@@ -52,7 +52,9 @@ class DocumentStatus(enum.StrEnum):
     PARSED = "parsed"  # sections extracted; ready for control mapping
     MAPPING = "mapping"  # LLM proposing section -> control mappings
     MAPPED = "mapped"  # proposals ready for human review
-    MAPPING_APPROVED = "mapping_approved"  # human confirmed mapping; ready for M3 drafting
+    MAPPING_APPROVED = "mapping_approved"  # human confirmed mapping; ready for drafting
+    DRAFTING = "drafting"  # LLM drafting Rev 5 text per section
+    DRAFTED = "drafted"  # Rev 5 drafts ready for human review/edit
     FAILED = "failed"
 
 
@@ -62,6 +64,14 @@ class MappingStatus(enum.StrEnum):
     PROPOSED = "proposed"  # LLM proposal, not yet reviewed
     EDITED = "edited"  # human changed the control set
     APPROVED = "approved"  # human confirmed (LLM proposal or their edit)
+
+
+class DraftStatus(enum.StrEnum):
+    """Per-section Rev 5 draft review state."""
+
+    PROPOSED = "proposed"  # LLM draft, not yet reviewed
+    EDITED = "edited"  # human edited the draft text
+    APPROVED = "approved"  # human confirmed the draft
 
 
 class Project(BaseModel):
@@ -162,3 +172,56 @@ class ControlMapping(BaseModel):
             if self.final_control_ids is not None
             else self.proposed_control_ids
         )
+
+
+class DispositionNote(BaseModel):
+    """How one Rev 4 control maps forward to Rev 5, carried onto a draft."""
+
+    rev4_id: str
+    rev5_ids: list[str] = Field(default_factory=list)
+    relationship: str  # same | renamed | withdrawn | new | merged | split | incorporated
+
+
+class DraftJob(BaseModel):
+    """Tracks an async Rev 5 drafting worker invocation for one document."""
+
+    job_id: str = Field(default_factory=lambda: _new_id("djob"))
+    project_id: str
+    document_id: str
+    status: JobStatus = JobStatus.PENDING
+    created_at: datetime = Field(default_factory=_now)
+    updated_at: datetime = Field(default_factory=_now)
+    section_count: int = 0
+    error_type: str | None = None
+
+
+class Draft(BaseModel):
+    """One section's proposed Rev 5 policy text.
+
+    Built from the section's APPROVED control mapping: the Rev 4 controls are
+    carried forward to their Rev 5 equivalents via the crosswalk, and the LLM
+    drafts updated policy language plus improvement suggestions. A human edits
+    and approves; ``edited_text`` (when set) is authoritative for M4 export.
+    """
+
+    draft_id: str = Field(default_factory=lambda: _new_id("draft"))
+    project_id: str
+    document_id: str
+    section_id: str
+    order: int  # mirrors the section's document-order
+
+    rev4_control_ids: list[str] = Field(default_factory=list)
+    rev5_control_ids: list[str] = Field(default_factory=list)
+    dispositions: list[DispositionNote] = Field(default_factory=list)
+
+    draft_text: str = ""  # LLM proposal (encrypted at rest; never logged)
+    suggestions: list[str] = Field(default_factory=list)
+
+    edited_text: str | None = None  # human edit
+    status: DraftStatus = DraftStatus.PROPOSED
+    reviewed_by: str | None = None
+    reviewed_at: datetime | None = None
+
+    def effective_text(self) -> str:
+        """Human-edited text if present, else the LLM draft."""
+        return self.edited_text if self.edited_text is not None else self.draft_text

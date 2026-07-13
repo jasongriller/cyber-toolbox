@@ -1,24 +1,27 @@
-// M2 shell. A minimal harness to open a document's mapping-review view. Project
-// creation, upload, and navigation get a proper UI in later milestones; for now
-// this lets the reviewer paste a project/document id and work the checkpoint.
+// M3 shell. Enter a project/document id, then work either the mapping-review
+// checkpoint or the Rev 5 draft editor. Full project navigation lands later.
 
 import { useState } from "react";
 import { ApiClient } from "./api/client";
 import MappingReview from "./components/MappingReview";
+import DraftEditor from "./components/DraftEditor";
 
 const client = new ApiClient();
+
+type View = "mapping" | "drafting";
 
 export default function App() {
   const [projectId, setProjectId] = useState("");
   const [documentId, setDocumentId] = useState("");
   const [open, setOpen] = useState<{ projectId: string; documentId: string } | null>(null);
+  const [view, setView] = useState<View>("mapping");
 
   return (
-    <main style={{ fontFamily: "system-ui, sans-serif", padding: "2rem", maxWidth: 960 }}>
+    <main style={{ fontFamily: "system-ui, sans-serif", padding: "2rem", maxWidth: 1040 }}>
       <h1>RMF Rev 5 Migrator</h1>
       <p style={{ color: "#666" }}>
-        Milestone M2 — control mapping review. Enter a project and document id to review the
-        proposed Rev 4 control mapping before Rev 5 drafting.
+        Milestone M3 — control mapping review and Rev 5 drafting. Enter a project and document
+        id, then review the mapping and draft the Rev 5 language.
       </p>
 
       <form
@@ -44,11 +47,36 @@ export default function App() {
       </form>
 
       {open && (
-        <MappingReview
-          client={client}
-          projectId={open.projectId}
-          documentId={open.documentId}
-        />
+        <>
+          <nav style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
+            <button
+              onClick={() => setView("mapping")}
+              disabled={view === "mapping"}
+            >
+              1 · Mapping review
+            </button>
+            <button
+              onClick={() => setView("drafting")}
+              disabled={view === "drafting"}
+            >
+              2 · Rev 5 editor
+            </button>
+          </nav>
+
+          {view === "mapping" ? (
+            <MappingReview
+              client={client}
+              projectId={open.projectId}
+              documentId={open.documentId}
+            />
+          ) : (
+            <DraftEditor
+              client={client}
+              projectId={open.projectId}
+              documentId={open.documentId}
+            />
+          )}
+        </>
       )}
     </main>
   );

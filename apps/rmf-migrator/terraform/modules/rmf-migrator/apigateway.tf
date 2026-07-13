@@ -20,6 +20,12 @@ locals {
     "GET /projects/{project_id}/documents/{document_id}/mappings"          = "get-mappings"
     "PUT /projects/{project_id}/documents/{document_id}/mappings/{section_id}" = "update-mapping"
     "POST /projects/{project_id}/documents/{document_id}/mappings/approve" = "approve-mappings"
+
+    # Rev 5 drafting + chat (M3)
+    "GET /projects/{project_id}/documents/{document_id}/drafts"                       = "get-drafts"
+    "PUT /projects/{project_id}/documents/{document_id}/drafts/{section_id}"          = "update-draft"
+    "POST /projects/{project_id}/documents/{document_id}/drafts/{section_id}/approve" = "approve-draft"
+    "POST /projects/{project_id}/documents/{document_id}/sections/{section_id}/chat"  = "chat"
   }
 }
 

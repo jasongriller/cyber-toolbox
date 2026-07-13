@@ -171,6 +171,11 @@ def _approve_mappings(event: dict[str, Any], deps: Deps) -> dict[str, Any]:
     document.status = DocumentStatus.MAPPING_APPROVED
     deps.repo.put_document(document)
 
+    # Auto-chain into Rev 5 drafting now that the mapping is confirmed.
+    from rmf_migrator.handlers.worker import enqueue_drafting
+
+    draft_job = enqueue_drafting(deps, project_id, document_id)
+
     log_event(
         "document.mapping_approved",
         project_id=project_id,
@@ -180,7 +185,11 @@ def _approve_mappings(event: dict[str, Any], deps: Deps) -> dict[str, Any]:
     )
     return json_response(
         200,
-        {"document_status": document.status, "approved_count": len(mappings)},
+        {
+            "document_status": document.status,
+            "approved_count": len(mappings),
+            "draft_job_id": draft_job.job_id,
+        },
     )
 
 

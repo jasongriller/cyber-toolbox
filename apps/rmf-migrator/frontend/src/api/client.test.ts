@@ -64,4 +64,33 @@ describe("ApiClient", () => {
       ApiError,
     );
   });
+
+  it("updateDraft PUTs text to the draft URL", async () => {
+    const spy = mockFetch(200, { section_id: "s1", status: "edited" });
+    const client = new ApiClient("/api");
+    await client.updateDraft("p1", "d1", "s1", "new text");
+
+    const [url, init] = spy.mock.calls[0];
+    expect(url).toBe("/api/projects/p1/documents/d1/drafts/s1");
+    expect(init?.method).toBe("PUT");
+    expect(JSON.parse(init?.body as string)).toEqual({ text: "new text" });
+  });
+
+  it("chat POSTs messages to the section chat URL", async () => {
+    const spy = mockFetch(200, { reply: "sure" });
+    const client = new ApiClient("/api");
+    const res = await client.chat("p1", "d1", "s1", [{ role: "user", content: "hi" }]);
+
+    const [url, init] = spy.mock.calls[0];
+    expect(url).toBe("/api/projects/p1/documents/d1/sections/s1/chat");
+    expect(init?.method).toBe("POST");
+    expect(res.reply).toBe("sure");
+  });
+
+  it("approveDraft POSTs to the approve URL", async () => {
+    const spy = mockFetch(200, { section_id: "s1", status: "approved" });
+    const client = new ApiClient("/api");
+    await client.approveDraft("p1", "d1", "s1");
+    expect(spy.mock.calls[0][0]).toBe("/api/projects/p1/documents/d1/drafts/s1/approve");
+  });
 });

@@ -7,7 +7,10 @@
 import type {
   ApproveResponse,
   Baseline,
+  ChatMessage,
   DocumentRecord,
+  Draft,
+  DraftsResponse,
   MappingsResponse,
   ParseJob,
   Project,
@@ -120,6 +123,45 @@ export class ApiClient {
     return this.request(
       "POST",
       `/projects/${projectId}/documents/${documentId}/mappings/approve`,
+    );
+  }
+
+  // ---- Rev 5 drafts (M3) ----
+
+  getDrafts(projectId: string, documentId: string): Promise<DraftsResponse> {
+    return this.request("GET", `/projects/${projectId}/documents/${documentId}/drafts`);
+  }
+
+  updateDraft(
+    projectId: string,
+    documentId: string,
+    sectionId: string,
+    text: string,
+  ): Promise<Draft> {
+    return this.request(
+      "PUT",
+      `/projects/${projectId}/documents/${documentId}/drafts/${sectionId}`,
+      { text },
+    );
+  }
+
+  approveDraft(projectId: string, documentId: string, sectionId: string): Promise<Draft> {
+    return this.request(
+      "POST",
+      `/projects/${projectId}/documents/${documentId}/drafts/${sectionId}/approve`,
+    );
+  }
+
+  chat(
+    projectId: string,
+    documentId: string,
+    sectionId: string,
+    messages: ChatMessage[],
+  ): Promise<{ reply: string }> {
+    return this.request(
+      "POST",
+      `/projects/${projectId}/documents/${documentId}/sections/${sectionId}/chat`,
+      { messages },
     );
   }
 }

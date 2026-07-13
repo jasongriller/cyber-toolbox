@@ -17,9 +17,13 @@ export type DocumentStatus =
   | "mapping"
   | "mapped"
   | "mapping_approved"
+  | "drafting"
+  | "drafted"
   | "failed";
 
 export type MappingStatus = "proposed" | "edited" | "approved";
+
+export type DraftStatus = "proposed" | "edited" | "approved";
 
 export interface Project {
   project_id: string;
@@ -94,4 +98,38 @@ export interface MappingsResponse {
 export interface ApproveResponse {
   document_status: DocumentStatus;
   approved_count: number;
+  draft_job_id?: string;
+}
+
+export interface DispositionNote {
+  rev4_id: string;
+  rev5_ids: string[];
+  relationship: string;
+}
+
+export interface Draft {
+  draft_id: string;
+  project_id: string;
+  document_id: string;
+  section_id: string;
+  order: number;
+  rev4_control_ids: string[];
+  rev5_control_ids: string[];
+  dispositions: DispositionNote[];
+  draft_text: string;
+  suggestions: string[];
+  edited_text: string | null;
+  status: DraftStatus;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+}
+
+export interface DraftsResponse {
+  document_status: DocumentStatus;
+  drafts: Draft[];
+}
+
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
 }

@@ -6,8 +6,10 @@ Single-table design keyed by ``PK``/``SK``:
     Document       PK=PROJECT#<pid>        SK=DOC#<did>
     ParseJob       PK=PROJECT#<pid>        SK=JOB#<job_id>
     MappingJob     PK=PROJECT#<pid>        SK=MJOB#<job_id>
+    DraftJob       PK=PROJECT#<pid>        SK=DJOB#<job_id>
     Section        PK=DOC#<did>            SK=SEC#<order padded>
     ControlMapping PK=DOC#<did>            SK=MAP#<section_id>
+    Draft          PK=DOC#<did>            SK=DRAFT#<section_id>
 
 This keeps a project's documents and jobs in one partition (cheap list), and a
 document's sections and mappings in their own partition (cheap scan). Later
@@ -24,7 +26,16 @@ from typing import Any
 import boto3
 from boto3.dynamodb.conditions import Key
 
-from .models import ControlMapping, Document, MappingJob, ParseJob, Project, Section
+from .models import (
+    ControlMapping,
+    Document,
+    Draft,
+    DraftJob,
+    MappingJob,
+    ParseJob,
+    Project,
+    Section,
+)
 
 
 def _project_pk(project_id: str) -> str:
@@ -177,6 +188,58 @@ class Repository:
         mappings = [ControlMapping(**_strip_keys(i)) for i in resp.get("Items", [])]
         mappings.sort(key=lambda m: m.order)
         return mappings
+
+    # ---- DraftJob ----------------------------------------------------------
+
+    def put_draft_job(self, job: DraftJob) -> None:
+        item = _to_item(job)
+        item |= {
+            "PK": _project_pk(job.project_id),
+            "SK": f"DJOB#{job.job_id}",
+            "type": "draft_job",
+        }
+        self._table.put_item(Item=item)
+
+    def get_draft_job(self, project_id: str, job_id: str) -> DraftJob | None:
+        resp = self._table.get_item(Key={"PK": _project_pk(project_id), "SK": f"DJOB#{job_id}"})
+        item = resp.get("Item")
+        return DraftJob(**_strip_keys(item)) if item else None
+
+    # ---- Draft -------------------------------------------------------------
+
+    def put_drafts(self, drafts: list[Draft]) -> None:
+        with self._table.batch_writer() as batch:
+            for draft in drafts:
+                item = _to_item(draft)
+                item |= {
+                    "PK": _doc_pk(draft.document_id),
+                    "SK": f"DRAFT#{draft.section_id}",
+                    "type": "draft",
+                }
+                batch.put_item(Item=item)
+
+    def put_draft(self, draft: Draft) -> None:
+        item = _to_item(draft)
+        item |= {
+            "PK": _doc_pk(draft.document_id),
+            "SK": f"DRAFT#{draft.section_id}",
+            "type": "draft",
+        }
+        self._table.put_item(Item=item)
+
+    def get_draft(self, document_id: str, section_id: str) -> Draft | None:
+        resp = self._table.get_item(Key={"PK": _doc_pk(document_id), "SK": f"DRAFT#{section_id}"})
+        item = resp.get("Item")
+        return Draft(**_strip_keys(item)) if item else None
+
+    def list_drafts(self, document_id: str) -> list[Draft]:
+        resp = self._table.query(
+            KeyConditionExpression=Key("PK").eq(_doc_pk(document_id))
+            & Key("SK").begins_with("DRAFT#")
+        )
+        drafts = [Draft(**_strip_keys(i)) for i in resp.get("Items", [])]
+        drafts.sort(key=lambda d: d.order)
+        return drafts
 
 
 _KEY_ATTRS = {"PK", "SK", "type"}

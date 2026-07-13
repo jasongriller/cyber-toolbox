@@ -94,10 +94,28 @@ class BedrockClient:
         temperature: float = 0.0,
     ) -> str:
         """One request/response turn; returns the assistant's text."""
+        return self.converse_messages(
+            system=system,
+            messages=[{"role": "user", "content": user}],
+            max_tokens=max_tokens,
+            temperature=temperature,
+        )
+
+    def converse_messages(
+        self,
+        *,
+        system: str,
+        messages: list[dict[str, str]],
+        max_tokens: int = 2048,
+        temperature: float = 0.0,
+    ) -> str:
+        """Multi-turn conversation; ``messages`` is [{role, content}]."""
         params: dict[str, Any] = {
             "modelId": self._model_id,
             "system": [{"text": system}],
-            "messages": [{"role": "user", "content": [{"text": user}]}],
+            "messages": [
+                {"role": m["role"], "content": [{"text": m["content"]}]} for m in messages
+            ],
             "inferenceConfig": {"maxTokens": max_tokens, "temperature": temperature},
         }
         if self._guardrail_id:

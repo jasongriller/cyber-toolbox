@@ -16,9 +16,16 @@ import json
 from typing import Any
 
 from rmf_migrator.common.logging import log_error, log_event
-from rmf_migrator.common.models import DocumentStatus, JobStatus, MappingJob
+from rmf_migrator.common.models import (
+    DocumentStatus,
+    DraftJob,
+    JobStatus,
+    MappingJob,
+    MappingStatus,
+)
 from rmf_migrator.handlers.deps import Deps
 from rmf_migrator.handlers.parse_document import run_parse_job
+from rmf_migrator.services.drafting import draft_document
 from rmf_migrator.services.mapping import map_document
 
 
@@ -38,6 +45,27 @@ def enqueue_mapping(deps: Deps, project_id: str, document_id: str) -> MappingJob
         ),
     )
     log_event("mapping.enqueued", project_id=project_id, document_id=document_id, job_id=job.job_id)
+    return job
+
+
+def enqueue_drafting(deps: Deps, project_id: str, document_id: str) -> DraftJob:
+    """Create a DraftJob and enqueue it for the worker (Rev 5 drafting)."""
+    job = DraftJob(project_id=project_id, document_id=document_id)
+    deps.repo.put_draft_job(job)
+    deps.sqs.send_message(
+        QueueUrl=deps.config.parse_queue_url,
+        MessageBody=json.dumps(
+            {
+                "kind": "draft",
+                "job_id": job.job_id,
+                "project_id": project_id,
+                "document_id": document_id,
+            }
+        ),
+    )
+    log_event(
+        "drafting.enqueued", project_id=project_id, document_id=document_id, job_id=job.job_id
+    )
     return job
 
 
@@ -92,6 +120,59 @@ def run_mapping_job(project_id: str, document_id: str, job_id: str, deps: Deps) 
         raise
 
 
+def run_draft_job(project_id: str, document_id: str, job_id: str, deps: Deps) -> None:
+    job = deps.repo.get_draft_job(project_id, job_id)
+    document = deps.repo.get_document(project_id, document_id)
+    if job is None or document is None:
+        log_event(
+            "drafting.job_missing",
+            project_id=project_id,
+            document_id=document_id,
+            job_id=job_id,
+            job_found=job is not None,
+            document_found=document is not None,
+        )
+        return
+
+    job.status = JobStatus.RUNNING
+    deps.repo.put_draft_job(job)
+    document.status = DocumentStatus.DRAFTING
+    deps.repo.put_document(document)
+
+    try:
+        sections = deps.repo.list_sections(document_id)
+        # Only draft from human-approved mappings.
+        mappings = [
+            m for m in deps.repo.list_mappings(document_id) if m.status == MappingStatus.APPROVED
+        ]
+        drafts = draft_document(sections, mappings, deps.bedrock)
+        deps.repo.put_drafts(drafts)
+
+        document.status = DocumentStatus.DRAFTED
+        deps.repo.put_document(document)
+
+        job.status = JobStatus.SUCCEEDED
+        job.section_count = len(drafts)
+        job.error_type = None
+        deps.repo.put_draft_job(job)
+
+        log_event(
+            "document.drafted",
+            project_id=project_id,
+            document_id=document_id,
+            job_id=job_id,
+            draft_count=len(drafts),
+        )
+    except Exception as exc:  # noqa: BLE001
+        document.status = DocumentStatus.FAILED
+        deps.repo.put_document(document)
+        job.status = JobStatus.FAILED
+        job.error_type = type(exc).__name__
+        deps.repo.put_draft_job(job)
+        log_error("document.drafting_failed", exc, project_id=project_id, document_id=document_id)
+        raise
+
+
 def process_event(event: dict[str, Any], deps: Deps) -> dict[str, Any]:
     """Dispatch each SQS record; returns partial-batch-failure identifiers.
 
@@ -114,6 +195,13 @@ def process_event(event: dict[str, Any], deps: Deps) -> dict[str, Any]:
                 enqueue_mapping(deps, body["project_id"], body["document_id"])
             elif kind == "map":
                 run_mapping_job(
+                    project_id=body["project_id"],
+                    document_id=body["document_id"],
+                    job_id=body["job_id"],
+                    deps=deps,
+                )
+            elif kind == "draft":
+                run_draft_job(
                     project_id=body["project_id"],
                     document_id=body["document_id"],
                     job_id=body["job_id"],

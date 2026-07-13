@@ -39,7 +39,8 @@ locals {
     } : {},
   )
 
-  # name -> { handler } for the API functions.
+  # name -> { handler, role? }. role defaults to "api"; "worker" grants Bedrock
+  # (the chat handler invokes the model from an API request).
   api_functions = {
     create-project   = { handler = "rmf_migrator.handlers.create_project.handler" }
     request-upload   = { handler = "rmf_migrator.handlers.request_upload.handler" }
@@ -50,6 +51,15 @@ locals {
     get-mappings     = { handler = "rmf_migrator.handlers.review.get_mappings" }
     update-mapping   = { handler = "rmf_migrator.handlers.review.update_mapping" }
     approve-mappings = { handler = "rmf_migrator.handlers.review.approve_mappings" }
+    get-drafts       = { handler = "rmf_migrator.handlers.drafts.get_drafts" }
+    update-draft     = { handler = "rmf_migrator.handlers.drafts.update_draft" }
+    approve-draft    = { handler = "rmf_migrator.handlers.drafts.approve_draft" }
+    chat             = { handler = "rmf_migrator.handlers.chat.handler", role = "worker" }
+  }
+
+  api_role_arns = {
+    api    = aws_iam_role.api.arn
+    worker = aws_iam_role.worker.arn
   }
 }
 
@@ -66,7 +76,7 @@ resource "aws_lambda_function" "api" {
   for_each = local.api_functions
 
   function_name    = "${local.name}-${each.key}"
-  role             = aws_iam_role.api.arn
+  role             = local.api_role_arns[try(each.value.role, "api")]
   runtime          = var.lambda_runtime
   handler          = each.value.handler
   filename         = var.lambda_zip_path

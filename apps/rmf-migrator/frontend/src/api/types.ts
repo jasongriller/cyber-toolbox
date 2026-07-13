@@ -10,7 +10,16 @@ export type Baseline =
 
 export type JobStatus = "pending" | "running" | "succeeded" | "failed";
 
-export type DocumentStatus = "uploaded" | "parsing" | "parsed" | "failed";
+export type DocumentStatus =
+  | "uploaded"
+  | "parsing"
+  | "parsed"
+  | "mapping"
+  | "mapped"
+  | "mapping_approved"
+  | "failed";
+
+export type MappingStatus = "proposed" | "edited" | "approved";
 
 export interface Project {
   project_id: string;
@@ -48,4 +57,41 @@ export interface ParseJob {
   created_at: string;
   updated_at: string;
   error_type: string | null;
+}
+
+export interface Section {
+  section_id: string;
+  document_id: string;
+  project_id: string;
+  order: number;
+  level: number;
+  heading: string;
+  parent_id: string | null;
+  text: string;
+  char_length: number;
+}
+
+export interface ControlMapping {
+  mapping_id: string;
+  project_id: string;
+  document_id: string;
+  section_id: string;
+  order: number;
+  proposed_control_ids: string[];
+  confidence: number;
+  rationale: string;
+  final_control_ids: string[] | null;
+  status: MappingStatus;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+}
+
+export interface MappingsResponse {
+  document_status: DocumentStatus;
+  mappings: ControlMapping[];
+}
+
+export interface ApproveResponse {
+  document_status: DocumentStatus;
+  approved_count: number;
 }

@@ -2,14 +2,16 @@
 
 Single-table design keyed by ``PK``/``SK``:
 
-    Project    PK=PROJECT#<pid>            SK=META
-    Document   PK=PROJECT#<pid>            SK=DOC#<did>
-    Section    PK=DOC#<did>               SK=SEC#<order padded>
-    ParseJob   PK=PROJECT#<pid>            SK=JOB#<job_id>
+    Project        PK=PROJECT#<pid>        SK=META
+    Document       PK=PROJECT#<pid>        SK=DOC#<did>
+    ParseJob       PK=PROJECT#<pid>        SK=JOB#<job_id>
+    MappingJob     PK=PROJECT#<pid>        SK=MJOB#<job_id>
+    Section        PK=DOC#<did>            SK=SEC#<order padded>
+    ControlMapping PK=DOC#<did>            SK=MAP#<section_id>
 
 This keeps a project's documents and jobs in one partition (cheap list), and a
-document's sections in their own partition (cheap ordered scan). Later
-milestones add mapping/decision items under the same keys.
+document's sections and mappings in their own partition (cheap scan). Later
+milestones add decision-log items under the same keys.
 
 All items are encrypted at rest by the table's KMS CMK (configured in Terraform);
 no crypto happens here.
@@ -22,7 +24,7 @@ from typing import Any
 import boto3
 from boto3.dynamodb.conditions import Key
 
-from .models import Document, ParseJob, Project, Section
+from .models import ControlMapping, Document, MappingJob, ParseJob, Project, Section
 
 
 def _project_pk(project_id: str) -> str:
@@ -124,15 +126,73 @@ class Repository:
         item = resp.get("Item")
         return ParseJob(**_strip_keys(item)) if item else None
 
+    # ---- MappingJob --------------------------------------------------------
+
+    def put_mapping_job(self, job: MappingJob) -> None:
+        item = _to_item(job)
+        item |= {
+            "PK": _project_pk(job.project_id),
+            "SK": f"MJOB#{job.job_id}",
+            "type": "mapping_job",
+        }
+        self._table.put_item(Item=item)
+
+    def get_mapping_job(self, project_id: str, job_id: str) -> MappingJob | None:
+        resp = self._table.get_item(Key={"PK": _project_pk(project_id), "SK": f"MJOB#{job_id}"})
+        item = resp.get("Item")
+        return MappingJob(**_strip_keys(item)) if item else None
+
+    # ---- ControlMapping ----------------------------------------------------
+
+    def put_mappings(self, mappings: list[ControlMapping]) -> None:
+        with self._table.batch_writer() as batch:
+            for mapping in mappings:
+                item = _to_item(mapping)
+                item |= {
+                    "PK": _doc_pk(mapping.document_id),
+                    "SK": f"MAP#{mapping.section_id}",
+                    "type": "mapping",
+                }
+                batch.put_item(Item=item)
+
+    def put_mapping(self, mapping: ControlMapping) -> None:
+        item = _to_item(mapping)
+        item |= {
+            "PK": _doc_pk(mapping.document_id),
+            "SK": f"MAP#{mapping.section_id}",
+            "type": "mapping",
+        }
+        self._table.put_item(Item=item)
+
+    def get_mapping(self, document_id: str, section_id: str) -> ControlMapping | None:
+        resp = self._table.get_item(Key={"PK": _doc_pk(document_id), "SK": f"MAP#{section_id}"})
+        item = resp.get("Item")
+        return ControlMapping(**_strip_keys(item)) if item else None
+
+    def list_mappings(self, document_id: str) -> list[ControlMapping]:
+        resp = self._table.query(
+            KeyConditionExpression=Key("PK").eq(_doc_pk(document_id))
+            & Key("SK").begins_with("MAP#")
+        )
+        mappings = [ControlMapping(**_strip_keys(i)) for i in resp.get("Items", [])]
+        mappings.sort(key=lambda m: m.order)
+        return mappings
+
 
 _KEY_ATTRS = {"PK", "SK", "type"}
 
 
 def _to_item(model: Any) -> dict[str, Any]:
-    """Serialize a pydantic model to a DynamoDB-safe dict (JSON round-trip)."""
-    import json
+    """Serialize a pydantic model to a DynamoDB-safe dict.
 
-    return json.loads(model.model_dump_json())
+    The JSON round-trip normalizes enums/datetimes to primitives; ``parse_float=
+    Decimal`` converts floats (e.g. mapping confidence) to Decimal, which the
+    DynamoDB resource client requires — it rejects native Python floats.
+    """
+    import json
+    from decimal import Decimal
+
+    return json.loads(model.model_dump_json(), parse_float=Decimal)
 
 
 def _strip_keys(item: dict[str, Any]) -> dict[str, Any]:

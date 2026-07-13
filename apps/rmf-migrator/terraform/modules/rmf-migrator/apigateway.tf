@@ -13,6 +13,13 @@ locals {
     "POST /projects/{project_id}/documents"                    = "request-upload"
     "POST /projects/{project_id}/documents/{document_id}/parse" = "enqueue-parse"
     "GET /projects/{project_id}/jobs/{job_id}"                 = "get-job"
+
+    # Mapping review (M2)
+    "GET /projects/{project_id}/documents/{document_id}"                    = "get-document"
+    "GET /projects/{project_id}/documents/{document_id}/sections"          = "list-sections"
+    "GET /projects/{project_id}/documents/{document_id}/mappings"          = "get-mappings"
+    "PUT /projects/{project_id}/documents/{document_id}/mappings/{section_id}" = "update-mapping"
+    "POST /projects/{project_id}/documents/{document_id}/mappings/approve" = "approve-mappings"
   }
 }
 
@@ -23,7 +30,7 @@ resource "aws_apigatewayv2_api" "this" {
   # CSP frame-ancestors is enforced at the SPA delivery layer; CORS here governs
   # XHR from the SPA origin(s).
   cors_configuration {
-    allow_methods = ["GET", "POST", "OPTIONS"]
+    allow_methods = ["GET", "POST", "PUT", "OPTIONS"]
     allow_origins = length(var.frame_ancestors) > 0 ? var.frame_ancestors : ["*"]
     allow_headers = ["content-type", var.identity_header != null ? var.identity_header : "x-remote-user"]
     max_age       = 3000

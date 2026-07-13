@@ -39,12 +39,17 @@ locals {
     } : {},
   )
 
-  # name -> { handler, role, timeout } for the API functions.
+  # name -> { handler } for the API functions.
   api_functions = {
-    create-project = { handler = "rmf_migrator.handlers.create_project.handler" }
-    request-upload = { handler = "rmf_migrator.handlers.request_upload.handler" }
-    enqueue-parse  = { handler = "rmf_migrator.handlers.enqueue_parse.handler" }
-    get-job        = { handler = "rmf_migrator.handlers.get_job.handler" }
+    create-project   = { handler = "rmf_migrator.handlers.create_project.handler" }
+    request-upload   = { handler = "rmf_migrator.handlers.request_upload.handler" }
+    enqueue-parse    = { handler = "rmf_migrator.handlers.enqueue_parse.handler" }
+    get-job          = { handler = "rmf_migrator.handlers.get_job.handler" }
+    get-document     = { handler = "rmf_migrator.handlers.review.get_document" }
+    list-sections    = { handler = "rmf_migrator.handlers.review.list_sections" }
+    get-mappings     = { handler = "rmf_migrator.handlers.review.get_mappings" }
+    update-mapping   = { handler = "rmf_migrator.handlers.review.update_mapping" }
+    approve-mappings = { handler = "rmf_migrator.handlers.review.approve_mappings" }
   }
 }
 
@@ -98,7 +103,7 @@ resource "aws_lambda_function" "worker" {
   function_name    = "${local.name}-parse-worker"
   role             = aws_iam_role.worker.arn
   runtime          = var.lambda_runtime
-  handler          = "rmf_migrator.handlers.parse_document.handler"
+  handler          = "rmf_migrator.handlers.worker.handler"
   filename         = var.lambda_zip_path
   source_code_hash = local.source_hash
   timeout          = var.worker_timeout_seconds

@@ -49,8 +49,19 @@ class JobStatus(enum.StrEnum):
 class DocumentStatus(enum.StrEnum):
     UPLOADED = "uploaded"  # object in S3, not yet parsed
     PARSING = "parsing"
-    PARSED = "parsed"
+    PARSED = "parsed"  # sections extracted; ready for control mapping
+    MAPPING = "mapping"  # LLM proposing section -> control mappings
+    MAPPED = "mapped"  # proposals ready for human review
+    MAPPING_APPROVED = "mapping_approved"  # human confirmed mapping; ready for M3 drafting
     FAILED = "failed"
+
+
+class MappingStatus(enum.StrEnum):
+    """Per-section control-mapping review state (the human checkpoint)."""
+
+    PROPOSED = "proposed"  # LLM proposal, not yet reviewed
+    EDITED = "edited"  # human changed the control set
+    APPROVED = "approved"  # human confirmed (LLM proposal or their edit)
 
 
 class Project(BaseModel):
@@ -106,3 +117,48 @@ class ParseJob(BaseModel):
     created_at: datetime = Field(default_factory=_now)
     updated_at: datetime = Field(default_factory=_now)
     error_type: str | None = None
+
+
+class MappingJob(BaseModel):
+    """Tracks an async control-mapping worker invocation for one document."""
+
+    job_id: str = Field(default_factory=lambda: _new_id("mjob"))
+    project_id: str
+    document_id: str
+    status: JobStatus = JobStatus.PENDING
+    created_at: datetime = Field(default_factory=_now)
+    updated_at: datetime = Field(default_factory=_now)
+    section_count: int = 0
+    error_type: str | None = None
+
+
+class ControlMapping(BaseModel):
+    """One section's mapping to Rev 4 control(s).
+
+    The LLM proposes ``proposed_control_ids`` with a ``confidence``; a human then
+    reviews and, on approval, ``final_control_ids`` holds the authoritative set.
+    Downstream Rev 5 drafting (M3) reads only APPROVED mappings.
+    """
+
+    mapping_id: str = Field(default_factory=lambda: _new_id("map"))
+    project_id: str
+    document_id: str
+    section_id: str
+    order: int  # mirrors the section's document-order for stable listing
+
+    proposed_control_ids: list[str] = Field(default_factory=list)
+    confidence: float = 0.0
+    rationale: str = ""  # brief LLM justification; stored (encrypted), never logged
+
+    final_control_ids: list[str] | None = None  # set on human edit/approve
+    status: MappingStatus = MappingStatus.PROPOSED
+    reviewed_by: str | None = None
+    reviewed_at: datetime | None = None
+
+    def effective_control_ids(self) -> list[str]:
+        """Human-confirmed set if present, else the LLM proposal."""
+        return (
+            self.final_control_ids
+            if self.final_control_ids is not None
+            else self.proposed_control_ids
+        )

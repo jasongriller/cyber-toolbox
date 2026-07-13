@@ -12,6 +12,7 @@ from typing import Any
 
 import boto3
 
+from rmf_migrator.common.bedrock import BedrockClient
 from rmf_migrator.common.config import Config, get_config
 from rmf_migrator.common.repository import Repository
 from rmf_migrator.common.storage import DocumentStore
@@ -23,6 +24,9 @@ class Deps:
     repo: Repository
     store: DocumentStore
     sqs: Any
+    # Bedrock is only needed by the mapping/drafting workers; API handlers leave
+    # it None. Tests inject a fake.
+    bedrock: Any = None
 
     @staticmethod
     def build() -> Deps:
@@ -32,4 +36,5 @@ class Deps:
             repo=Repository(config.table_name),
             store=DocumentStore(config.documents_bucket, config.kms_key_id),
             sqs=boto3.client("sqs"),
+            bedrock=BedrockClient.from_config(config),
         )

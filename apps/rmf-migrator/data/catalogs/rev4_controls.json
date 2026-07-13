@@ -1,0 +1,7382 @@
+{
+  "revision": "4",
+  "source": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev4/json/NIST_SP-800-53_rev4_catalog.json",
+  "controls": [
+    {
+      "id": "AC-1",
+      "oscal_id": "ac-1",
+      "title": "Access Control Policy and Procedures",
+      "family": "AC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-10",
+      "oscal_id": "ac-10",
+      "title": "Concurrent Session Control",
+      "family": "AC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-11",
+      "oscal_id": "ac-11",
+      "title": "Session Lock",
+      "family": "AC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-11(1)",
+      "oscal_id": "ac-11.1",
+      "title": "Pattern-hiding Displays",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-12",
+      "oscal_id": "ac-12",
+      "title": "Session Termination",
+      "family": "AC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-12(1)",
+      "oscal_id": "ac-12.1",
+      "title": "User-initiated Logouts / Message Displays",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-13",
+      "oscal_id": "ac-13",
+      "title": "Supervision and Review - Access Control",
+      "family": "AC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-14",
+      "oscal_id": "ac-14",
+      "title": "Permitted Actions Without Identification or Authentication",
+      "family": "AC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-14(1)",
+      "oscal_id": "ac-14.1",
+      "title": "Necessary Uses",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-15",
+      "oscal_id": "ac-15",
+      "title": "Automated Marking",
+      "family": "AC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-16",
+      "oscal_id": "ac-16",
+      "title": "Security Attributes",
+      "family": "AC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-16(1)",
+      "oscal_id": "ac-16.1",
+      "title": "Dynamic Attribute Association",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-16(10)",
+      "oscal_id": "ac-16.10",
+      "title": "Attribute Configuration by Authorized Individuals",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-16(2)",
+      "oscal_id": "ac-16.2",
+      "title": "Attribute Value Changes by Authorized Individuals",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-16(3)",
+      "oscal_id": "ac-16.3",
+      "title": "Maintenance of Attribute Associations by Information System",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-16(4)",
+      "oscal_id": "ac-16.4",
+      "title": "Association of Attributes by Authorized Individuals",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-16(5)",
+      "oscal_id": "ac-16.5",
+      "title": "Attribute Displays for Output Devices",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-16(6)",
+      "oscal_id": "ac-16.6",
+      "title": "Maintenance of Attribute Association by Organization",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-16(7)",
+      "oscal_id": "ac-16.7",
+      "title": "Consistent Attribute Interpretation",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-16(8)",
+      "oscal_id": "ac-16.8",
+      "title": "Association Techniques / Technologies",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-16(9)",
+      "oscal_id": "ac-16.9",
+      "title": "Attribute Reassignment",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-17",
+      "oscal_id": "ac-17",
+      "title": "Remote Access",
+      "family": "AC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-17(1)",
+      "oscal_id": "ac-17.1",
+      "title": "Automated Monitoring / Control",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-17(2)",
+      "oscal_id": "ac-17.2",
+      "title": "Protection of Confidentiality / Integrity Using Encryption",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-17(3)",
+      "oscal_id": "ac-17.3",
+      "title": "Managed Access Control Points",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-17(4)",
+      "oscal_id": "ac-17.4",
+      "title": "Privileged Commands / Access",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-17(5)",
+      "oscal_id": "ac-17.5",
+      "title": "Monitoring for Unauthorized Connections",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-17(6)",
+      "oscal_id": "ac-17.6",
+      "title": "Protection of Information",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-17(7)",
+      "oscal_id": "ac-17.7",
+      "title": "Additional Protection for Security Function Access",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-17(8)",
+      "oscal_id": "ac-17.8",
+      "title": "Disable Nonsecure Network Protocols",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-17(9)",
+      "oscal_id": "ac-17.9",
+      "title": "Disconnect / Disable Access",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-18",
+      "oscal_id": "ac-18",
+      "title": "Wireless Access",
+      "family": "AC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-18(1)",
+      "oscal_id": "ac-18.1",
+      "title": "Authentication and Encryption",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-18(2)",
+      "oscal_id": "ac-18.2",
+      "title": "Monitoring Unauthorized Connections",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-18(3)",
+      "oscal_id": "ac-18.3",
+      "title": "Disable Wireless Networking",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-18(4)",
+      "oscal_id": "ac-18.4",
+      "title": "Restrict Configurations by Users",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-18(5)",
+      "oscal_id": "ac-18.5",
+      "title": "Antennas / Transmission Power Levels",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-19",
+      "oscal_id": "ac-19",
+      "title": "Access Control for Mobile Devices",
+      "family": "AC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-19(1)",
+      "oscal_id": "ac-19.1",
+      "title": "Use of Writable / Portable Storage Devices",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-19(2)",
+      "oscal_id": "ac-19.2",
+      "title": "Use of Personally Owned Portable Storage Devices",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-19(3)",
+      "oscal_id": "ac-19.3",
+      "title": "Use of Portable Storage Devices with No Identifiable Owner",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-19(4)",
+      "oscal_id": "ac-19.4",
+      "title": "Restrictions for Classified Information",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-19(5)",
+      "oscal_id": "ac-19.5",
+      "title": "Full Device / Container-based Encryption",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-2",
+      "oscal_id": "ac-2",
+      "title": "Account Management",
+      "family": "AC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-2(1)",
+      "oscal_id": "ac-2.1",
+      "title": "Automated System Account Management",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-2(10)",
+      "oscal_id": "ac-2.10",
+      "title": "Shared / Group Account Credential Termination",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-2(11)",
+      "oscal_id": "ac-2.11",
+      "title": "Usage Conditions",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-2(12)",
+      "oscal_id": "ac-2.12",
+      "title": "Account Monitoring / Atypical Usage",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-2(13)",
+      "oscal_id": "ac-2.13",
+      "title": "Disable Accounts for High-risk Individuals",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-2(2)",
+      "oscal_id": "ac-2.2",
+      "title": "Removal of Temporary / Emergency Accounts",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-2(3)",
+      "oscal_id": "ac-2.3",
+      "title": "Disable Inactive Accounts",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-2(4)",
+      "oscal_id": "ac-2.4",
+      "title": "Automated Audit Actions",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-2(5)",
+      "oscal_id": "ac-2.5",
+      "title": "Inactivity Logout",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-2(6)",
+      "oscal_id": "ac-2.6",
+      "title": "Dynamic Privilege Management",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-2(7)",
+      "oscal_id": "ac-2.7",
+      "title": "Role-based Schemes",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-2(8)",
+      "oscal_id": "ac-2.8",
+      "title": "Dynamic Account Creation",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-2(9)",
+      "oscal_id": "ac-2.9",
+      "title": "Restrictions On Use of Shared / Group Accounts",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-20",
+      "oscal_id": "ac-20",
+      "title": "Use of External Information Systems",
+      "family": "AC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-20(1)",
+      "oscal_id": "ac-20.1",
+      "title": "Limits On Authorized Use",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-20(2)",
+      "oscal_id": "ac-20.2",
+      "title": "Portable Storage Devices",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-20(3)",
+      "oscal_id": "ac-20.3",
+      "title": "Non-organizationally Owned Systems / Components / Devices",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-20(4)",
+      "oscal_id": "ac-20.4",
+      "title": "Network Accessible Storage Devices",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-21",
+      "oscal_id": "ac-21",
+      "title": "Information Sharing",
+      "family": "AC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-21(1)",
+      "oscal_id": "ac-21.1",
+      "title": "Automated Decision Support",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-21(2)",
+      "oscal_id": "ac-21.2",
+      "title": "Information Search and Retrieval",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-22",
+      "oscal_id": "ac-22",
+      "title": "Publicly Accessible Content",
+      "family": "AC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-23",
+      "oscal_id": "ac-23",
+      "title": "Data Mining Protection",
+      "family": "AC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-24",
+      "oscal_id": "ac-24",
+      "title": "Access Control Decisions",
+      "family": "AC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-24(1)",
+      "oscal_id": "ac-24.1",
+      "title": "Transmit Access Authorization Information",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-24(2)",
+      "oscal_id": "ac-24.2",
+      "title": "No User or Process Identity",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-25",
+      "oscal_id": "ac-25",
+      "title": "Reference Monitor",
+      "family": "AC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-3",
+      "oscal_id": "ac-3",
+      "title": "Access Enforcement",
+      "family": "AC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-3(1)",
+      "oscal_id": "ac-3.1",
+      "title": "Restricted Access to Privileged Functions",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-3(10)",
+      "oscal_id": "ac-3.10",
+      "title": "Audited Override of Access Control Mechanisms",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-3(2)",
+      "oscal_id": "ac-3.2",
+      "title": "Dual Authorization",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-3(3)",
+      "oscal_id": "ac-3.3",
+      "title": "Mandatory Access Control",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-3(4)",
+      "oscal_id": "ac-3.4",
+      "title": "Discretionary Access Control",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-3(5)",
+      "oscal_id": "ac-3.5",
+      "title": "Security-relevant Information",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-3(6)",
+      "oscal_id": "ac-3.6",
+      "title": "Protection of User and System Information",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-3(7)",
+      "oscal_id": "ac-3.7",
+      "title": "Role-based Access Control",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-3(8)",
+      "oscal_id": "ac-3.8",
+      "title": "Revocation of Access Authorizations",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-3(9)",
+      "oscal_id": "ac-3.9",
+      "title": "Controlled Release",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-4",
+      "oscal_id": "ac-4",
+      "title": "Information Flow Enforcement",
+      "family": "AC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-4(1)",
+      "oscal_id": "ac-4.1",
+      "title": "Object Security Attributes",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-4(10)",
+      "oscal_id": "ac-4.10",
+      "title": "Enable / Disable Security Policy Filters",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-4(11)",
+      "oscal_id": "ac-4.11",
+      "title": "Configuration of Security Policy Filters",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-4(12)",
+      "oscal_id": "ac-4.12",
+      "title": "Data Type Identifiers",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-4(13)",
+      "oscal_id": "ac-4.13",
+      "title": "Decomposition into Policy-relevant Subcomponents",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-4(14)",
+      "oscal_id": "ac-4.14",
+      "title": "Security Policy Filter Constraints",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-4(15)",
+      "oscal_id": "ac-4.15",
+      "title": "Detection of Unsanctioned Information",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-4(16)",
+      "oscal_id": "ac-4.16",
+      "title": "Information Transfers On Interconnected Systems",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-4(17)",
+      "oscal_id": "ac-4.17",
+      "title": "Domain Authentication",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-4(18)",
+      "oscal_id": "ac-4.18",
+      "title": "Security Attribute Binding",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-4(19)",
+      "oscal_id": "ac-4.19",
+      "title": "Validation of Metadata",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-4(2)",
+      "oscal_id": "ac-4.2",
+      "title": "Processing Domains",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-4(20)",
+      "oscal_id": "ac-4.20",
+      "title": "Approved Solutions",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-4(21)",
+      "oscal_id": "ac-4.21",
+      "title": "Physical / Logical Separation of Information Flows",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-4(22)",
+      "oscal_id": "ac-4.22",
+      "title": "Access Only",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-4(3)",
+      "oscal_id": "ac-4.3",
+      "title": "Dynamic Information Flow Control",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-4(4)",
+      "oscal_id": "ac-4.4",
+      "title": "Content Check Encrypted Information",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-4(5)",
+      "oscal_id": "ac-4.5",
+      "title": "Embedded Data Types",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-4(6)",
+      "oscal_id": "ac-4.6",
+      "title": "Metadata",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-4(7)",
+      "oscal_id": "ac-4.7",
+      "title": "One-way Flow Mechanisms",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-4(8)",
+      "oscal_id": "ac-4.8",
+      "title": "Security Policy Filters",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-4(9)",
+      "oscal_id": "ac-4.9",
+      "title": "Human Reviews",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-5",
+      "oscal_id": "ac-5",
+      "title": "Separation of Duties",
+      "family": "AC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-6",
+      "oscal_id": "ac-6",
+      "title": "Least Privilege",
+      "family": "AC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-6(1)",
+      "oscal_id": "ac-6.1",
+      "title": "Authorize Access to Security Functions",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-6(10)",
+      "oscal_id": "ac-6.10",
+      "title": "Prohibit Non-privileged Users from Executing Privileged Functions",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-6(2)",
+      "oscal_id": "ac-6.2",
+      "title": "Non-privileged Access for Nonsecurity Functions",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-6(3)",
+      "oscal_id": "ac-6.3",
+      "title": "Network Access to Privileged Commands",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-6(4)",
+      "oscal_id": "ac-6.4",
+      "title": "Separate Processing Domains",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-6(5)",
+      "oscal_id": "ac-6.5",
+      "title": "Privileged Accounts",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-6(6)",
+      "oscal_id": "ac-6.6",
+      "title": "Privileged Access by Non-organizational Users",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-6(7)",
+      "oscal_id": "ac-6.7",
+      "title": "Review of User Privileges",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-6(8)",
+      "oscal_id": "ac-6.8",
+      "title": "Privilege Levels for Code Execution",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-6(9)",
+      "oscal_id": "ac-6.9",
+      "title": "Auditing Use of Privileged Functions",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-7",
+      "oscal_id": "ac-7",
+      "title": "Unsuccessful Logon Attempts",
+      "family": "AC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-7(1)",
+      "oscal_id": "ac-7.1",
+      "title": "Automatic Account Lock",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-7(2)",
+      "oscal_id": "ac-7.2",
+      "title": "Purge / Wipe Mobile Device",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-8",
+      "oscal_id": "ac-8",
+      "title": "System Use Notification",
+      "family": "AC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-9",
+      "oscal_id": "ac-9",
+      "title": "Previous Logon (access) Notification",
+      "family": "AC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-9(1)",
+      "oscal_id": "ac-9.1",
+      "title": "Unsuccessful Logons",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-9(2)",
+      "oscal_id": "ac-9.2",
+      "title": "Successful / Unsuccessful Logons",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-9(3)",
+      "oscal_id": "ac-9.3",
+      "title": "Notification of Account Changes",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AC-9(4)",
+      "oscal_id": "ac-9.4",
+      "title": "Additional Logon Information",
+      "family": "AC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AT-1",
+      "oscal_id": "at-1",
+      "title": "Security Awareness and Training Policy and Procedures",
+      "family": "AT",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AT-2",
+      "oscal_id": "at-2",
+      "title": "Security Awareness Training",
+      "family": "AT",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AT-2(1)",
+      "oscal_id": "at-2.1",
+      "title": "Practical Exercises",
+      "family": "AT",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AT-2(2)",
+      "oscal_id": "at-2.2",
+      "title": "Insider Threat",
+      "family": "AT",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AT-3",
+      "oscal_id": "at-3",
+      "title": "Role-based Security Training",
+      "family": "AT",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AT-3(1)",
+      "oscal_id": "at-3.1",
+      "title": "Environmental Controls",
+      "family": "AT",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AT-3(2)",
+      "oscal_id": "at-3.2",
+      "title": "Physical Security Controls",
+      "family": "AT",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AT-3(3)",
+      "oscal_id": "at-3.3",
+      "title": "Practical Exercises",
+      "family": "AT",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AT-3(4)",
+      "oscal_id": "at-3.4",
+      "title": "Suspicious Communications and Anomalous System Behavior",
+      "family": "AT",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AT-4",
+      "oscal_id": "at-4",
+      "title": "Security Training Records",
+      "family": "AT",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AT-5",
+      "oscal_id": "at-5",
+      "title": "Contacts with Security Groups and Associations",
+      "family": "AT",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-1",
+      "oscal_id": "au-1",
+      "title": "Audit and Accountability Policy and Procedures",
+      "family": "AU",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-10",
+      "oscal_id": "au-10",
+      "title": "Non-repudiation",
+      "family": "AU",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-10(1)",
+      "oscal_id": "au-10.1",
+      "title": "Association of Identities",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-10(2)",
+      "oscal_id": "au-10.2",
+      "title": "Validate Binding of Information Producer Identity",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-10(3)",
+      "oscal_id": "au-10.3",
+      "title": "Chain of Custody",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-10(4)",
+      "oscal_id": "au-10.4",
+      "title": "Validate Binding of Information Reviewer Identity",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-10(5)",
+      "oscal_id": "au-10.5",
+      "title": "Digital Signatures",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-11",
+      "oscal_id": "au-11",
+      "title": "Audit Record Retention",
+      "family": "AU",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-11(1)",
+      "oscal_id": "au-11.1",
+      "title": "Long-term Retrieval Capability",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-12",
+      "oscal_id": "au-12",
+      "title": "Audit Generation",
+      "family": "AU",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-12(1)",
+      "oscal_id": "au-12.1",
+      "title": "System-wide / Time-correlated Audit Trail",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-12(2)",
+      "oscal_id": "au-12.2",
+      "title": "Standardized Formats",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-12(3)",
+      "oscal_id": "au-12.3",
+      "title": "Changes by Authorized Individuals",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-13",
+      "oscal_id": "au-13",
+      "title": "Monitoring for Information Disclosure",
+      "family": "AU",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-13(1)",
+      "oscal_id": "au-13.1",
+      "title": "Use of Automated Tools",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-13(2)",
+      "oscal_id": "au-13.2",
+      "title": "Review of Monitored Sites",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-14",
+      "oscal_id": "au-14",
+      "title": "Session Audit",
+      "family": "AU",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-14(1)",
+      "oscal_id": "au-14.1",
+      "title": "System Start-up",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-14(2)",
+      "oscal_id": "au-14.2",
+      "title": "Capture/record and Log Content",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-14(3)",
+      "oscal_id": "au-14.3",
+      "title": "Remote Viewing / Listening",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-15",
+      "oscal_id": "au-15",
+      "title": "Alternate Audit Capability",
+      "family": "AU",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-16",
+      "oscal_id": "au-16",
+      "title": "Cross-organizational Auditing",
+      "family": "AU",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-16(1)",
+      "oscal_id": "au-16.1",
+      "title": "Identity Preservation",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-16(2)",
+      "oscal_id": "au-16.2",
+      "title": "Sharing of Audit Information",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-2",
+      "oscal_id": "au-2",
+      "title": "Audit Events",
+      "family": "AU",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-2(1)",
+      "oscal_id": "au-2.1",
+      "title": "Compilation of Audit Records from Multiple Sources",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-2(2)",
+      "oscal_id": "au-2.2",
+      "title": "Selection of Audit Events by Component",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-2(3)",
+      "oscal_id": "au-2.3",
+      "title": "Reviews and Updates",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-2(4)",
+      "oscal_id": "au-2.4",
+      "title": "Privileged Functions",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-3",
+      "oscal_id": "au-3",
+      "title": "Content of Audit Records",
+      "family": "AU",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-3(1)",
+      "oscal_id": "au-3.1",
+      "title": "Additional Audit Information",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-3(2)",
+      "oscal_id": "au-3.2",
+      "title": "Centralized Management of Planned Audit Record Content",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-4",
+      "oscal_id": "au-4",
+      "title": "Audit Storage Capacity",
+      "family": "AU",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-4(1)",
+      "oscal_id": "au-4.1",
+      "title": "Transfer to Alternate Storage",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-5",
+      "oscal_id": "au-5",
+      "title": "Response to Audit Processing Failures",
+      "family": "AU",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-5(1)",
+      "oscal_id": "au-5.1",
+      "title": "Audit Storage Capacity",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-5(2)",
+      "oscal_id": "au-5.2",
+      "title": "Real-time Alerts",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-5(3)",
+      "oscal_id": "au-5.3",
+      "title": "Configurable Traffic Volume Thresholds",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-5(4)",
+      "oscal_id": "au-5.4",
+      "title": "Shutdown On Failure",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-6",
+      "oscal_id": "au-6",
+      "title": "Audit Review, Analysis, and Reporting",
+      "family": "AU",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-6(1)",
+      "oscal_id": "au-6.1",
+      "title": "Process Integration",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-6(10)",
+      "oscal_id": "au-6.10",
+      "title": "Audit Level Adjustment",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-6(2)",
+      "oscal_id": "au-6.2",
+      "title": "Automated Security Alerts",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-6(3)",
+      "oscal_id": "au-6.3",
+      "title": "Correlate Audit Repositories",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-6(4)",
+      "oscal_id": "au-6.4",
+      "title": "Central Review and Analysis",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-6(5)",
+      "oscal_id": "au-6.5",
+      "title": "Integration / Scanning and Monitoring Capabilities",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-6(6)",
+      "oscal_id": "au-6.6",
+      "title": "Correlation with Physical Monitoring",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-6(7)",
+      "oscal_id": "au-6.7",
+      "title": "Permitted Actions",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-6(8)",
+      "oscal_id": "au-6.8",
+      "title": "Full Text Analysis of Privileged Commands",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-6(9)",
+      "oscal_id": "au-6.9",
+      "title": "Correlation with Information from Nontechnical Sources",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-7",
+      "oscal_id": "au-7",
+      "title": "Audit Reduction and Report Generation",
+      "family": "AU",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-7(1)",
+      "oscal_id": "au-7.1",
+      "title": "Automatic Processing",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-7(2)",
+      "oscal_id": "au-7.2",
+      "title": "Automatic Sort and Search",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-8",
+      "oscal_id": "au-8",
+      "title": "Time Stamps",
+      "family": "AU",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-8(1)",
+      "oscal_id": "au-8.1",
+      "title": "Synchronization with Authoritative Time Source",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-8(2)",
+      "oscal_id": "au-8.2",
+      "title": "Secondary Authoritative Time Source",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-9",
+      "oscal_id": "au-9",
+      "title": "Protection of Audit Information",
+      "family": "AU",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-9(1)",
+      "oscal_id": "au-9.1",
+      "title": "Hardware Write-once Media",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-9(2)",
+      "oscal_id": "au-9.2",
+      "title": "Audit Backup On Separate Physical Systems / Components",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-9(3)",
+      "oscal_id": "au-9.3",
+      "title": "Cryptographic Protection",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-9(4)",
+      "oscal_id": "au-9.4",
+      "title": "Access by Subset of Privileged Users",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-9(5)",
+      "oscal_id": "au-9.5",
+      "title": "Dual Authorization",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "AU-9(6)",
+      "oscal_id": "au-9.6",
+      "title": "Read Only Access",
+      "family": "AU",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CA-1",
+      "oscal_id": "ca-1",
+      "title": "Security Assessment and Authorization Policy and Procedures",
+      "family": "CA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "CA-2",
+      "oscal_id": "ca-2",
+      "title": "Security Assessments",
+      "family": "CA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "CA-2(1)",
+      "oscal_id": "ca-2.1",
+      "title": "Independent Assessors",
+      "family": "CA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CA-2(2)",
+      "oscal_id": "ca-2.2",
+      "title": "Specialized Assessments",
+      "family": "CA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CA-2(3)",
+      "oscal_id": "ca-2.3",
+      "title": "External Organizations",
+      "family": "CA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CA-3",
+      "oscal_id": "ca-3",
+      "title": "System Interconnections",
+      "family": "CA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "CA-3(1)",
+      "oscal_id": "ca-3.1",
+      "title": "Unclassified National Security System Connections",
+      "family": "CA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CA-3(2)",
+      "oscal_id": "ca-3.2",
+      "title": "Classified National Security System Connections",
+      "family": "CA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CA-3(3)",
+      "oscal_id": "ca-3.3",
+      "title": "Unclassified Non-national Security System Connections",
+      "family": "CA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CA-3(4)",
+      "oscal_id": "ca-3.4",
+      "title": "Connections to Public Networks",
+      "family": "CA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CA-3(5)",
+      "oscal_id": "ca-3.5",
+      "title": "Restrictions On External System Connections",
+      "family": "CA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CA-4",
+      "oscal_id": "ca-4",
+      "title": "Security Certification",
+      "family": "CA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "CA-5",
+      "oscal_id": "ca-5",
+      "title": "Plan of Action and Milestones",
+      "family": "CA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "CA-5(1)",
+      "oscal_id": "ca-5.1",
+      "title": "Automation Support for Accuracy / Currency",
+      "family": "CA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CA-6",
+      "oscal_id": "ca-6",
+      "title": "Security Authorization",
+      "family": "CA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "CA-7",
+      "oscal_id": "ca-7",
+      "title": "Continuous Monitoring",
+      "family": "CA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "CA-7(1)",
+      "oscal_id": "ca-7.1",
+      "title": "Independent Assessment",
+      "family": "CA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CA-7(2)",
+      "oscal_id": "ca-7.2",
+      "title": "Types of Assessments",
+      "family": "CA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CA-7(3)",
+      "oscal_id": "ca-7.3",
+      "title": "Trend Analyses",
+      "family": "CA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CA-8",
+      "oscal_id": "ca-8",
+      "title": "Penetration Testing",
+      "family": "CA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "CA-8(1)",
+      "oscal_id": "ca-8.1",
+      "title": "Independent Penetration Agent or Team",
+      "family": "CA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CA-8(2)",
+      "oscal_id": "ca-8.2",
+      "title": "Red Team Exercises",
+      "family": "CA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CA-9",
+      "oscal_id": "ca-9",
+      "title": "Internal System Connections",
+      "family": "CA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "CA-9(1)",
+      "oscal_id": "ca-9.1",
+      "title": "Security Compliance Checks",
+      "family": "CA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-1",
+      "oscal_id": "cm-1",
+      "title": "Configuration Management Policy and Procedures",
+      "family": "CM",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-10",
+      "oscal_id": "cm-10",
+      "title": "Software Usage Restrictions",
+      "family": "CM",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-10(1)",
+      "oscal_id": "cm-10.1",
+      "title": "Open Source Software",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-11",
+      "oscal_id": "cm-11",
+      "title": "User-installed Software",
+      "family": "CM",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-11(1)",
+      "oscal_id": "cm-11.1",
+      "title": "Alerts for Unauthorized Installations",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-11(2)",
+      "oscal_id": "cm-11.2",
+      "title": "Prohibit Installation Without Privileged Status",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-2",
+      "oscal_id": "cm-2",
+      "title": "Baseline Configuration",
+      "family": "CM",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-2(1)",
+      "oscal_id": "cm-2.1",
+      "title": "Reviews and Updates",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-2(2)",
+      "oscal_id": "cm-2.2",
+      "title": "Automation Support for Accuracy / Currency",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-2(3)",
+      "oscal_id": "cm-2.3",
+      "title": "Retention of Previous Configurations",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-2(4)",
+      "oscal_id": "cm-2.4",
+      "title": "Unauthorized Software",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-2(5)",
+      "oscal_id": "cm-2.5",
+      "title": "Authorized Software",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-2(6)",
+      "oscal_id": "cm-2.6",
+      "title": "Development and Test Environments",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-2(7)",
+      "oscal_id": "cm-2.7",
+      "title": "Configure Systems, Components, or Devices for High-risk Areas",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-3",
+      "oscal_id": "cm-3",
+      "title": "Configuration Change Control",
+      "family": "CM",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-3(1)",
+      "oscal_id": "cm-3.1",
+      "title": "Automated Document / Notification / Prohibition of Changes",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-3(2)",
+      "oscal_id": "cm-3.2",
+      "title": "Test / Validate / Document Changes",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-3(3)",
+      "oscal_id": "cm-3.3",
+      "title": "Automated Change Implementation",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-3(4)",
+      "oscal_id": "cm-3.4",
+      "title": "Security Representative",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-3(5)",
+      "oscal_id": "cm-3.5",
+      "title": "Automated Security Response",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-3(6)",
+      "oscal_id": "cm-3.6",
+      "title": "Cryptography Management",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-4",
+      "oscal_id": "cm-4",
+      "title": "Security Impact Analysis",
+      "family": "CM",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-4(1)",
+      "oscal_id": "cm-4.1",
+      "title": "Separate Test Environments",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-4(2)",
+      "oscal_id": "cm-4.2",
+      "title": "Verification of Security Functions",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-5",
+      "oscal_id": "cm-5",
+      "title": "Access Restrictions for Change",
+      "family": "CM",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-5(1)",
+      "oscal_id": "cm-5.1",
+      "title": "Automated Access Enforcement / Auditing",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-5(2)",
+      "oscal_id": "cm-5.2",
+      "title": "Review System Changes",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-5(3)",
+      "oscal_id": "cm-5.3",
+      "title": "Signed Components",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-5(4)",
+      "oscal_id": "cm-5.4",
+      "title": "Dual Authorization",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-5(5)",
+      "oscal_id": "cm-5.5",
+      "title": "Limit Production / Operational Privileges",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-5(6)",
+      "oscal_id": "cm-5.6",
+      "title": "Limit Library Privileges",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-5(7)",
+      "oscal_id": "cm-5.7",
+      "title": "Automatic Implementation of Security Safeguards",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-6",
+      "oscal_id": "cm-6",
+      "title": "Configuration Settings",
+      "family": "CM",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-6(1)",
+      "oscal_id": "cm-6.1",
+      "title": "Automated Central Management / Application / Verification",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-6(2)",
+      "oscal_id": "cm-6.2",
+      "title": "Respond to Unauthorized Changes",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-6(3)",
+      "oscal_id": "cm-6.3",
+      "title": "Unauthorized Change Detection",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-6(4)",
+      "oscal_id": "cm-6.4",
+      "title": "Conformance Demonstration",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-7",
+      "oscal_id": "cm-7",
+      "title": "Least Functionality",
+      "family": "CM",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-7(1)",
+      "oscal_id": "cm-7.1",
+      "title": "Periodic Review",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-7(2)",
+      "oscal_id": "cm-7.2",
+      "title": "Prevent Program Execution",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-7(3)",
+      "oscal_id": "cm-7.3",
+      "title": "Registration Compliance",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-7(4)",
+      "oscal_id": "cm-7.4",
+      "title": "Unauthorized Software / Blacklisting",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-7(5)",
+      "oscal_id": "cm-7.5",
+      "title": "Authorized Software / Whitelisting",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-8",
+      "oscal_id": "cm-8",
+      "title": "Information System Component Inventory",
+      "family": "CM",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-8(1)",
+      "oscal_id": "cm-8.1",
+      "title": "Updates During Installations / Removals",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-8(2)",
+      "oscal_id": "cm-8.2",
+      "title": "Automated Maintenance",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-8(3)",
+      "oscal_id": "cm-8.3",
+      "title": "Automated Unauthorized Component Detection",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-8(4)",
+      "oscal_id": "cm-8.4",
+      "title": "Accountability Information",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-8(5)",
+      "oscal_id": "cm-8.5",
+      "title": "No Duplicate Accounting of Components",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-8(6)",
+      "oscal_id": "cm-8.6",
+      "title": "Assessed Configurations / Approved Deviations",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-8(7)",
+      "oscal_id": "cm-8.7",
+      "title": "Centralized Repository",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-8(8)",
+      "oscal_id": "cm-8.8",
+      "title": "Automated Location Tracking",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-8(9)",
+      "oscal_id": "cm-8.9",
+      "title": "Assignment of Components to Systems",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-9",
+      "oscal_id": "cm-9",
+      "title": "Configuration Management Plan",
+      "family": "CM",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "CM-9(1)",
+      "oscal_id": "cm-9.1",
+      "title": "Assignment of Responsibility",
+      "family": "CM",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-1",
+      "oscal_id": "cp-1",
+      "title": "Contingency Planning Policy and Procedures",
+      "family": "CP",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-10",
+      "oscal_id": "cp-10",
+      "title": "Information System Recovery and Reconstitution",
+      "family": "CP",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-10(1)",
+      "oscal_id": "cp-10.1",
+      "title": "Contingency Plan Testing",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-10(2)",
+      "oscal_id": "cp-10.2",
+      "title": "Transaction Recovery",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-10(3)",
+      "oscal_id": "cp-10.3",
+      "title": "Compensating Security Controls",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-10(4)",
+      "oscal_id": "cp-10.4",
+      "title": "Restore Within Time Period",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-10(5)",
+      "oscal_id": "cp-10.5",
+      "title": "Failover Capability",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-10(6)",
+      "oscal_id": "cp-10.6",
+      "title": "Component Protection",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-11",
+      "oscal_id": "cp-11",
+      "title": "Alternate Communications Protocols",
+      "family": "CP",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-12",
+      "oscal_id": "cp-12",
+      "title": "Safe Mode",
+      "family": "CP",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-13",
+      "oscal_id": "cp-13",
+      "title": "Alternative Security Mechanisms",
+      "family": "CP",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-2",
+      "oscal_id": "cp-2",
+      "title": "Contingency Plan",
+      "family": "CP",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-2(1)",
+      "oscal_id": "cp-2.1",
+      "title": "Coordinate with Related Plans",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-2(2)",
+      "oscal_id": "cp-2.2",
+      "title": "Capacity Planning",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-2(3)",
+      "oscal_id": "cp-2.3",
+      "title": "Resume Essential Missions / Business Functions",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-2(4)",
+      "oscal_id": "cp-2.4",
+      "title": "Resume All Missions / Business Functions",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-2(5)",
+      "oscal_id": "cp-2.5",
+      "title": "Continue Essential Missions / Business Functions",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-2(6)",
+      "oscal_id": "cp-2.6",
+      "title": "Alternate Processing / Storage Site",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-2(7)",
+      "oscal_id": "cp-2.7",
+      "title": "Coordinate with External Service Providers",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-2(8)",
+      "oscal_id": "cp-2.8",
+      "title": "Identify Critical Assets",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-3",
+      "oscal_id": "cp-3",
+      "title": "Contingency Training",
+      "family": "CP",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-3(1)",
+      "oscal_id": "cp-3.1",
+      "title": "Simulated Events",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-3(2)",
+      "oscal_id": "cp-3.2",
+      "title": "Automated Training Environments",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-4",
+      "oscal_id": "cp-4",
+      "title": "Contingency Plan Testing",
+      "family": "CP",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-4(1)",
+      "oscal_id": "cp-4.1",
+      "title": "Coordinate with Related Plans",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-4(2)",
+      "oscal_id": "cp-4.2",
+      "title": "Alternate Processing Site",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-4(3)",
+      "oscal_id": "cp-4.3",
+      "title": "Automated Testing",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-4(4)",
+      "oscal_id": "cp-4.4",
+      "title": "Full Recovery / Reconstitution",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-5",
+      "oscal_id": "cp-5",
+      "title": "Contingency Plan Update",
+      "family": "CP",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-6",
+      "oscal_id": "cp-6",
+      "title": "Alternate Storage Site",
+      "family": "CP",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-6(1)",
+      "oscal_id": "cp-6.1",
+      "title": "Separation from Primary Site",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-6(2)",
+      "oscal_id": "cp-6.2",
+      "title": "Recovery Time / Point Objectives",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-6(3)",
+      "oscal_id": "cp-6.3",
+      "title": "Accessibility",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-7",
+      "oscal_id": "cp-7",
+      "title": "Alternate Processing Site",
+      "family": "CP",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-7(1)",
+      "oscal_id": "cp-7.1",
+      "title": "Separation from Primary Site",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-7(2)",
+      "oscal_id": "cp-7.2",
+      "title": "Accessibility",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-7(3)",
+      "oscal_id": "cp-7.3",
+      "title": "Priority of Service",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-7(4)",
+      "oscal_id": "cp-7.4",
+      "title": "Preparation for Use",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-7(5)",
+      "oscal_id": "cp-7.5",
+      "title": "Equivalent Information Security Safeguards",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-7(6)",
+      "oscal_id": "cp-7.6",
+      "title": "Inability to Return to Primary Site",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-8",
+      "oscal_id": "cp-8",
+      "title": "Telecommunications Services",
+      "family": "CP",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-8(1)",
+      "oscal_id": "cp-8.1",
+      "title": "Priority of Service Provisions",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-8(2)",
+      "oscal_id": "cp-8.2",
+      "title": "Single Points of Failure",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-8(3)",
+      "oscal_id": "cp-8.3",
+      "title": "Separation of Primary / Alternate Providers",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-8(4)",
+      "oscal_id": "cp-8.4",
+      "title": "Provider Contingency Plan",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-8(5)",
+      "oscal_id": "cp-8.5",
+      "title": "Alternate Telecommunication Service Testing",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-9",
+      "oscal_id": "cp-9",
+      "title": "Information System Backup",
+      "family": "CP",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-9(1)",
+      "oscal_id": "cp-9.1",
+      "title": "Testing for Reliability / Integrity",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-9(2)",
+      "oscal_id": "cp-9.2",
+      "title": "Test Restoration Using Sampling",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-9(3)",
+      "oscal_id": "cp-9.3",
+      "title": "Separate Storage for Critical Information",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-9(4)",
+      "oscal_id": "cp-9.4",
+      "title": "Protection from Unauthorized Modification",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-9(5)",
+      "oscal_id": "cp-9.5",
+      "title": "Transfer to Alternate Storage Site",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-9(6)",
+      "oscal_id": "cp-9.6",
+      "title": "Redundant Secondary System",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "CP-9(7)",
+      "oscal_id": "cp-9.7",
+      "title": "Dual Authorization",
+      "family": "CP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-1",
+      "oscal_id": "ia-1",
+      "title": "Identification and Authentication Policy and Procedures",
+      "family": "IA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-10",
+      "oscal_id": "ia-10",
+      "title": "Adaptive Identification and Authentication",
+      "family": "IA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-11",
+      "oscal_id": "ia-11",
+      "title": "Re-authentication",
+      "family": "IA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-2",
+      "oscal_id": "ia-2",
+      "title": "Identification and Authentication (organizational Users)",
+      "family": "IA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-2(1)",
+      "oscal_id": "ia-2.1",
+      "title": "Network Access to Privileged Accounts",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-2(10)",
+      "oscal_id": "ia-2.10",
+      "title": "Single Sign-on",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-2(11)",
+      "oscal_id": "ia-2.11",
+      "title": "Remote Access - Separate Device",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-2(12)",
+      "oscal_id": "ia-2.12",
+      "title": "Acceptance of PIV Credentials",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-2(13)",
+      "oscal_id": "ia-2.13",
+      "title": "Out-of-band Authentication",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-2(2)",
+      "oscal_id": "ia-2.2",
+      "title": "Network Access to Non-privileged Accounts",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-2(3)",
+      "oscal_id": "ia-2.3",
+      "title": "Local Access to Privileged Accounts",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-2(4)",
+      "oscal_id": "ia-2.4",
+      "title": "Local Access to Non-privileged Accounts",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-2(5)",
+      "oscal_id": "ia-2.5",
+      "title": "Group Authentication",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-2(6)",
+      "oscal_id": "ia-2.6",
+      "title": "Network Access to Privileged Accounts - Separate Device",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-2(7)",
+      "oscal_id": "ia-2.7",
+      "title": "Network Access to Non-privileged Accounts - Separate Device",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-2(8)",
+      "oscal_id": "ia-2.8",
+      "title": "Network Access to Privileged Accounts - Replay Resistant",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-2(9)",
+      "oscal_id": "ia-2.9",
+      "title": "Network Access to Non-privileged Accounts - Replay Resistant",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-3",
+      "oscal_id": "ia-3",
+      "title": "Device Identification and Authentication",
+      "family": "IA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-3(1)",
+      "oscal_id": "ia-3.1",
+      "title": "Cryptographic Bidirectional Authentication",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-3(2)",
+      "oscal_id": "ia-3.2",
+      "title": "Cryptographic Bidirectional Network Authentication",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-3(3)",
+      "oscal_id": "ia-3.3",
+      "title": "Dynamic Address Allocation",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-3(4)",
+      "oscal_id": "ia-3.4",
+      "title": "Device Attestation",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-4",
+      "oscal_id": "ia-4",
+      "title": "Identifier Management",
+      "family": "IA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-4(1)",
+      "oscal_id": "ia-4.1",
+      "title": "Prohibit Account Identifiers as Public Identifiers",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-4(2)",
+      "oscal_id": "ia-4.2",
+      "title": "Supervisor Authorization",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-4(3)",
+      "oscal_id": "ia-4.3",
+      "title": "Multiple Forms of Certification",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-4(4)",
+      "oscal_id": "ia-4.4",
+      "title": "Identify User Status",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-4(5)",
+      "oscal_id": "ia-4.5",
+      "title": "Dynamic Management",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-4(6)",
+      "oscal_id": "ia-4.6",
+      "title": "Cross-organization Management",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-4(7)",
+      "oscal_id": "ia-4.7",
+      "title": "In-person Registration",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-5",
+      "oscal_id": "ia-5",
+      "title": "Authenticator Management",
+      "family": "IA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-5(1)",
+      "oscal_id": "ia-5.1",
+      "title": "Password-based Authentication",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-5(10)",
+      "oscal_id": "ia-5.10",
+      "title": "Dynamic Credential Association",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-5(11)",
+      "oscal_id": "ia-5.11",
+      "title": "Hardware Token-based Authentication",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-5(12)",
+      "oscal_id": "ia-5.12",
+      "title": "Biometric-based Authentication",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-5(13)",
+      "oscal_id": "ia-5.13",
+      "title": "Expiration of Cached Authenticators",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-5(14)",
+      "oscal_id": "ia-5.14",
+      "title": "Managing Content of PKI Trust Stores",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-5(15)",
+      "oscal_id": "ia-5.15",
+      "title": "Ficam-approved Products and Services",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-5(2)",
+      "oscal_id": "ia-5.2",
+      "title": "Pki-based Authentication",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-5(3)",
+      "oscal_id": "ia-5.3",
+      "title": "In-person or Trusted Third-party Registration",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-5(4)",
+      "oscal_id": "ia-5.4",
+      "title": "Automated Support for Password Strength Determination",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-5(5)",
+      "oscal_id": "ia-5.5",
+      "title": "Change Authenticators Prior to Delivery",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-5(6)",
+      "oscal_id": "ia-5.6",
+      "title": "Protection of Authenticators",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-5(7)",
+      "oscal_id": "ia-5.7",
+      "title": "No Embedded Unencrypted Static Authenticators",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-5(8)",
+      "oscal_id": "ia-5.8",
+      "title": "Multiple Information System Accounts",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-5(9)",
+      "oscal_id": "ia-5.9",
+      "title": "Cross-organization Credential Management",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-6",
+      "oscal_id": "ia-6",
+      "title": "Authenticator Feedback",
+      "family": "IA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-7",
+      "oscal_id": "ia-7",
+      "title": "Cryptographic Module Authentication",
+      "family": "IA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-8",
+      "oscal_id": "ia-8",
+      "title": "Identification and Authentication (non-organizational Users)",
+      "family": "IA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-8(1)",
+      "oscal_id": "ia-8.1",
+      "title": "Acceptance of PIV Credentials from Other Agencies",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-8(2)",
+      "oscal_id": "ia-8.2",
+      "title": "Acceptance of Third-party Credentials",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-8(3)",
+      "oscal_id": "ia-8.3",
+      "title": "Use of Ficam-approved Products",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-8(4)",
+      "oscal_id": "ia-8.4",
+      "title": "Use of Ficam-issued Profiles",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-8(5)",
+      "oscal_id": "ia-8.5",
+      "title": "Acceptance of PIV-I Credentials",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-9",
+      "oscal_id": "ia-9",
+      "title": "Service Identification and Authentication",
+      "family": "IA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-9(1)",
+      "oscal_id": "ia-9.1",
+      "title": "Information Exchange",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IA-9(2)",
+      "oscal_id": "ia-9.2",
+      "title": "Transmission of Decisions",
+      "family": "IA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IR-1",
+      "oscal_id": "ir-1",
+      "title": "Incident Response Policy and Procedures",
+      "family": "IR",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "IR-10",
+      "oscal_id": "ir-10",
+      "title": "Integrated Information Security Analysis Team",
+      "family": "IR",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "IR-2",
+      "oscal_id": "ir-2",
+      "title": "Incident Response Training",
+      "family": "IR",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "IR-2(1)",
+      "oscal_id": "ir-2.1",
+      "title": "Simulated Events",
+      "family": "IR",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IR-2(2)",
+      "oscal_id": "ir-2.2",
+      "title": "Automated Training Environments",
+      "family": "IR",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IR-3",
+      "oscal_id": "ir-3",
+      "title": "Incident Response Testing",
+      "family": "IR",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "IR-3(1)",
+      "oscal_id": "ir-3.1",
+      "title": "Automated Testing",
+      "family": "IR",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IR-3(2)",
+      "oscal_id": "ir-3.2",
+      "title": "Coordination with Related Plans",
+      "family": "IR",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IR-4",
+      "oscal_id": "ir-4",
+      "title": "Incident Handling",
+      "family": "IR",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "IR-4(1)",
+      "oscal_id": "ir-4.1",
+      "title": "Automated Incident Handling Processes",
+      "family": "IR",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IR-4(10)",
+      "oscal_id": "ir-4.10",
+      "title": "Supply Chain Coordination",
+      "family": "IR",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IR-4(2)",
+      "oscal_id": "ir-4.2",
+      "title": "Dynamic Reconfiguration",
+      "family": "IR",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IR-4(3)",
+      "oscal_id": "ir-4.3",
+      "title": "Continuity of Operations",
+      "family": "IR",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IR-4(4)",
+      "oscal_id": "ir-4.4",
+      "title": "Information Correlation",
+      "family": "IR",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IR-4(5)",
+      "oscal_id": "ir-4.5",
+      "title": "Automatic Disabling of Information System",
+      "family": "IR",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IR-4(6)",
+      "oscal_id": "ir-4.6",
+      "title": "Insider Threats - Specific Capabilities",
+      "family": "IR",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IR-4(7)",
+      "oscal_id": "ir-4.7",
+      "title": "Insider Threats - Intra-organization Coordination",
+      "family": "IR",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IR-4(8)",
+      "oscal_id": "ir-4.8",
+      "title": "Correlation with External Organizations",
+      "family": "IR",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IR-4(9)",
+      "oscal_id": "ir-4.9",
+      "title": "Dynamic Response Capability",
+      "family": "IR",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IR-5",
+      "oscal_id": "ir-5",
+      "title": "Incident Monitoring",
+      "family": "IR",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "IR-5(1)",
+      "oscal_id": "ir-5.1",
+      "title": "Automated Tracking / Data Collection / Analysis",
+      "family": "IR",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IR-6",
+      "oscal_id": "ir-6",
+      "title": "Incident Reporting",
+      "family": "IR",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "IR-6(1)",
+      "oscal_id": "ir-6.1",
+      "title": "Automated Reporting",
+      "family": "IR",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IR-6(2)",
+      "oscal_id": "ir-6.2",
+      "title": "Vulnerabilities Related to Incidents",
+      "family": "IR",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IR-6(3)",
+      "oscal_id": "ir-6.3",
+      "title": "Coordination with Supply Chain",
+      "family": "IR",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IR-7",
+      "oscal_id": "ir-7",
+      "title": "Incident Response Assistance",
+      "family": "IR",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "IR-7(1)",
+      "oscal_id": "ir-7.1",
+      "title": "Automation Support for Availability of Information / Support",
+      "family": "IR",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IR-7(2)",
+      "oscal_id": "ir-7.2",
+      "title": "Coordination with External Providers",
+      "family": "IR",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IR-8",
+      "oscal_id": "ir-8",
+      "title": "Incident Response Plan",
+      "family": "IR",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "IR-9",
+      "oscal_id": "ir-9",
+      "title": "Information Spillage Response",
+      "family": "IR",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "IR-9(1)",
+      "oscal_id": "ir-9.1",
+      "title": "Responsible Personnel",
+      "family": "IR",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IR-9(2)",
+      "oscal_id": "ir-9.2",
+      "title": "Training",
+      "family": "IR",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IR-9(3)",
+      "oscal_id": "ir-9.3",
+      "title": "Post-spill Operations",
+      "family": "IR",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "IR-9(4)",
+      "oscal_id": "ir-9.4",
+      "title": "Exposure to Unauthorized Personnel",
+      "family": "IR",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MA-1",
+      "oscal_id": "ma-1",
+      "title": "System Maintenance Policy and Procedures",
+      "family": "MA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "MA-2",
+      "oscal_id": "ma-2",
+      "title": "Controlled Maintenance",
+      "family": "MA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "MA-2(1)",
+      "oscal_id": "ma-2.1",
+      "title": "Record Content",
+      "family": "MA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MA-2(2)",
+      "oscal_id": "ma-2.2",
+      "title": "Automated Maintenance Activities",
+      "family": "MA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MA-3",
+      "oscal_id": "ma-3",
+      "title": "Maintenance Tools",
+      "family": "MA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "MA-3(1)",
+      "oscal_id": "ma-3.1",
+      "title": "Inspect Tools",
+      "family": "MA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MA-3(2)",
+      "oscal_id": "ma-3.2",
+      "title": "Inspect Media",
+      "family": "MA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MA-3(3)",
+      "oscal_id": "ma-3.3",
+      "title": "Prevent Unauthorized Removal",
+      "family": "MA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MA-3(4)",
+      "oscal_id": "ma-3.4",
+      "title": "Restricted Tool Use",
+      "family": "MA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MA-4",
+      "oscal_id": "ma-4",
+      "title": "Nonlocal Maintenance",
+      "family": "MA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "MA-4(1)",
+      "oscal_id": "ma-4.1",
+      "title": "Auditing and Review",
+      "family": "MA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MA-4(2)",
+      "oscal_id": "ma-4.2",
+      "title": "Document Nonlocal Maintenance",
+      "family": "MA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MA-4(3)",
+      "oscal_id": "ma-4.3",
+      "title": "Comparable Security / Sanitization",
+      "family": "MA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MA-4(4)",
+      "oscal_id": "ma-4.4",
+      "title": "Authentication / Separation of Maintenance Sessions",
+      "family": "MA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MA-4(5)",
+      "oscal_id": "ma-4.5",
+      "title": "Approvals and Notifications",
+      "family": "MA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MA-4(6)",
+      "oscal_id": "ma-4.6",
+      "title": "Cryptographic Protection",
+      "family": "MA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MA-4(7)",
+      "oscal_id": "ma-4.7",
+      "title": "Remote Disconnect Verification",
+      "family": "MA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MA-5",
+      "oscal_id": "ma-5",
+      "title": "Maintenance Personnel",
+      "family": "MA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "MA-5(1)",
+      "oscal_id": "ma-5.1",
+      "title": "Individuals Without Appropriate Access",
+      "family": "MA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MA-5(2)",
+      "oscal_id": "ma-5.2",
+      "title": "Security Clearances for Classified Systems",
+      "family": "MA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MA-5(3)",
+      "oscal_id": "ma-5.3",
+      "title": "Citizenship Requirements for Classified Systems",
+      "family": "MA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MA-5(4)",
+      "oscal_id": "ma-5.4",
+      "title": "Foreign Nationals",
+      "family": "MA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MA-5(5)",
+      "oscal_id": "ma-5.5",
+      "title": "Nonsystem-related Maintenance",
+      "family": "MA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MA-6",
+      "oscal_id": "ma-6",
+      "title": "Timely Maintenance",
+      "family": "MA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "MA-6(1)",
+      "oscal_id": "ma-6.1",
+      "title": "Preventive Maintenance",
+      "family": "MA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MA-6(2)",
+      "oscal_id": "ma-6.2",
+      "title": "Predictive Maintenance",
+      "family": "MA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MA-6(3)",
+      "oscal_id": "ma-6.3",
+      "title": "Automated Support for Predictive Maintenance",
+      "family": "MA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MP-1",
+      "oscal_id": "mp-1",
+      "title": "Media Protection Policy and Procedures",
+      "family": "MP",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "MP-2",
+      "oscal_id": "mp-2",
+      "title": "Media Access",
+      "family": "MP",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "MP-2(1)",
+      "oscal_id": "mp-2.1",
+      "title": "Automated Restricted Access",
+      "family": "MP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MP-2(2)",
+      "oscal_id": "mp-2.2",
+      "title": "Cryptographic Protection",
+      "family": "MP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MP-3",
+      "oscal_id": "mp-3",
+      "title": "Media Marking",
+      "family": "MP",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "MP-4",
+      "oscal_id": "mp-4",
+      "title": "Media Storage",
+      "family": "MP",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "MP-4(1)",
+      "oscal_id": "mp-4.1",
+      "title": "Cryptographic Protection",
+      "family": "MP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MP-4(2)",
+      "oscal_id": "mp-4.2",
+      "title": "Automated Restricted Access",
+      "family": "MP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MP-5",
+      "oscal_id": "mp-5",
+      "title": "Media Transport",
+      "family": "MP",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "MP-5(1)",
+      "oscal_id": "mp-5.1",
+      "title": "Protection Outside of Controlled Areas",
+      "family": "MP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MP-5(2)",
+      "oscal_id": "mp-5.2",
+      "title": "Documentation of Activities",
+      "family": "MP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MP-5(3)",
+      "oscal_id": "mp-5.3",
+      "title": "Custodians",
+      "family": "MP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MP-5(4)",
+      "oscal_id": "mp-5.4",
+      "title": "Cryptographic Protection",
+      "family": "MP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MP-6",
+      "oscal_id": "mp-6",
+      "title": "Media Sanitization",
+      "family": "MP",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "MP-6(1)",
+      "oscal_id": "mp-6.1",
+      "title": "Review / Approve / Track / Document / Verify",
+      "family": "MP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MP-6(2)",
+      "oscal_id": "mp-6.2",
+      "title": "Equipment Testing",
+      "family": "MP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MP-6(3)",
+      "oscal_id": "mp-6.3",
+      "title": "Nondestructive Techniques",
+      "family": "MP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MP-6(4)",
+      "oscal_id": "mp-6.4",
+      "title": "Controlled Unclassified Information",
+      "family": "MP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MP-6(5)",
+      "oscal_id": "mp-6.5",
+      "title": "Classified Information",
+      "family": "MP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MP-6(6)",
+      "oscal_id": "mp-6.6",
+      "title": "Media Destruction",
+      "family": "MP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MP-6(7)",
+      "oscal_id": "mp-6.7",
+      "title": "Dual Authorization",
+      "family": "MP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MP-6(8)",
+      "oscal_id": "mp-6.8",
+      "title": "Remote Purging / Wiping of Information",
+      "family": "MP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MP-7",
+      "oscal_id": "mp-7",
+      "title": "Media Use",
+      "family": "MP",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "MP-7(1)",
+      "oscal_id": "mp-7.1",
+      "title": "Prohibit Use Without Owner",
+      "family": "MP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MP-7(2)",
+      "oscal_id": "mp-7.2",
+      "title": "Prohibit Use of Sanitization-resistant Media",
+      "family": "MP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MP-8",
+      "oscal_id": "mp-8",
+      "title": "Media Downgrading",
+      "family": "MP",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "MP-8(1)",
+      "oscal_id": "mp-8.1",
+      "title": "Documentation of Process",
+      "family": "MP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MP-8(2)",
+      "oscal_id": "mp-8.2",
+      "title": "Equipment Testing",
+      "family": "MP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MP-8(3)",
+      "oscal_id": "mp-8.3",
+      "title": "Controlled Unclassified Information",
+      "family": "MP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "MP-8(4)",
+      "oscal_id": "mp-8.4",
+      "title": "Classified Information",
+      "family": "MP",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-1",
+      "oscal_id": "pe-1",
+      "title": "Physical and Environmental Protection Policy and Procedures",
+      "family": "PE",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-10",
+      "oscal_id": "pe-10",
+      "title": "Emergency Shutoff",
+      "family": "PE",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-10(1)",
+      "oscal_id": "pe-10.1",
+      "title": "Accidental / Unauthorized Activation",
+      "family": "PE",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-11",
+      "oscal_id": "pe-11",
+      "title": "Emergency Power",
+      "family": "PE",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-11(1)",
+      "oscal_id": "pe-11.1",
+      "title": "Long-term Alternate Power Supply - Minimal Operational Capability",
+      "family": "PE",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-11(2)",
+      "oscal_id": "pe-11.2",
+      "title": "Long-term Alternate Power Supply - Self-contained",
+      "family": "PE",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-12",
+      "oscal_id": "pe-12",
+      "title": "Emergency Lighting",
+      "family": "PE",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-12(1)",
+      "oscal_id": "pe-12.1",
+      "title": "Essential Missions / Business Functions",
+      "family": "PE",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-13",
+      "oscal_id": "pe-13",
+      "title": "Fire Protection",
+      "family": "PE",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-13(1)",
+      "oscal_id": "pe-13.1",
+      "title": "Detection Devices / Systems",
+      "family": "PE",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-13(2)",
+      "oscal_id": "pe-13.2",
+      "title": "Suppression Devices / Systems",
+      "family": "PE",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-13(3)",
+      "oscal_id": "pe-13.3",
+      "title": "Automatic Fire Suppression",
+      "family": "PE",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-13(4)",
+      "oscal_id": "pe-13.4",
+      "title": "Inspections",
+      "family": "PE",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-14",
+      "oscal_id": "pe-14",
+      "title": "Temperature and Humidity Controls",
+      "family": "PE",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-14(1)",
+      "oscal_id": "pe-14.1",
+      "title": "Automatic Controls",
+      "family": "PE",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-14(2)",
+      "oscal_id": "pe-14.2",
+      "title": "Monitoring with Alarms / Notifications",
+      "family": "PE",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-15",
+      "oscal_id": "pe-15",
+      "title": "Water Damage Protection",
+      "family": "PE",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-15(1)",
+      "oscal_id": "pe-15.1",
+      "title": "Automation Support",
+      "family": "PE",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-16",
+      "oscal_id": "pe-16",
+      "title": "Delivery and Removal",
+      "family": "PE",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-17",
+      "oscal_id": "pe-17",
+      "title": "Alternate Work Site",
+      "family": "PE",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-18",
+      "oscal_id": "pe-18",
+      "title": "Location of Information System Components",
+      "family": "PE",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-18(1)",
+      "oscal_id": "pe-18.1",
+      "title": "Facility Site",
+      "family": "PE",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-19",
+      "oscal_id": "pe-19",
+      "title": "Information Leakage",
+      "family": "PE",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-19(1)",
+      "oscal_id": "pe-19.1",
+      "title": "National Emissions / Tempest Policies and Procedures",
+      "family": "PE",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-2",
+      "oscal_id": "pe-2",
+      "title": "Physical Access Authorizations",
+      "family": "PE",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-2(1)",
+      "oscal_id": "pe-2.1",
+      "title": "Access by Position / Role",
+      "family": "PE",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-2(2)",
+      "oscal_id": "pe-2.2",
+      "title": "Two Forms of Identification",
+      "family": "PE",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-2(3)",
+      "oscal_id": "pe-2.3",
+      "title": "Restrict Unescorted Access",
+      "family": "PE",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-20",
+      "oscal_id": "pe-20",
+      "title": "Asset Monitoring and Tracking",
+      "family": "PE",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-3",
+      "oscal_id": "pe-3",
+      "title": "Physical Access Control",
+      "family": "PE",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-3(1)",
+      "oscal_id": "pe-3.1",
+      "title": "Information System Access",
+      "family": "PE",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-3(2)",
+      "oscal_id": "pe-3.2",
+      "title": "Facility / Information System Boundaries",
+      "family": "PE",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-3(3)",
+      "oscal_id": "pe-3.3",
+      "title": "Continuous Guards / Alarms / Monitoring",
+      "family": "PE",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-3(4)",
+      "oscal_id": "pe-3.4",
+      "title": "Lockable Casings",
+      "family": "PE",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-3(5)",
+      "oscal_id": "pe-3.5",
+      "title": "Tamper Protection",
+      "family": "PE",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-3(6)",
+      "oscal_id": "pe-3.6",
+      "title": "Facility Penetration Testing",
+      "family": "PE",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-4",
+      "oscal_id": "pe-4",
+      "title": "Access Control for Transmission Medium",
+      "family": "PE",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-5",
+      "oscal_id": "pe-5",
+      "title": "Access Control for Output Devices",
+      "family": "PE",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-5(1)",
+      "oscal_id": "pe-5.1",
+      "title": "Access to Output by Authorized Individuals",
+      "family": "PE",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-5(2)",
+      "oscal_id": "pe-5.2",
+      "title": "Access to Output by Individual Identity",
+      "family": "PE",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-5(3)",
+      "oscal_id": "pe-5.3",
+      "title": "Marking Output Devices",
+      "family": "PE",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-6",
+      "oscal_id": "pe-6",
+      "title": "Monitoring Physical Access",
+      "family": "PE",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-6(1)",
+      "oscal_id": "pe-6.1",
+      "title": "Intrusion Alarms / Surveillance Equipment",
+      "family": "PE",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-6(2)",
+      "oscal_id": "pe-6.2",
+      "title": "Automated Intrusion Recognition / Responses",
+      "family": "PE",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-6(3)",
+      "oscal_id": "pe-6.3",
+      "title": "Video Surveillance",
+      "family": "PE",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-6(4)",
+      "oscal_id": "pe-6.4",
+      "title": "Monitoring Physical Access to Information Systems",
+      "family": "PE",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-7",
+      "oscal_id": "pe-7",
+      "title": "Visitor Control",
+      "family": "PE",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-8",
+      "oscal_id": "pe-8",
+      "title": "Visitor Access Records",
+      "family": "PE",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-8(1)",
+      "oscal_id": "pe-8.1",
+      "title": "Automated Records Maintenance / Review",
+      "family": "PE",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-8(2)",
+      "oscal_id": "pe-8.2",
+      "title": "Physical Access Records",
+      "family": "PE",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-9",
+      "oscal_id": "pe-9",
+      "title": "Power Equipment and Cabling",
+      "family": "PE",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-9(1)",
+      "oscal_id": "pe-9.1",
+      "title": "Redundant Cabling",
+      "family": "PE",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PE-9(2)",
+      "oscal_id": "pe-9.2",
+      "title": "Automatic Voltage Controls",
+      "family": "PE",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PL-1",
+      "oscal_id": "pl-1",
+      "title": "Security Planning Policy and Procedures",
+      "family": "PL",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PL-2",
+      "oscal_id": "pl-2",
+      "title": "System Security Plan",
+      "family": "PL",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PL-2(1)",
+      "oscal_id": "pl-2.1",
+      "title": "Concept of Operations",
+      "family": "PL",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PL-2(2)",
+      "oscal_id": "pl-2.2",
+      "title": "Functional Architecture",
+      "family": "PL",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PL-2(3)",
+      "oscal_id": "pl-2.3",
+      "title": "Plan / Coordinate with Other Organizational Entities",
+      "family": "PL",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PL-3",
+      "oscal_id": "pl-3",
+      "title": "System Security Plan Update",
+      "family": "PL",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PL-4",
+      "oscal_id": "pl-4",
+      "title": "Rules of Behavior",
+      "family": "PL",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PL-4(1)",
+      "oscal_id": "pl-4.1",
+      "title": "Social Media and Networking Restrictions",
+      "family": "PL",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PL-5",
+      "oscal_id": "pl-5",
+      "title": "Privacy Impact Assessment",
+      "family": "PL",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PL-6",
+      "oscal_id": "pl-6",
+      "title": "Security-related Activity Planning",
+      "family": "PL",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PL-7",
+      "oscal_id": "pl-7",
+      "title": "Security Concept of Operations",
+      "family": "PL",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PL-8",
+      "oscal_id": "pl-8",
+      "title": "Information Security Architecture",
+      "family": "PL",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PL-8(1)",
+      "oscal_id": "pl-8.1",
+      "title": "Defense-in-depth",
+      "family": "PL",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PL-8(2)",
+      "oscal_id": "pl-8.2",
+      "title": "Supplier Diversity",
+      "family": "PL",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PL-9",
+      "oscal_id": "pl-9",
+      "title": "Central Management",
+      "family": "PL",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PM-1",
+      "oscal_id": "pm-1",
+      "title": "Information Security Program Plan",
+      "family": "PM",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PM-10",
+      "oscal_id": "pm-10",
+      "title": "Security Authorization Process",
+      "family": "PM",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PM-11",
+      "oscal_id": "pm-11",
+      "title": "Mission/business Process Definition",
+      "family": "PM",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PM-12",
+      "oscal_id": "pm-12",
+      "title": "Insider Threat Program",
+      "family": "PM",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PM-13",
+      "oscal_id": "pm-13",
+      "title": "Information Security Workforce",
+      "family": "PM",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PM-14",
+      "oscal_id": "pm-14",
+      "title": "Testing, Training, and Monitoring",
+      "family": "PM",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PM-15",
+      "oscal_id": "pm-15",
+      "title": "Contacts with Security Groups and Associations",
+      "family": "PM",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PM-16",
+      "oscal_id": "pm-16",
+      "title": "Threat Awareness Program",
+      "family": "PM",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PM-2",
+      "oscal_id": "pm-2",
+      "title": "Senior Information Security Officer",
+      "family": "PM",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PM-3",
+      "oscal_id": "pm-3",
+      "title": "Information Security Resources",
+      "family": "PM",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PM-4",
+      "oscal_id": "pm-4",
+      "title": "Plan of Action and Milestones Process",
+      "family": "PM",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PM-5",
+      "oscal_id": "pm-5",
+      "title": "Information System Inventory",
+      "family": "PM",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PM-6",
+      "oscal_id": "pm-6",
+      "title": "Information Security Measures of Performance",
+      "family": "PM",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PM-7",
+      "oscal_id": "pm-7",
+      "title": "Enterprise Architecture",
+      "family": "PM",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PM-8",
+      "oscal_id": "pm-8",
+      "title": "Critical Infrastructure Plan",
+      "family": "PM",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PM-9",
+      "oscal_id": "pm-9",
+      "title": "Risk Management Strategy",
+      "family": "PM",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PS-1",
+      "oscal_id": "ps-1",
+      "title": "Personnel Security Policy and Procedures",
+      "family": "PS",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PS-2",
+      "oscal_id": "ps-2",
+      "title": "Position Risk Designation",
+      "family": "PS",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PS-3",
+      "oscal_id": "ps-3",
+      "title": "Personnel Screening",
+      "family": "PS",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PS-3(1)",
+      "oscal_id": "ps-3.1",
+      "title": "Classified Information",
+      "family": "PS",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PS-3(2)",
+      "oscal_id": "ps-3.2",
+      "title": "Formal Indoctrination",
+      "family": "PS",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PS-3(3)",
+      "oscal_id": "ps-3.3",
+      "title": "Information with Special Protection Measures",
+      "family": "PS",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PS-4",
+      "oscal_id": "ps-4",
+      "title": "Personnel Termination",
+      "family": "PS",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PS-4(1)",
+      "oscal_id": "ps-4.1",
+      "title": "Post-employment Requirements",
+      "family": "PS",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PS-4(2)",
+      "oscal_id": "ps-4.2",
+      "title": "Automated Notification",
+      "family": "PS",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PS-5",
+      "oscal_id": "ps-5",
+      "title": "Personnel Transfer",
+      "family": "PS",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PS-6",
+      "oscal_id": "ps-6",
+      "title": "Access Agreements",
+      "family": "PS",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PS-6(1)",
+      "oscal_id": "ps-6.1",
+      "title": "Information Requiring Special Protection",
+      "family": "PS",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PS-6(2)",
+      "oscal_id": "ps-6.2",
+      "title": "Classified Information Requiring Special Protection",
+      "family": "PS",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PS-6(3)",
+      "oscal_id": "ps-6.3",
+      "title": "Post-employment Requirements",
+      "family": "PS",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "PS-7",
+      "oscal_id": "ps-7",
+      "title": "Third-party Personnel Security",
+      "family": "PS",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "PS-8",
+      "oscal_id": "ps-8",
+      "title": "Personnel Sanctions",
+      "family": "PS",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "RA-1",
+      "oscal_id": "ra-1",
+      "title": "Risk Assessment Policy and Procedures",
+      "family": "RA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "RA-2",
+      "oscal_id": "ra-2",
+      "title": "Security Categorization",
+      "family": "RA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "RA-3",
+      "oscal_id": "ra-3",
+      "title": "Risk Assessment",
+      "family": "RA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "RA-4",
+      "oscal_id": "ra-4",
+      "title": "Risk Assessment Update",
+      "family": "RA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "RA-5",
+      "oscal_id": "ra-5",
+      "title": "Vulnerability Scanning",
+      "family": "RA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "RA-5(1)",
+      "oscal_id": "ra-5.1",
+      "title": "Update Tool Capability",
+      "family": "RA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "RA-5(10)",
+      "oscal_id": "ra-5.10",
+      "title": "Correlate Scanning Information",
+      "family": "RA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "RA-5(2)",
+      "oscal_id": "ra-5.2",
+      "title": "Update by Frequency / Prior to New Scan / When Identified",
+      "family": "RA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "RA-5(3)",
+      "oscal_id": "ra-5.3",
+      "title": "Breadth / Depth of Coverage",
+      "family": "RA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "RA-5(4)",
+      "oscal_id": "ra-5.4",
+      "title": "Discoverable Information",
+      "family": "RA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "RA-5(5)",
+      "oscal_id": "ra-5.5",
+      "title": "Privileged Access",
+      "family": "RA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "RA-5(6)",
+      "oscal_id": "ra-5.6",
+      "title": "Automated Trend Analyses",
+      "family": "RA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "RA-5(7)",
+      "oscal_id": "ra-5.7",
+      "title": "Automated Detection and Notification of Unauthorized Components",
+      "family": "RA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "RA-5(8)",
+      "oscal_id": "ra-5.8",
+      "title": "Review Historic Audit Logs",
+      "family": "RA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "RA-5(9)",
+      "oscal_id": "ra-5.9",
+      "title": "Penetration Testing and Analyses",
+      "family": "RA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "RA-6",
+      "oscal_id": "ra-6",
+      "title": "Technical Surveillance Countermeasures Survey",
+      "family": "RA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-1",
+      "oscal_id": "sa-1",
+      "title": "System and Services Acquisition Policy and Procedures",
+      "family": "SA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-10",
+      "oscal_id": "sa-10",
+      "title": "Developer Configuration Management",
+      "family": "SA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-10(1)",
+      "oscal_id": "sa-10.1",
+      "title": "Software / Firmware Integrity Verification",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-10(2)",
+      "oscal_id": "sa-10.2",
+      "title": "Alternative Configuration Management Processes",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-10(3)",
+      "oscal_id": "sa-10.3",
+      "title": "Hardware Integrity Verification",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-10(4)",
+      "oscal_id": "sa-10.4",
+      "title": "Trusted Generation",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-10(5)",
+      "oscal_id": "sa-10.5",
+      "title": "Mapping Integrity for Version Control",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-10(6)",
+      "oscal_id": "sa-10.6",
+      "title": "Trusted Distribution",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-11",
+      "oscal_id": "sa-11",
+      "title": "Developer Security Testing and Evaluation",
+      "family": "SA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-11(1)",
+      "oscal_id": "sa-11.1",
+      "title": "Static Code Analysis",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-11(2)",
+      "oscal_id": "sa-11.2",
+      "title": "Threat and Vulnerability Analyses",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-11(3)",
+      "oscal_id": "sa-11.3",
+      "title": "Independent Verification of Assessment Plans / Evidence",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-11(4)",
+      "oscal_id": "sa-11.4",
+      "title": "Manual Code Reviews",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-11(5)",
+      "oscal_id": "sa-11.5",
+      "title": "Penetration Testing",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-11(6)",
+      "oscal_id": "sa-11.6",
+      "title": "Attack Surface Reviews",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-11(7)",
+      "oscal_id": "sa-11.7",
+      "title": "Verify Scope of Testing / Evaluation",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-11(8)",
+      "oscal_id": "sa-11.8",
+      "title": "Dynamic Code Analysis",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-12",
+      "oscal_id": "sa-12",
+      "title": "Supply Chain Protection",
+      "family": "SA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-12(1)",
+      "oscal_id": "sa-12.1",
+      "title": "Acquisition Strategies / Tools / Methods",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-12(10)",
+      "oscal_id": "sa-12.10",
+      "title": "Validate as Genuine and Not Altered",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-12(11)",
+      "oscal_id": "sa-12.11",
+      "title": "Penetration Testing / Analysis of Elements, Processes, and Actors",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-12(12)",
+      "oscal_id": "sa-12.12",
+      "title": "Inter-organizational Agreements",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-12(13)",
+      "oscal_id": "sa-12.13",
+      "title": "Critical Information System Components",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-12(14)",
+      "oscal_id": "sa-12.14",
+      "title": "Identity and Traceability",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-12(15)",
+      "oscal_id": "sa-12.15",
+      "title": "Processes to Address Weaknesses or Deficiencies",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-12(2)",
+      "oscal_id": "sa-12.2",
+      "title": "Supplier Reviews",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-12(3)",
+      "oscal_id": "sa-12.3",
+      "title": "Trusted Shipping and Warehousing",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-12(4)",
+      "oscal_id": "sa-12.4",
+      "title": "Diversity of Suppliers",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-12(5)",
+      "oscal_id": "sa-12.5",
+      "title": "Limitation of Harm",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-12(6)",
+      "oscal_id": "sa-12.6",
+      "title": "Minimizing Procurement Time",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-12(7)",
+      "oscal_id": "sa-12.7",
+      "title": "Assessments Prior to Selection / Acceptance / Update",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-12(8)",
+      "oscal_id": "sa-12.8",
+      "title": "Use of All-source Intelligence",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-12(9)",
+      "oscal_id": "sa-12.9",
+      "title": "Operations Security",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-13",
+      "oscal_id": "sa-13",
+      "title": "Trustworthiness",
+      "family": "SA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-14",
+      "oscal_id": "sa-14",
+      "title": "Criticality Analysis",
+      "family": "SA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-14(1)",
+      "oscal_id": "sa-14.1",
+      "title": "Critical Components with No Viable Alternative Sourcing",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-15",
+      "oscal_id": "sa-15",
+      "title": "Development Process, Standards, and Tools",
+      "family": "SA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-15(1)",
+      "oscal_id": "sa-15.1",
+      "title": "Quality Metrics",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-15(10)",
+      "oscal_id": "sa-15.10",
+      "title": "Incident Response Plan",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-15(11)",
+      "oscal_id": "sa-15.11",
+      "title": "Archive Information System / Component",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-15(2)",
+      "oscal_id": "sa-15.2",
+      "title": "Security Tracking Tools",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-15(3)",
+      "oscal_id": "sa-15.3",
+      "title": "Criticality Analysis",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-15(4)",
+      "oscal_id": "sa-15.4",
+      "title": "Threat Modeling / Vulnerability Analysis",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-15(5)",
+      "oscal_id": "sa-15.5",
+      "title": "Attack Surface Reduction",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-15(6)",
+      "oscal_id": "sa-15.6",
+      "title": "Continuous Improvement",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-15(7)",
+      "oscal_id": "sa-15.7",
+      "title": "Automated Vulnerability Analysis",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-15(8)",
+      "oscal_id": "sa-15.8",
+      "title": "Reuse of Threat / Vulnerability Information",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-15(9)",
+      "oscal_id": "sa-15.9",
+      "title": "Use of Live Data",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-16",
+      "oscal_id": "sa-16",
+      "title": "Developer-provided Training",
+      "family": "SA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-17",
+      "oscal_id": "sa-17",
+      "title": "Developer Security Architecture and Design",
+      "family": "SA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-17(1)",
+      "oscal_id": "sa-17.1",
+      "title": "Formal Policy Model",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-17(2)",
+      "oscal_id": "sa-17.2",
+      "title": "Security-relevant Components",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-17(3)",
+      "oscal_id": "sa-17.3",
+      "title": "Formal Correspondence",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-17(4)",
+      "oscal_id": "sa-17.4",
+      "title": "Informal Correspondence",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-17(5)",
+      "oscal_id": "sa-17.5",
+      "title": "Conceptually Simple Design",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-17(6)",
+      "oscal_id": "sa-17.6",
+      "title": "Structure for Testing",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-17(7)",
+      "oscal_id": "sa-17.7",
+      "title": "Structure for Least Privilege",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-18",
+      "oscal_id": "sa-18",
+      "title": "Tamper Resistance and Detection",
+      "family": "SA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-18(1)",
+      "oscal_id": "sa-18.1",
+      "title": "Multiple Phases of SDLC",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-18(2)",
+      "oscal_id": "sa-18.2",
+      "title": "Inspection of Information Systems, Components, or Devices",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-19",
+      "oscal_id": "sa-19",
+      "title": "Component Authenticity",
+      "family": "SA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-19(1)",
+      "oscal_id": "sa-19.1",
+      "title": "Anti-counterfeit Training",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-19(2)",
+      "oscal_id": "sa-19.2",
+      "title": "Configuration Control for Component Service / Repair",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-19(3)",
+      "oscal_id": "sa-19.3",
+      "title": "Component Disposal",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-19(4)",
+      "oscal_id": "sa-19.4",
+      "title": "Anti-counterfeit Scanning",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-2",
+      "oscal_id": "sa-2",
+      "title": "Allocation of Resources",
+      "family": "SA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-20",
+      "oscal_id": "sa-20",
+      "title": "Customized Development of Critical Components",
+      "family": "SA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-21",
+      "oscal_id": "sa-21",
+      "title": "Developer Screening",
+      "family": "SA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-21(1)",
+      "oscal_id": "sa-21.1",
+      "title": "Validation of Screening",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-22",
+      "oscal_id": "sa-22",
+      "title": "Unsupported System Components",
+      "family": "SA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-22(1)",
+      "oscal_id": "sa-22.1",
+      "title": "Alternative Sources for Continued Support",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-3",
+      "oscal_id": "sa-3",
+      "title": "System Development Life Cycle",
+      "family": "SA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-4",
+      "oscal_id": "sa-4",
+      "title": "Acquisition Process",
+      "family": "SA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-4(1)",
+      "oscal_id": "sa-4.1",
+      "title": "Functional Properties of Security Controls",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-4(10)",
+      "oscal_id": "sa-4.10",
+      "title": "Use of Approved PIV Products",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-4(2)",
+      "oscal_id": "sa-4.2",
+      "title": "Design / Implementation Information for Security Controls",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-4(3)",
+      "oscal_id": "sa-4.3",
+      "title": "Development Methods / Techniques / Practices",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-4(4)",
+      "oscal_id": "sa-4.4",
+      "title": "Assignment of Components to Systems",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-4(5)",
+      "oscal_id": "sa-4.5",
+      "title": "System / Component / Service Configurations",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-4(6)",
+      "oscal_id": "sa-4.6",
+      "title": "Use of Information Assurance Products",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-4(7)",
+      "oscal_id": "sa-4.7",
+      "title": "Niap-approved Protection Profiles",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-4(8)",
+      "oscal_id": "sa-4.8",
+      "title": "Continuous Monitoring Plan",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-4(9)",
+      "oscal_id": "sa-4.9",
+      "title": "Functions / Ports / Protocols / Services in Use",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-5",
+      "oscal_id": "sa-5",
+      "title": "Information System Documentation",
+      "family": "SA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-5(1)",
+      "oscal_id": "sa-5.1",
+      "title": "Functional Properties of Security Controls",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-5(2)",
+      "oscal_id": "sa-5.2",
+      "title": "Security-relevant External System Interfaces",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-5(3)",
+      "oscal_id": "sa-5.3",
+      "title": "High-level Design",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-5(4)",
+      "oscal_id": "sa-5.4",
+      "title": "Low-level Design",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-5(5)",
+      "oscal_id": "sa-5.5",
+      "title": "Source Code",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-6",
+      "oscal_id": "sa-6",
+      "title": "Software Usage Restrictions",
+      "family": "SA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-7",
+      "oscal_id": "sa-7",
+      "title": "User-installed Software",
+      "family": "SA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-8",
+      "oscal_id": "sa-8",
+      "title": "Security Engineering Principles",
+      "family": "SA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-9",
+      "oscal_id": "sa-9",
+      "title": "External Information System Services",
+      "family": "SA",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-9(1)",
+      "oscal_id": "sa-9.1",
+      "title": "Risk Assessments / Organizational Approvals",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-9(2)",
+      "oscal_id": "sa-9.2",
+      "title": "Identification of Functions / Ports / Protocols / Services",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-9(3)",
+      "oscal_id": "sa-9.3",
+      "title": "Establish / Maintain Trust Relationship with Providers",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-9(4)",
+      "oscal_id": "sa-9.4",
+      "title": "Consistent Interests of Consumers and Providers",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SA-9(5)",
+      "oscal_id": "sa-9.5",
+      "title": "Processing, Storage, and Service Location",
+      "family": "SA",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-1",
+      "oscal_id": "sc-1",
+      "title": "System and Communications Protection Policy and Procedures",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-10",
+      "oscal_id": "sc-10",
+      "title": "Network Disconnect",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-11",
+      "oscal_id": "sc-11",
+      "title": "Trusted Path",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-11(1)",
+      "oscal_id": "sc-11.1",
+      "title": "Logical Isolation",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-12",
+      "oscal_id": "sc-12",
+      "title": "Cryptographic Key Establishment and Management",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-12(1)",
+      "oscal_id": "sc-12.1",
+      "title": "Availability",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-12(2)",
+      "oscal_id": "sc-12.2",
+      "title": "Symmetric Keys",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-12(3)",
+      "oscal_id": "sc-12.3",
+      "title": "Asymmetric Keys",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-12(4)",
+      "oscal_id": "sc-12.4",
+      "title": "PKI Certificates",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-12(5)",
+      "oscal_id": "sc-12.5",
+      "title": "PKI Certificates / Hardware Tokens",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-13",
+      "oscal_id": "sc-13",
+      "title": "Cryptographic Protection",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-13(1)",
+      "oscal_id": "sc-13.1",
+      "title": "Fips-validated Cryptography",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-13(2)",
+      "oscal_id": "sc-13.2",
+      "title": "Nsa-approved Cryptography",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-13(3)",
+      "oscal_id": "sc-13.3",
+      "title": "Individuals Without Formal Access Approvals",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-13(4)",
+      "oscal_id": "sc-13.4",
+      "title": "Digital Signatures",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-14",
+      "oscal_id": "sc-14",
+      "title": "Public Access Protections",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-15",
+      "oscal_id": "sc-15",
+      "title": "Collaborative Computing Devices",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-15(1)",
+      "oscal_id": "sc-15.1",
+      "title": "Physical Disconnect",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-15(2)",
+      "oscal_id": "sc-15.2",
+      "title": "Blocking Inbound / Outbound Communications Traffic",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-15(3)",
+      "oscal_id": "sc-15.3",
+      "title": "Disabling / Removal in Secure Work Areas",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-15(4)",
+      "oscal_id": "sc-15.4",
+      "title": "Explicitly Indicate Current Participants",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-16",
+      "oscal_id": "sc-16",
+      "title": "Transmission of Security Attributes",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-16(1)",
+      "oscal_id": "sc-16.1",
+      "title": "Integrity Validation",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-17",
+      "oscal_id": "sc-17",
+      "title": "Public Key Infrastructure Certificates",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-18",
+      "oscal_id": "sc-18",
+      "title": "Mobile Code",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-18(1)",
+      "oscal_id": "sc-18.1",
+      "title": "Identify Unacceptable Code / Take Corrective Actions",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-18(2)",
+      "oscal_id": "sc-18.2",
+      "title": "Acquisition / Development / Use",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-18(3)",
+      "oscal_id": "sc-18.3",
+      "title": "Prevent Downloading / Execution",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-18(4)",
+      "oscal_id": "sc-18.4",
+      "title": "Prevent Automatic Execution",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-18(5)",
+      "oscal_id": "sc-18.5",
+      "title": "Allow Execution Only in Confined Environments",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-19",
+      "oscal_id": "sc-19",
+      "title": "Voice Over Internet Protocol",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-2",
+      "oscal_id": "sc-2",
+      "title": "Application Partitioning",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-2(1)",
+      "oscal_id": "sc-2.1",
+      "title": "Interfaces for Non-privileged Users",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-20",
+      "oscal_id": "sc-20",
+      "title": "Secure Name / Address Resolution Service (authoritative Source)",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-20(1)",
+      "oscal_id": "sc-20.1",
+      "title": "Child Subspaces",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-20(2)",
+      "oscal_id": "sc-20.2",
+      "title": "Data Origin / Integrity",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-21",
+      "oscal_id": "sc-21",
+      "title": "Secure Name / Address Resolution Service (recursive or Caching Resolver)",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-21(1)",
+      "oscal_id": "sc-21.1",
+      "title": "Data Origin / Integrity",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-22",
+      "oscal_id": "sc-22",
+      "title": "Architecture and Provisioning for Name / Address Resolution Service",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-23",
+      "oscal_id": "sc-23",
+      "title": "Session Authenticity",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-23(1)",
+      "oscal_id": "sc-23.1",
+      "title": "Invalidate Session Identifiers at Logout",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-23(2)",
+      "oscal_id": "sc-23.2",
+      "title": "User-initiated Logouts / Message Displays",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-23(3)",
+      "oscal_id": "sc-23.3",
+      "title": "Unique Session Identifiers with Randomization",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-23(4)",
+      "oscal_id": "sc-23.4",
+      "title": "Unique Session Identifiers with Randomization",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-23(5)",
+      "oscal_id": "sc-23.5",
+      "title": "Allowed Certificate Authorities",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-24",
+      "oscal_id": "sc-24",
+      "title": "Fail in Known State",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-25",
+      "oscal_id": "sc-25",
+      "title": "Thin Nodes",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-26",
+      "oscal_id": "sc-26",
+      "title": "Honeypots",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-26(1)",
+      "oscal_id": "sc-26.1",
+      "title": "Detection of Malicious Code",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-27",
+      "oscal_id": "sc-27",
+      "title": "Platform-independent Applications",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-28",
+      "oscal_id": "sc-28",
+      "title": "Protection of Information at Rest",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-28(1)",
+      "oscal_id": "sc-28.1",
+      "title": "Cryptographic Protection",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-28(2)",
+      "oscal_id": "sc-28.2",
+      "title": "Off-line Storage",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-29",
+      "oscal_id": "sc-29",
+      "title": "Heterogeneity",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-29(1)",
+      "oscal_id": "sc-29.1",
+      "title": "Virtualization Techniques",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-3",
+      "oscal_id": "sc-3",
+      "title": "Security Function Isolation",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-3(1)",
+      "oscal_id": "sc-3.1",
+      "title": "Hardware Separation",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-3(2)",
+      "oscal_id": "sc-3.2",
+      "title": "Access / Flow Control Functions",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-3(3)",
+      "oscal_id": "sc-3.3",
+      "title": "Minimize Nonsecurity Functionality",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-3(4)",
+      "oscal_id": "sc-3.4",
+      "title": "Module Coupling and Cohesiveness",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-3(5)",
+      "oscal_id": "sc-3.5",
+      "title": "Layered Structures",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-30",
+      "oscal_id": "sc-30",
+      "title": "Concealment and Misdirection",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-30(1)",
+      "oscal_id": "sc-30.1",
+      "title": "Virtualization Techniques",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-30(2)",
+      "oscal_id": "sc-30.2",
+      "title": "Randomness",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-30(3)",
+      "oscal_id": "sc-30.3",
+      "title": "Change Processing / Storage Locations",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-30(4)",
+      "oscal_id": "sc-30.4",
+      "title": "Misleading Information",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-30(5)",
+      "oscal_id": "sc-30.5",
+      "title": "Concealment of System Components",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-31",
+      "oscal_id": "sc-31",
+      "title": "Covert Channel Analysis",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-31(1)",
+      "oscal_id": "sc-31.1",
+      "title": "Test Covert Channels for Exploitability",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-31(2)",
+      "oscal_id": "sc-31.2",
+      "title": "Maximum Bandwidth",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-31(3)",
+      "oscal_id": "sc-31.3",
+      "title": "Measure Bandwidth in Operational Environments",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-32",
+      "oscal_id": "sc-32",
+      "title": "Information System Partitioning",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-33",
+      "oscal_id": "sc-33",
+      "title": "Transmission Preparation Integrity",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-34",
+      "oscal_id": "sc-34",
+      "title": "Non-modifiable Executable Programs",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-34(1)",
+      "oscal_id": "sc-34.1",
+      "title": "No Writable Storage",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-34(2)",
+      "oscal_id": "sc-34.2",
+      "title": "Integrity Protection / Read-only Media",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-34(3)",
+      "oscal_id": "sc-34.3",
+      "title": "Hardware-based Protection",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-35",
+      "oscal_id": "sc-35",
+      "title": "Honeyclients",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-36",
+      "oscal_id": "sc-36",
+      "title": "Distributed Processing and Storage",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-36(1)",
+      "oscal_id": "sc-36.1",
+      "title": "Polling Techniques",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-37",
+      "oscal_id": "sc-37",
+      "title": "Out-of-band Channels",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-37(1)",
+      "oscal_id": "sc-37.1",
+      "title": "Ensure Delivery / Transmission",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-38",
+      "oscal_id": "sc-38",
+      "title": "Operations Security",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-39",
+      "oscal_id": "sc-39",
+      "title": "Process Isolation",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-39(1)",
+      "oscal_id": "sc-39.1",
+      "title": "Hardware Separation",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-39(2)",
+      "oscal_id": "sc-39.2",
+      "title": "Thread Isolation",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-4",
+      "oscal_id": "sc-4",
+      "title": "Information in Shared Resources",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-4(1)",
+      "oscal_id": "sc-4.1",
+      "title": "Security Levels",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-4(2)",
+      "oscal_id": "sc-4.2",
+      "title": "Periods Processing",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-40",
+      "oscal_id": "sc-40",
+      "title": "Wireless Link Protection",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-40(1)",
+      "oscal_id": "sc-40.1",
+      "title": "Electromagnetic Interference",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-40(2)",
+      "oscal_id": "sc-40.2",
+      "title": "Reduce Detection Potential",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-40(3)",
+      "oscal_id": "sc-40.3",
+      "title": "Imitative or Manipulative Communications Deception",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-40(4)",
+      "oscal_id": "sc-40.4",
+      "title": "Signal Parameter Identification",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-41",
+      "oscal_id": "sc-41",
+      "title": "Port and I/O Device Access",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-42",
+      "oscal_id": "sc-42",
+      "title": "Sensor Capability and Data",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-42(1)",
+      "oscal_id": "sc-42.1",
+      "title": "Reporting to Authorized Individuals or Roles",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-42(2)",
+      "oscal_id": "sc-42.2",
+      "title": "Authorized Use",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-42(3)",
+      "oscal_id": "sc-42.3",
+      "title": "Prohibit Use of Devices",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-43",
+      "oscal_id": "sc-43",
+      "title": "Usage Restrictions",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-44",
+      "oscal_id": "sc-44",
+      "title": "Detonation Chambers",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-5",
+      "oscal_id": "sc-5",
+      "title": "Denial of Service Protection",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-5(1)",
+      "oscal_id": "sc-5.1",
+      "title": "Restrict Internal Users",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-5(2)",
+      "oscal_id": "sc-5.2",
+      "title": "Excess Capacity / Bandwidth / Redundancy",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-5(3)",
+      "oscal_id": "sc-5.3",
+      "title": "Detection / Monitoring",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-6",
+      "oscal_id": "sc-6",
+      "title": "Resource Availability",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-7",
+      "oscal_id": "sc-7",
+      "title": "Boundary Protection",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-7(1)",
+      "oscal_id": "sc-7.1",
+      "title": "Physically Separated Subnetworks",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-7(10)",
+      "oscal_id": "sc-7.10",
+      "title": "Prevent Unauthorized Exfiltration",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-7(11)",
+      "oscal_id": "sc-7.11",
+      "title": "Restrict Incoming Communications Traffic",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-7(12)",
+      "oscal_id": "sc-7.12",
+      "title": "Host-based Protection",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-7(13)",
+      "oscal_id": "sc-7.13",
+      "title": "Isolation of Security Tools / Mechanisms / Support Components",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-7(14)",
+      "oscal_id": "sc-7.14",
+      "title": "Protects Against Unauthorized Physical Connections",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-7(15)",
+      "oscal_id": "sc-7.15",
+      "title": "Route Privileged Network Accesses",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-7(16)",
+      "oscal_id": "sc-7.16",
+      "title": "Prevent Discovery of Components / Devices",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-7(17)",
+      "oscal_id": "sc-7.17",
+      "title": "Automated Enforcement of Protocol Formats",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-7(18)",
+      "oscal_id": "sc-7.18",
+      "title": "Fail Secure",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-7(19)",
+      "oscal_id": "sc-7.19",
+      "title": "Blocks Communication from Non-organizationally Configured Hosts",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-7(2)",
+      "oscal_id": "sc-7.2",
+      "title": "Public Access",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-7(20)",
+      "oscal_id": "sc-7.20",
+      "title": "Dynamic Isolation / Segregation",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-7(21)",
+      "oscal_id": "sc-7.21",
+      "title": "Isolation of Information System Components",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-7(22)",
+      "oscal_id": "sc-7.22",
+      "title": "Separate Subnets for Connecting to Different Security Domains",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-7(23)",
+      "oscal_id": "sc-7.23",
+      "title": "Disable Sender Feedback On Protocol Validation Failure",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-7(3)",
+      "oscal_id": "sc-7.3",
+      "title": "Access Points",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-7(4)",
+      "oscal_id": "sc-7.4",
+      "title": "External Telecommunications Services",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-7(5)",
+      "oscal_id": "sc-7.5",
+      "title": "Deny by Default / Allow by Exception",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-7(6)",
+      "oscal_id": "sc-7.6",
+      "title": "Response to Recognized Failures",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-7(7)",
+      "oscal_id": "sc-7.7",
+      "title": "Prevent Split Tunneling for Remote Devices",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-7(8)",
+      "oscal_id": "sc-7.8",
+      "title": "Route Traffic to Authenticated Proxy Servers",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-7(9)",
+      "oscal_id": "sc-7.9",
+      "title": "Restrict Threatening Outgoing Communications Traffic",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-8",
+      "oscal_id": "sc-8",
+      "title": "Transmission Confidentiality and Integrity",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-8(1)",
+      "oscal_id": "sc-8.1",
+      "title": "Cryptographic or Alternate Physical Protection",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-8(2)",
+      "oscal_id": "sc-8.2",
+      "title": "Pre / Post Transmission Handling",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-8(3)",
+      "oscal_id": "sc-8.3",
+      "title": "Cryptographic Protection for Message Externals",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-8(4)",
+      "oscal_id": "sc-8.4",
+      "title": "Conceal / Randomize Communications",
+      "family": "SC",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SC-9",
+      "oscal_id": "sc-9",
+      "title": "Transmission Confidentiality",
+      "family": "SC",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-1",
+      "oscal_id": "si-1",
+      "title": "System and Information Integrity Policy and Procedures",
+      "family": "SI",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-10",
+      "oscal_id": "si-10",
+      "title": "Information Input Validation",
+      "family": "SI",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-10(1)",
+      "oscal_id": "si-10.1",
+      "title": "Manual Override Capability",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-10(2)",
+      "oscal_id": "si-10.2",
+      "title": "Review / Resolution of Errors",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-10(3)",
+      "oscal_id": "si-10.3",
+      "title": "Predictable Behavior",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-10(4)",
+      "oscal_id": "si-10.4",
+      "title": "Review / Timing Interactions",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-10(5)",
+      "oscal_id": "si-10.5",
+      "title": "Restrict Inputs to Trusted Sources and Approved Formats",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-11",
+      "oscal_id": "si-11",
+      "title": "Error Handling",
+      "family": "SI",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-12",
+      "oscal_id": "si-12",
+      "title": "Information Handling and Retention",
+      "family": "SI",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-13",
+      "oscal_id": "si-13",
+      "title": "Predictable Failure Prevention",
+      "family": "SI",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-13(1)",
+      "oscal_id": "si-13.1",
+      "title": "Transferring Component Responsibilities",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-13(2)",
+      "oscal_id": "si-13.2",
+      "title": "Time Limit On Process Execution Without Supervision",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-13(3)",
+      "oscal_id": "si-13.3",
+      "title": "Manual Transfer Between Components",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-13(4)",
+      "oscal_id": "si-13.4",
+      "title": "Standby Component Installation / Notification",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-13(5)",
+      "oscal_id": "si-13.5",
+      "title": "Failover Capability",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-14",
+      "oscal_id": "si-14",
+      "title": "Non-persistence",
+      "family": "SI",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-14(1)",
+      "oscal_id": "si-14.1",
+      "title": "Refresh from Trusted Sources",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-15",
+      "oscal_id": "si-15",
+      "title": "Information Output Filtering",
+      "family": "SI",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-16",
+      "oscal_id": "si-16",
+      "title": "Memory Protection",
+      "family": "SI",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-17",
+      "oscal_id": "si-17",
+      "title": "Fail-safe Procedures",
+      "family": "SI",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-2",
+      "oscal_id": "si-2",
+      "title": "Flaw Remediation",
+      "family": "SI",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-2(1)",
+      "oscal_id": "si-2.1",
+      "title": "Central Management",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-2(2)",
+      "oscal_id": "si-2.2",
+      "title": "Automated Flaw Remediation Status",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-2(3)",
+      "oscal_id": "si-2.3",
+      "title": "Time to Remediate Flaws / Benchmarks for Corrective Actions",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-2(4)",
+      "oscal_id": "si-2.4",
+      "title": "Automated Patch Management Tools",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-2(5)",
+      "oscal_id": "si-2.5",
+      "title": "Automatic Software / Firmware Updates",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-2(6)",
+      "oscal_id": "si-2.6",
+      "title": "Removal of Previous Versions of Software / Firmware",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-3",
+      "oscal_id": "si-3",
+      "title": "Malicious Code Protection",
+      "family": "SI",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-3(1)",
+      "oscal_id": "si-3.1",
+      "title": "Central Management",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-3(10)",
+      "oscal_id": "si-3.10",
+      "title": "Malicious Code Analysis",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-3(2)",
+      "oscal_id": "si-3.2",
+      "title": "Automatic Updates",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-3(3)",
+      "oscal_id": "si-3.3",
+      "title": "Non-privileged Users",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-3(4)",
+      "oscal_id": "si-3.4",
+      "title": "Updates Only by Privileged Users",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-3(5)",
+      "oscal_id": "si-3.5",
+      "title": "Portable Storage Devices",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-3(6)",
+      "oscal_id": "si-3.6",
+      "title": "Testing / Verification",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-3(7)",
+      "oscal_id": "si-3.7",
+      "title": "Nonsignature-based Detection",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-3(8)",
+      "oscal_id": "si-3.8",
+      "title": "Detect Unauthorized Commands",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-3(9)",
+      "oscal_id": "si-3.9",
+      "title": "Authenticate Remote Commands",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-4",
+      "oscal_id": "si-4",
+      "title": "Information System Monitoring",
+      "family": "SI",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-4(1)",
+      "oscal_id": "si-4.1",
+      "title": "System-wide Intrusion Detection System",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-4(10)",
+      "oscal_id": "si-4.10",
+      "title": "Visibility of Encrypted Communications",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-4(11)",
+      "oscal_id": "si-4.11",
+      "title": "Analyze Communications Traffic Anomalies",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-4(12)",
+      "oscal_id": "si-4.12",
+      "title": "Automated Alerts",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-4(13)",
+      "oscal_id": "si-4.13",
+      "title": "Analyze Traffic / Event Patterns",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-4(14)",
+      "oscal_id": "si-4.14",
+      "title": "Wireless Intrusion Detection",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-4(15)",
+      "oscal_id": "si-4.15",
+      "title": "Wireless to Wireline Communications",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-4(16)",
+      "oscal_id": "si-4.16",
+      "title": "Correlate Monitoring Information",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-4(17)",
+      "oscal_id": "si-4.17",
+      "title": "Integrated Situational Awareness",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-4(18)",
+      "oscal_id": "si-4.18",
+      "title": "Analyze Traffic / Covert Exfiltration",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-4(19)",
+      "oscal_id": "si-4.19",
+      "title": "Individuals Posing Greater Risk",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-4(2)",
+      "oscal_id": "si-4.2",
+      "title": "Automated Tools for Real-time Analysis",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-4(20)",
+      "oscal_id": "si-4.20",
+      "title": "Privileged Users",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-4(21)",
+      "oscal_id": "si-4.21",
+      "title": "Probationary Periods",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-4(22)",
+      "oscal_id": "si-4.22",
+      "title": "Unauthorized Network Services",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-4(23)",
+      "oscal_id": "si-4.23",
+      "title": "Host-based Devices",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-4(24)",
+      "oscal_id": "si-4.24",
+      "title": "Indicators of Compromise",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-4(3)",
+      "oscal_id": "si-4.3",
+      "title": "Automated Tool Integration",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-4(4)",
+      "oscal_id": "si-4.4",
+      "title": "Inbound and Outbound Communications Traffic",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-4(5)",
+      "oscal_id": "si-4.5",
+      "title": "System-generated Alerts",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-4(6)",
+      "oscal_id": "si-4.6",
+      "title": "Restrict Non-privileged Users",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-4(7)",
+      "oscal_id": "si-4.7",
+      "title": "Automated Response to Suspicious Events",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-4(8)",
+      "oscal_id": "si-4.8",
+      "title": "Protection of Monitoring Information",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-4(9)",
+      "oscal_id": "si-4.9",
+      "title": "Testing of Monitoring Tools",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-5",
+      "oscal_id": "si-5",
+      "title": "Security Alerts, Advisories, and Directives",
+      "family": "SI",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-5(1)",
+      "oscal_id": "si-5.1",
+      "title": "Automated Alerts and Advisories",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-6",
+      "oscal_id": "si-6",
+      "title": "Security Function Verification",
+      "family": "SI",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-6(1)",
+      "oscal_id": "si-6.1",
+      "title": "Notification of Failed Security Tests",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-6(2)",
+      "oscal_id": "si-6.2",
+      "title": "Automation Support for Distributed Testing",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-6(3)",
+      "oscal_id": "si-6.3",
+      "title": "Report Verification Results",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-7",
+      "oscal_id": "si-7",
+      "title": "Software, Firmware, and Information Integrity",
+      "family": "SI",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-7(1)",
+      "oscal_id": "si-7.1",
+      "title": "Integrity Checks",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-7(10)",
+      "oscal_id": "si-7.10",
+      "title": "Protection of Boot Firmware",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-7(11)",
+      "oscal_id": "si-7.11",
+      "title": "Confined Environments with Limited Privileges",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-7(12)",
+      "oscal_id": "si-7.12",
+      "title": "Integrity Verification",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-7(13)",
+      "oscal_id": "si-7.13",
+      "title": "Code Execution in Protected Environments",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-7(14)",
+      "oscal_id": "si-7.14",
+      "title": "Binary or Machine Executable Code",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-7(15)",
+      "oscal_id": "si-7.15",
+      "title": "Code Authentication",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-7(16)",
+      "oscal_id": "si-7.16",
+      "title": "Time Limit On Process Execution w/o Supervision",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-7(2)",
+      "oscal_id": "si-7.2",
+      "title": "Automated Notifications of Integrity Violations",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-7(3)",
+      "oscal_id": "si-7.3",
+      "title": "Centrally-managed Integrity Tools",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-7(4)",
+      "oscal_id": "si-7.4",
+      "title": "Tamper-evident Packaging",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-7(5)",
+      "oscal_id": "si-7.5",
+      "title": "Automated Response to Integrity Violations",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-7(6)",
+      "oscal_id": "si-7.6",
+      "title": "Cryptographic Protection",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-7(7)",
+      "oscal_id": "si-7.7",
+      "title": "Integration of Detection and Response",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-7(8)",
+      "oscal_id": "si-7.8",
+      "title": "Auditing Capability for Significant Events",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-7(9)",
+      "oscal_id": "si-7.9",
+      "title": "Verify Boot Process",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-8",
+      "oscal_id": "si-8",
+      "title": "Spam Protection",
+      "family": "SI",
+      "is_enhancement": false,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-8(1)",
+      "oscal_id": "si-8.1",
+      "title": "Central Management",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-8(2)",
+      "oscal_id": "si-8.2",
+      "title": "Automatic Updates",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-8(3)",
+      "oscal_id": "si-8.3",
+      "title": "Continuous Learning Capability",
+      "family": "SI",
+      "is_enhancement": true,
+      "withdrawn": false
+    },
+    {
+      "id": "SI-9",
+      "oscal_id": "si-9",
+      "title": "Information Input Restrictions",
+      "family": "SI",
+      "is_enhancement": false,
+      "withdrawn": false
+    }
+  ]
+}

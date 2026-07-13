@@ -65,3 +65,26 @@ def deps(aws) -> Deps:
         store=DocumentStore(_BUCKET, _KMS_KEY, s3_client=s3),
         sqs=sqs,
     )
+
+
+class FakeBedrock:
+    """Fake Bedrock client returning a fixed mapping result for every section."""
+
+    def __init__(self, result=None):
+        self.result = result or {
+            "control_ids": ["AC-2"],
+            "confidence": 0.8,
+            "rationale": "account management",
+        }
+
+    def converse_json(self, *, system: str, user: str, max_tokens: int = 2048):
+        return self.result
+
+
+def sqs_event(*bodies: dict) -> dict:
+    """Wrap message bodies into an SQS Lambda event."""
+    import json
+
+    return {
+        "Records": [{"messageId": f"m{i}", "body": json.dumps(b)} for i, b in enumerate(bodies)]
+    }

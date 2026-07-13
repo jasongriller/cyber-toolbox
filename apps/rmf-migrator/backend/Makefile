@@ -14,6 +14,9 @@ ZIP := $(BUILD_DIR)/rmf-migrator-lambda.zip
 build: clean
 	mkdir -p $(PKG_DIR)
 	$(PYTHON) -m pip install . --target $(PKG_DIR)
+	# Bundle the NIST catalog data beside rmf_migrator/ so the catalog loader
+	# resolves it at runtime (private deployments have no internet to fetch it).
+	cp -r ../data $(PKG_DIR)/data
 	# Drop test/build metadata that bloats the artifact.
 	rm -rf $(PKG_DIR)/*.dist-info $(PKG_DIR)/*.egg-info
 	cd $(PKG_DIR) && zip -r -q ../../$(ZIP) . -x '*.pyc' -x '*__pycache__*'

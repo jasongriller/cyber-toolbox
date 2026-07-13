@@ -48,15 +48,26 @@ Moving an A&A package from NIST SP 800-53 Rev 4 to Rev 5 is tedious and error-pr
 
 ## Roadmap
 
-| Milestone | Scope |
-|-----------|-------|
-| **M1** | Terraform skeleton + document upload & DOCX parse pipeline |
-| **M2** | Section → control mapping review UI (human checkpoint) |
-| **M3** | Side-by-side editor, per-control chat assistant, Bedrock drafting |
-| **M4** | Structure-preserving Rev 5 DOCX export + per-control decision log |
-| **M5** | Coverage dashboard + conversion matrix exports (CSV/XLSX) |
+| Milestone | Scope | Status |
+|-----------|-------|--------|
+| **M1** | Terraform skeleton + document upload & DOCX parse pipeline | ✅ landed |
+| **M2** | Section → control mapping (Bedrock) + review UI (human checkpoint) | ✅ landed |
+| **M3** | Side-by-side editor, per-control chat assistant, Bedrock Rev 5 drafting | next |
+| **M4** | Structure-preserving Rev 5 DOCX export + per-control decision log | planned |
+| **M5** | Coverage dashboard + conversion matrix exports (CSV/XLSX) | planned |
 
 Public v1 release follows M5.
+
+## Control data
+
+The NIST SP 800-53 catalogs (Rev 4 and Rev 5) and a derived Rev 4 → Rev 5
+disposition map are **bundled** under `data/` (a U.S. Government public-domain
+work), because private/GovCloud deployments have no internet egress to fetch them
+at runtime. They are generated from the official [NIST OSCAL content](https://github.com/usnistgov/oscal-content)
+by `scripts/fetch_catalogs.py`; a maintainer re-runs it to refresh the data. The
+mapping's `same` / `renamed` / `withdrawn` / `new` relationships are computed from
+the two catalogs; `merged` / `split` relationships from NIST's official comparison
+workbook are layered on top over time.
 
 ## Repository layout
 
@@ -64,7 +75,8 @@ Public v1 release follows M5.
 backend/     Python Lambda source + tests
 frontend/    React + TypeScript SPA
 terraform/   Reusable module + standalone example root
-data/        Static NIST Rev4→Rev5 mapping + Rev5 catalog (public domain)
+data/        Bundled NIST Rev4/Rev5 catalogs + Rev4→Rev5 mapping (public domain)
+scripts/     Maintainer tooling (fetch_catalogs.py regenerates data/)
 docs/        Architecture and deployment docs
 ```
 

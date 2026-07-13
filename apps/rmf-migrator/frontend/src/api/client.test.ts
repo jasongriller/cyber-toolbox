@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { joinUrl } from "./client";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { ApiClient, ApiError, joinUrl, parseControlIds } from "./client";
 
 describe("joinUrl", () => {
   it("joins without doubling slashes", () => {
@@ -12,5 +12,56 @@ describe("joinUrl", () => {
 
   it("handles a sub-path base", () => {
     expect(joinUrl("/api", "/projects/p1/jobs/j1")).toBe("/api/projects/p1/jobs/j1");
+  });
+});
+
+describe("parseControlIds", () => {
+  it("splits on commas and whitespace, uppercases, dedupes", () => {
+    expect(parseControlIds("ac-2, AC-2  au-2")).toEqual(["AC-2", "AU-2"]);
+  });
+
+  it("returns empty for blank input", () => {
+    expect(parseControlIds("   ")).toEqual([]);
+  });
+});
+
+describe("ApiClient", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  function mockFetch(status: number, body: unknown) {
+    return vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify(body), {
+        status,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+  }
+
+  it("updateMapping PUTs control ids to the section URL", async () => {
+    const spy = mockFetch(200, { section_id: "sec_1", final_control_ids: ["AC-2"] });
+    const client = new ApiClient("/api");
+    await client.updateMapping("p1", "d1", "sec_1", ["AC-2"]);
+
+    const [url, init] = spy.mock.calls[0];
+    expect(url).toBe("/api/projects/p1/documents/d1/mappings/sec_1");
+    expect(init?.method).toBe("PUT");
+    expect(JSON.parse(init?.body as string)).toEqual({ control_ids: ["AC-2"] });
+  });
+
+  it("getMappings GETs the mappings URL", async () => {
+    const spy = mockFetch(200, { document_status: "mapped", mappings: [] });
+    const client = new ApiClient("/api");
+    const res = await client.getMappings("p1", "d1");
+
+    expect(spy.mock.calls[0][0]).toBe("/api/projects/p1/documents/d1/mappings");
+    expect(res.document_status).toBe("mapped");
+  });
+
+  it("throws ApiError with server message on non-2xx", async () => {
+    mockFetch(400, { error: "unknown Rev 4 control ids: ZZ-99" });
+    const client = new ApiClient("/api");
+    await expect(client.updateMapping("p1", "d1", "s1", ["ZZ-99"])).rejects.toThrowError(
+      ApiError,
+    );
   });
 });

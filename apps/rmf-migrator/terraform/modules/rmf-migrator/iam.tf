@@ -111,6 +111,8 @@ data "aws_iam_policy_document" "worker" {
       "sqs:ReceiveMessage",
       "sqs:DeleteMessage",
       "sqs:GetQueueAttributes",
+      # The worker re-enqueues a mapping job after a successful parse.
+      "sqs:SendMessage",
     ]
     resources = [aws_sqs_queue.parse.arn]
   }

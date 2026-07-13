@@ -8,13 +8,11 @@ Flow per message:
   3. Persist sections; mark document PARSED (with count) and job SUCCEEDED.
 On failure, mark both FAILED with an error *type* only — never content.
 
-The core is ``run_parse_job`` so tests can drive it directly with fakes.
+The core is ``run_parse_job``. The SQS entrypoint that dispatches parse vs.
+mapping messages lives in ``handlers/worker.py``.
 """
 
 from __future__ import annotations
-
-import json
-from typing import Any
 
 from rmf_migrator.common.logging import length_of, log_error, log_event
 from rmf_migrator.common.models import DocumentStatus, JobStatus
@@ -76,23 +74,3 @@ def run_parse_job(project_id: str, document_id: str, job_id: str, deps: Deps) ->
 
         log_error("document.parse_failed", exc, project_id=project_id, document_id=document_id)
         raise  # let SQS/Lambda apply its retry + DLQ policy
-
-
-def handler(event: dict[str, Any], _context: Any = None) -> dict[str, Any]:
-    """SQS batch handler with partial-batch-failure reporting."""
-    deps = Deps.build()
-    failures: list[dict[str, str]] = []
-
-    for record in event.get("Records", []):
-        try:
-            body = json.loads(record["body"])
-            run_parse_job(
-                project_id=body["project_id"],
-                document_id=body["document_id"],
-                job_id=body["job_id"],
-                deps=deps,
-            )
-        except Exception:  # noqa: BLE001
-            failures.append({"itemIdentifier": record.get("messageId", "")})
-
-    return {"batchItemFailures": failures}

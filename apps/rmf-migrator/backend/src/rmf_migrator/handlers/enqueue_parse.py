@@ -37,7 +37,12 @@ def _enqueue(event: dict[str, Any], deps: Deps) -> dict[str, Any]:
     deps.sqs.send_message(
         QueueUrl=deps.config.parse_queue_url,
         MessageBody=json.dumps(
-            {"job_id": job.job_id, "project_id": project_id, "document_id": document_id}
+            {
+                "kind": "parse",
+                "job_id": job.job_id,
+                "project_id": project_id,
+                "document_id": document_id,
+            }
         ),
     )
 

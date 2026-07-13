@@ -5,10 +5,13 @@
 // browser -> S3 and never transit our API.
 
 import type {
+  ApproveResponse,
   Baseline,
   DocumentRecord,
+  MappingsResponse,
   ParseJob,
   Project,
+  Section,
   UploadTarget,
 } from "./types";
 
@@ -85,4 +88,52 @@ export class ApiClient {
   getJob(projectId: string, jobId: string): Promise<ParseJob> {
     return this.request("GET", `/projects/${projectId}/jobs/${jobId}`);
   }
+
+  // ---- Mapping review (M2) ----
+
+  getDocument(projectId: string, documentId: string): Promise<DocumentRecord> {
+    return this.request("GET", `/projects/${projectId}/documents/${documentId}`);
+  }
+
+  listSections(projectId: string, documentId: string): Promise<{ sections: Section[] }> {
+    return this.request("GET", `/projects/${projectId}/documents/${documentId}/sections`);
+  }
+
+  getMappings(projectId: string, documentId: string): Promise<MappingsResponse> {
+    return this.request("GET", `/projects/${projectId}/documents/${documentId}/mappings`);
+  }
+
+  updateMapping(
+    projectId: string,
+    documentId: string,
+    sectionId: string,
+    controlIds: string[],
+  ): Promise<import("./types").ControlMapping> {
+    return this.request(
+      "PUT",
+      `/projects/${projectId}/documents/${documentId}/mappings/${sectionId}`,
+      { control_ids: controlIds },
+    );
+  }
+
+  approveMappings(projectId: string, documentId: string): Promise<ApproveResponse> {
+    return this.request(
+      "POST",
+      `/projects/${projectId}/documents/${documentId}/mappings/approve`,
+    );
+  }
+}
+
+/** Parse a comma/space separated control-id string into a normalized list. */
+export function parseControlIds(input: string): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const token of input.split(/[\s,]+/)) {
+    const id = token.trim().toUpperCase();
+    if (id && !seen.has(id)) {
+      seen.add(id);
+      out.push(id);
+    }
+  }
+  return out;
 }

@@ -150,3 +150,14 @@ export interface PresignedGet {
   url: string;
   expires_in: number;
 }
+
+export interface Coverage {
+  baseline: string | null;
+  covered_count: number;
+  covered_controls: string[];
+  baseline_total: number | null;
+  baseline_covered: number | null;
+  coverage_pct: number | null;
+  baseline_gaps: string[];
+  new_in_rev5_gaps: string[];
+}

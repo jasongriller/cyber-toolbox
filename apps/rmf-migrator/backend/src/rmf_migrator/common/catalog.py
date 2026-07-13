@@ -133,6 +133,19 @@ def rev5_catalog() -> Catalog:
     return Catalog("5", _load_controls("rev5_controls.json"))
 
 
+BASELINE_NAMES = ("low", "moderate", "high")
+
+
+@lru_cache(maxsize=8)
+def baseline_controls(name: str) -> frozenset[str]:
+    """Return the Rev 5 control ids required by a baseline (low/moderate/high)."""
+    if name not in BASELINE_NAMES:
+        raise CatalogError(f"unknown baseline {name!r}; expected one of {BASELINE_NAMES}")
+    data_dir = _find_data_dir()
+    raw = json.loads((data_dir / "baselines" / f"rev5_{name}.json").read_text())
+    return frozenset(raw["control_ids"])
+
+
 @lru_cache(maxsize=1)
 def crosswalk() -> Crosswalk:
     data_dir = _find_data_dir()

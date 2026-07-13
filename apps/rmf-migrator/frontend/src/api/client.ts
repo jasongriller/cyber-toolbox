@@ -8,6 +8,7 @@ import type {
   ApproveResponse,
   Baseline,
   ChatMessage,
+  Coverage,
   DocumentRecord,
   Draft,
   DraftsResponse,
@@ -188,6 +189,24 @@ export class ApiClient {
   async getDecisionLogCsv(projectId: string, documentId: string): Promise<string> {
     const res = await fetch(
       joinUrl(this.baseUrl, `/projects/${projectId}/documents/${documentId}/decision-log.csv`),
+    );
+    if (!res.ok) {
+      throw new ApiError(res.status, res.statusText);
+    }
+    return res.text();
+  }
+
+  // ---- Coverage dashboard + conversion matrix (M5) ----
+
+  getCoverage(projectId: string, baseline?: string): Promise<Coverage> {
+    const qs = baseline ? `?baseline=${encodeURIComponent(baseline)}` : "";
+    return this.request("GET", `/projects/${projectId}/coverage${qs}`);
+  }
+
+  /** Fetch the conversion-matrix CSV as text (not JSON). */
+  async getConversionMatrixCsv(projectId: string): Promise<string> {
+    const res = await fetch(
+      joinUrl(this.baseUrl, `/projects/${projectId}/conversion-matrix.csv`),
     );
     if (!res.ok) {
       throw new ApiError(res.status, res.statusText);

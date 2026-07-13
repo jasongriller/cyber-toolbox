@@ -121,4 +121,31 @@ describe("ApiClient", () => {
     const csv = await client.getDecisionLogCsv("p1", "d1");
     expect(csv).toContain("order,heading");
   });
+
+  it("getCoverage GETs coverage with a baseline query", async () => {
+    const spy = mockFetch(200, { baseline: "low", covered_count: 2, covered_controls: [] });
+    const client = new ApiClient("/api");
+    const res = await client.getCoverage("p1", "low");
+    expect(spy.mock.calls[0][0]).toBe("/api/projects/p1/coverage?baseline=low");
+    expect(res.baseline).toBe("low");
+  });
+
+  it("getCoverage omits the query when no baseline given", async () => {
+    const spy = mockFetch(200, { baseline: null, covered_count: 0, covered_controls: [] });
+    const client = new ApiClient("/api");
+    await client.getCoverage("p1");
+    expect(spy.mock.calls[0][0]).toBe("/api/projects/p1/coverage");
+  });
+
+  it("getConversionMatrixCsv fetches CSV text", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("rev4_control,rev4_title\nAC-1,Policy\n", {
+        status: 200,
+        headers: { "Content-Type": "text/csv" },
+      }),
+    );
+    const client = new ApiClient("/api");
+    const csv = await client.getConversionMatrixCsv("p1");
+    expect(csv).toContain("rev4_control");
+  });
 });

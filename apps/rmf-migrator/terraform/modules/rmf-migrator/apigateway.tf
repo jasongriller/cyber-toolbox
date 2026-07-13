@@ -32,6 +32,10 @@ locals {
     "GET /projects/{project_id}/export-jobs/{job_id}"                      = "get-export-job"
     "GET /projects/{project_id}/documents/{document_id}/export/download"   = "download-export"
     "GET /projects/{project_id}/documents/{document_id}/decision-log.csv"  = "decision-log"
+
+    # Coverage dashboard + conversion matrix (M5)
+    "GET /projects/{project_id}/coverage"                = "coverage"
+    "GET /projects/{project_id}/conversion-matrix.csv"  = "conversion-matrix"
   }
 }
 

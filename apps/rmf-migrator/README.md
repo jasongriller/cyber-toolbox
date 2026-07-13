@@ -54,9 +54,11 @@ Moving an A&A package from NIST SP 800-53 Rev 4 to Rev 5 is tedious and error-pr
 | **M2** | Section → control mapping (Bedrock) + review UI (human checkpoint) | ✅ landed |
 | **M3** | Side-by-side editor, per-control chat assistant, Bedrock Rev 5 drafting | ✅ landed |
 | **M4** | Structure-preserving Rev 5 DOCX export + per-control decision log | ✅ landed |
-| **M5** | Coverage dashboard + conversion matrix exports (CSV/XLSX) | next |
+| **M5** | Package coverage dashboard + conversion matrix export (CSV) | ✅ landed |
 
-Public v1 release follows M5.
+All v1 milestones are implemented. The tool now runs the full pipeline end to end:
+upload → parse → control mapping (human-reviewed) → Rev 5 drafting → structure-preserving
+export → package coverage & gap analysis.
 
 ## Control data
 

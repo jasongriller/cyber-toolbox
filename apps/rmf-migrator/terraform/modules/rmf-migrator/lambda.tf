@@ -55,10 +55,12 @@ locals {
     update-draft     = { handler = "rmf_migrator.handlers.drafts.update_draft" }
     approve-draft    = { handler = "rmf_migrator.handlers.drafts.approve_draft" }
     chat             = { handler = "rmf_migrator.handlers.chat.handler", role = "worker" }
-    start-export     = { handler = "rmf_migrator.handlers.export.enqueue_export" }
-    get-export-job   = { handler = "rmf_migrator.handlers.export.get_export_job" }
-    download-export  = { handler = "rmf_migrator.handlers.export.download_export" }
-    decision-log     = { handler = "rmf_migrator.handlers.export.decision_log" }
+    start-export      = { handler = "rmf_migrator.handlers.export.enqueue_export" }
+    get-export-job    = { handler = "rmf_migrator.handlers.export.get_export_job" }
+    download-export   = { handler = "rmf_migrator.handlers.export.download_export" }
+    decision-log      = { handler = "rmf_migrator.handlers.export.decision_log" }
+    coverage          = { handler = "rmf_migrator.handlers.coverage.coverage" }
+    conversion-matrix = { handler = "rmf_migrator.handlers.coverage.conversion_matrix" }
   }
 
   api_role_arns = {

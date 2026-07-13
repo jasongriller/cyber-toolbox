@@ -34,9 +34,18 @@ REPO_RAW = "https://raw.githubusercontent.com/usnistgov/oscal-content/main"
 REV4_URL = f"{REPO_RAW}/nist.gov/SP800-53/rev4/json/NIST_SP-800-53_rev4_catalog.json"
 REV5_URL = f"{REPO_RAW}/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json"
 
+# Rev 5 baseline profiles (LOW / MODERATE / HIGH). Each lists the control ids the
+# baseline requires, used for package coverage/gap analysis.
+REV5_BASELINE_URLS = {
+    "low": f"{REPO_RAW}/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_LOW-baseline_profile.json",
+    "moderate": f"{REPO_RAW}/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_MODERATE-baseline_profile.json",
+    "high": f"{REPO_RAW}/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_HIGH-baseline_profile.json",
+}
+
 ROOT = Path(__file__).resolve().parent.parent
 CATALOG_DIR = ROOT / "data" / "catalogs"
 MAPPING_DIR = ROOT / "data" / "mappings"
+BASELINE_DIR = ROOT / "data" / "baselines"
 
 
 def _download_json(url: str) -> dict[str, Any]:
@@ -46,21 +55,36 @@ def _download_json(url: str) -> dict[str, Any]:
         return json.load(resp)
 
 
-def _display_id(control: dict[str, Any]) -> str:
-    """Canonical display id derived from the OSCAL id.
+def _canonical_id(oscal_id: str) -> str:
+    """Canonical display id derived from an OSCAL id.
 
     The OSCAL id (e.g. "ac-11.1") has an identical format across Rev 4 and Rev 5,
     whereas the human 'label' prop is zero-padded inconsistently between the two
     revisions (Rev 5 emits "AC-11(01)", Rev 4 "AC-11(1)"). Deriving the display id
     from the OSCAL id gives one canonical form ("AC-11(1)") that joins cleanly
-    across revisions.
+    across revisions and against baseline profiles.
     """
-    parts = control["id"].split(".")
+    parts = oscal_id.split(".")
     family, _, number = parts[0].partition("-")
     display = f"{family.upper()}-{number}"
     for enhancement in parts[1:]:
         display += f"({enhancement})"
     return display
+
+
+def _display_id(control: dict[str, Any]) -> str:
+    return _canonical_id(control["id"])
+
+
+def extract_baseline_ids(profile_json: dict[str, Any]) -> list[str]:
+    """Pull the canonical control ids a baseline profile requires."""
+    ids: list[str] = []
+    for imp in profile_json.get("profile", {}).get("imports", []):
+        for inc in imp.get("include-controls", []):
+            for oscal_id in inc.get("with-ids", []):
+                ids.append(_canonical_id(oscal_id))
+    # De-duplicate, keep sorted for stable diffs.
+    return sorted(set(ids))
 
 
 def _is_withdrawn(control: dict[str, Any]) -> bool:
@@ -140,6 +164,7 @@ def derive_mapping(
 def main() -> int:
     CATALOG_DIR.mkdir(parents=True, exist_ok=True)
     MAPPING_DIR.mkdir(parents=True, exist_ok=True)
+    BASELINE_DIR.mkdir(parents=True, exist_ok=True)
 
     rev4 = normalize_catalog(_download_json(REV4_URL))
     rev5 = normalize_catalog(_download_json(REV5_URL))
@@ -168,9 +193,17 @@ def main() -> int:
         + "\n"
     )
 
+    baseline_counts = {}
+    for name, url in REV5_BASELINE_URLS.items():
+        ids = extract_baseline_ids(_download_json(url))
+        (BASELINE_DIR / f"rev5_{name}.json").write_text(
+            json.dumps({"baseline": name, "source": url, "control_ids": ids}, indent=2) + "\n"
+        )
+        baseline_counts[name] = len(ids)
+
     print(
         f"wrote {len(rev4)} Rev4 controls, {len(rev5)} Rev5 controls, "
-        f"{len(mapping)} mapping rows",
+        f"{len(mapping)} mapping rows, baselines {baseline_counts}",
         file=sys.stderr,
     )
     return 0

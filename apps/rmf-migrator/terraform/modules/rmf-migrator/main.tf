@@ -1,0 +1,57 @@
+# Core locals, data sources, and cross-cutting validation.
+#
+# This module is partition-aware (aws / aws-us-gov) so the same code deploys to
+# commercial AWS and GovCloud unchanged — the partition flows into every ARN we
+# construct by hand.
+
+data "aws_partition" "current" {}
+data "aws_caller_identity" "current" {}
+data "aws_region" "current" {}
+
+locals {
+  partition  = data.aws_partition.current.partition
+  account_id = data.aws_caller_identity.current.account_id
+  region     = data.aws_region.current.name
+
+  name = var.name_prefix
+
+  bedrock_region = coalesce(var.bedrock_region, local.region)
+
+  is_private = var.network_mode == "private"
+
+  # When the module creates its own key, use that; otherwise the caller's.
+  kms_key_arn = var.kms_key_arn != null ? var.kms_key_arn : aws_kms_key.this[0].arn
+  kms_key_id  = var.kms_key_arn != null ? var.kms_key_arn : aws_kms_key.this[0].key_id
+
+  common_tags = merge(
+    {
+      "app"        = "rmf-rev5-migrator"
+      "managed-by" = "terraform"
+    },
+    var.tags,
+  )
+}
+
+# Guardrail version must accompany a guardrail id.
+resource "terraform_data" "validate_guardrail" {
+  count = var.bedrock_guardrail_id != null && var.bedrock_guardrail_version == null ? 1 : 0
+
+  lifecycle {
+    precondition {
+      condition     = false
+      error_message = "bedrock_guardrail_version is required when bedrock_guardrail_id is set."
+    }
+  }
+}
+
+# Private mode needs a VPC and subnets to place the Lambdas in.
+resource "terraform_data" "validate_private_network" {
+  count = local.is_private && (var.vpc_id == null || length(var.private_subnet_ids) == 0) ? 1 : 0
+
+  lifecycle {
+    precondition {
+      condition     = false
+      error_message = "network_mode = \"private\" requires vpc_id and at least one private_subnet_id."
+    }
+  }
+}

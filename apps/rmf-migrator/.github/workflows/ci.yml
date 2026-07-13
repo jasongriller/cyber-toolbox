@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend (lint + test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -e ".[dev]"
+      - name: Ruff lint
+        run: ruff check .
+      - name: Ruff format
+        run: ruff format --check .
+      - name: Pytest
+        run: pytest --cov=rmf_migrator --cov-report=term-missing
+
+  frontend:
+    name: Frontend (lint + test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Test
+        run: npm test --if-present
+
+  terraform:
+    name: Terraform (fmt + validate + lint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - name: Format
+        run: terraform fmt -check -recursive
+        working-directory: terraform
+      - name: Validate module
+        working-directory: terraform/examples/standalone
+        run: |
+          terraform init -backend=false
+          terraform validate
+      - name: tflint
+        uses: terraform-linters/setup-tflint@v4
+      - run: tflint --recursive
+        working-directory: terraform
+
+  security:
+    name: Security scanning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: gitleaks (secret scan)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: checkov (Terraform IaC scan)
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: terraform
+          framework: terraform
+          quiet: true
+          soft_fail: false
+      - name: pip-audit
+        run: |
+          pip install pip-audit
+          pip-audit -r backend/requirements-lock.txt || true
+      - name: npm audit
+        working-directory: frontend
+        run: npm audit --audit-level=high || true

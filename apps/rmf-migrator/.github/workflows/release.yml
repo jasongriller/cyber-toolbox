@@ -1,0 +1,42 @@
+name: Release artifacts
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-artifacts:
+    name: Build Lambda zips + frontend bundle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build Lambda package
+        run: |
+          cd backend
+          make build   # produces build/rmf-migrator-lambda.zip
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Build frontend bundle
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+          cd dist && zip -r ../../frontend-bundle.zip . && cd ../..
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            backend/build/rmf-migrator-lambda.zip
+            frontend-bundle.zip
+          generate_release_notes: true

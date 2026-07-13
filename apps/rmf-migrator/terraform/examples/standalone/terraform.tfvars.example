@@ -1,0 +1,30 @@
+# Copy to terraform.tfvars and edit. Do NOT commit terraform.tfvars.
+
+# --- Required ---------------------------------------------------------------
+
+# Bedrock model your account has enabled. Examples (verify availability in your
+# region/partition — GovCloud availability differs from commercial):
+#   anthropic.claude-3-5-sonnet-20240620-v1:0
+bedrock_model_id = "REPLACE_WITH_YOUR_ENABLED_MODEL_ID"
+
+# Path to the built Lambda package.
+lambda_zip_path = "../../../backend/build/rmf-migrator-lambda.zip"
+
+# --- Common -----------------------------------------------------------------
+
+region       = "us-east-1" # us-gov-west-1 for GovCloud
+name_prefix  = "rmf-migrator"
+network_mode = "public" # "private" for production
+
+# --- Private-mode only (network_mode = "private") ---------------------------
+# vpc_id             = "vpc-0123456789abcdef0"
+# private_subnet_ids = ["subnet-aaa", "subnet-bbb"]
+
+# --- Optional integration ---------------------------------------------------
+# identity_header = "X-Remote-User"
+# frame_ancestors = ["https://toolbox.internal.example.gov"]
+
+tags = {
+  environment = "dev"
+  owner       = "security-team"
+}

@@ -1,0 +1,108 @@
+"""Domain models.
+
+These are the persisted shapes for the ingest & parse pipeline (M1). The data
+model is deliberately project-scoped from day one: a Project is one system's A&A
+package and holds many Documents, each of which parses into many Sections. Later
+milestones attach control mappings and decision-log entries to Sections without
+reshaping this core.
+
+Pydantic is used for validation and (de)serialization to/from DynamoDB item
+dicts. Nothing here stores document *body* text beyond what a Section needs; the
+original .docx always lives in S3, addressed by ``s3_key``.
+"""
+
+from __future__ import annotations
+
+import enum
+import uuid
+from datetime import UTC, datetime
+
+from pydantic import BaseModel, Field
+
+
+def _new_id(prefix: str) -> str:
+    return f"{prefix}_{uuid.uuid4().hex[:12]}"
+
+
+def _now() -> datetime:
+    return datetime.now(UTC)
+
+
+class Baseline(enum.StrEnum):
+    """Selectable control baseline context; drives mapping/suggestion logic later."""
+
+    DOD_CNSSI_1253 = "dod_cnssi_1253"
+    FEDRAMP = "fedramp"
+    FIPS_199_LOW = "fips199_low"
+    FIPS_199_MODERATE = "fips199_moderate"
+    FIPS_199_HIGH = "fips199_high"
+    GENERIC_800_53 = "generic_800_53"
+
+
+class JobStatus(enum.StrEnum):
+    PENDING = "pending"
+    RUNNING = "running"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+
+
+class DocumentStatus(enum.StrEnum):
+    UPLOADED = "uploaded"  # object in S3, not yet parsed
+    PARSING = "parsing"
+    PARSED = "parsed"
+    FAILED = "failed"
+
+
+class Project(BaseModel):
+    """One system's A&A package."""
+
+    project_id: str = Field(default_factory=lambda: _new_id("proj"))
+    name: str
+    baseline: Baseline = Baseline.GENERIC_800_53
+    created_at: datetime = Field(default_factory=_now)
+    created_by: str = "anonymous"
+    document_count: int = 0
+
+
+class Section(BaseModel):
+    """A parsed unit of a document — a heading and the text beneath it.
+
+    Sections form a tree via ``parent_id`` and ``level`` (heading depth). Control
+    mapping (M2) attaches to sections by id.
+    """
+
+    section_id: str = Field(default_factory=lambda: _new_id("sec"))
+    document_id: str
+    project_id: str
+    order: int  # 0-based position in document reading order
+    level: int  # heading depth; 0 for the synthetic root/preamble
+    heading: str = ""  # heading text ("" for preamble)
+    parent_id: str | None = None
+    text: str = ""  # body text under this heading, above child headings
+    char_length: int = 0  # convenience for UI/logging without loading text
+
+
+class Document(BaseModel):
+    """An uploaded source policy document."""
+
+    document_id: str = Field(default_factory=lambda: _new_id("doc"))
+    project_id: str
+    filename: str
+    s3_key: str
+    status: DocumentStatus = DocumentStatus.UPLOADED
+    uploaded_at: datetime = Field(default_factory=_now)
+    uploaded_by: str = "anonymous"
+    section_count: int = 0
+    parse_error: str | None = None
+
+
+class ParseJob(BaseModel):
+    """Tracks an async parse worker invocation for one document."""
+
+    job_id: str = Field(default_factory=lambda: _new_id("job"))
+    project_id: str
+    document_id: str
+    status: JobStatus = JobStatus.PENDING
+    created_at: datetime = Field(default_factory=_now)
+    updated_at: datetime = Field(default_factory=_now)
+    error_type: str | None = None

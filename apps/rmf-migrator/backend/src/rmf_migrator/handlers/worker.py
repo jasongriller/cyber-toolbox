@@ -19,10 +19,13 @@ from rmf_migrator.common.logging import log_error, log_event
 from rmf_migrator.common.models import (
     DocumentStatus,
     DraftJob,
+    ExportJob,
     JobStatus,
     MappingJob,
     MappingStatus,
 )
+from rmf_migrator.common.storage import build_export_key
+from rmf_migrator.docx.export_docx import export_rev5_docx
 from rmf_migrator.handlers.deps import Deps
 from rmf_migrator.handlers.parse_document import run_parse_job
 from rmf_migrator.services.drafting import draft_document
@@ -66,6 +69,25 @@ def enqueue_drafting(deps: Deps, project_id: str, document_id: str) -> DraftJob:
     log_event(
         "drafting.enqueued", project_id=project_id, document_id=document_id, job_id=job.job_id
     )
+    return job
+
+
+def enqueue_export(deps: Deps, project_id: str, document_id: str) -> ExportJob:
+    """Create an ExportJob and enqueue it for the worker (Rev 5 DOCX export)."""
+    job = ExportJob(project_id=project_id, document_id=document_id)
+    deps.repo.put_export_job(job)
+    deps.sqs.send_message(
+        QueueUrl=deps.config.parse_queue_url,
+        MessageBody=json.dumps(
+            {
+                "kind": "export",
+                "job_id": job.job_id,
+                "project_id": project_id,
+                "document_id": document_id,
+            }
+        ),
+    )
+    log_event("export.enqueued", project_id=project_id, document_id=document_id, job_id=job.job_id)
     return job
 
 
@@ -173,6 +195,62 @@ def run_draft_job(project_id: str, document_id: str, job_id: str, deps: Deps) ->
         raise
 
 
+def run_export_job(project_id: str, document_id: str, job_id: str, deps: Deps) -> None:
+    job = deps.repo.get_export_job(project_id, job_id)
+    document = deps.repo.get_document(project_id, document_id)
+    if job is None or document is None:
+        log_event(
+            "export.job_missing",
+            project_id=project_id,
+            document_id=document_id,
+            job_id=job_id,
+            job_found=job is not None,
+            document_found=document is not None,
+        )
+        return
+
+    prior_status = document.status
+    job.status = JobStatus.RUNNING
+    deps.repo.put_export_job(job)
+    document.status = DocumentStatus.EXPORTING
+    deps.repo.put_document(document)
+
+    try:
+        original = deps.store.get_bytes(document.s3_key)
+        drafts = deps.repo.list_drafts(document_id)
+        # Use each section's authoritative (edited-or-proposed) Rev 5 text.
+        drafts_by_order = {d.order: d.effective_text() for d in drafts}
+        new_docx = export_rev5_docx(original, drafts_by_order)
+
+        export_key = build_export_key(project_id, document_id)
+        deps.store.put_bytes(export_key, new_docx)
+
+        document.status = DocumentStatus.EXPORTED
+        document.export_key = export_key
+        deps.repo.put_document(document)
+
+        job.status = JobStatus.SUCCEEDED
+        job.error_type = None
+        deps.repo.put_export_job(job)
+
+        log_event(
+            "document.exported",
+            project_id=project_id,
+            document_id=document_id,
+            job_id=job_id,
+            section_count=len(drafts_by_order),
+        )
+    except Exception as exc:  # noqa: BLE001
+        # Don't leave the document stuck in EXPORTING; restore prior state.
+        document.status = prior_status
+        deps.repo.put_document(document)
+        job.status = JobStatus.FAILED
+        job.error_type = type(exc).__name__
+        deps.repo.put_export_job(job)
+        log_error("document.export_failed", exc, project_id=project_id, document_id=document_id)
+        raise
+
+
 def process_event(event: dict[str, Any], deps: Deps) -> dict[str, Any]:
     """Dispatch each SQS record; returns partial-batch-failure identifiers.
 
@@ -202,6 +280,13 @@ def process_event(event: dict[str, Any], deps: Deps) -> dict[str, Any]:
                 )
             elif kind == "draft":
                 run_draft_job(
+                    project_id=body["project_id"],
+                    document_id=body["document_id"],
+                    job_id=body["job_id"],
+                    deps=deps,
+                )
+            elif kind == "export":
+                run_export_job(
                     project_id=body["project_id"],
                     document_id=body["document_id"],
                     job_id=body["job_id"],

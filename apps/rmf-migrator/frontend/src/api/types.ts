@@ -19,6 +19,8 @@ export type DocumentStatus =
   | "mapping_approved"
   | "drafting"
   | "drafted"
+  | "exporting"
+  | "exported"
   | "failed";
 
 export type MappingStatus = "proposed" | "edited" | "approved";
@@ -132,4 +134,19 @@ export interface DraftsResponse {
 export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
+}
+
+export interface ExportJob {
+  job_id: string;
+  project_id: string;
+  document_id: string;
+  status: JobStatus;
+  created_at: string;
+  updated_at: string;
+  error_type: string | null;
+}
+
+export interface PresignedGet {
+  url: string;
+  expires_in: number;
 }

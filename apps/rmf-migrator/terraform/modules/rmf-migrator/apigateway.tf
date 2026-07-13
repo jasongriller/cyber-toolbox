@@ -26,6 +26,12 @@ locals {
     "PUT /projects/{project_id}/documents/{document_id}/drafts/{section_id}"          = "update-draft"
     "POST /projects/{project_id}/documents/{document_id}/drafts/{section_id}/approve" = "approve-draft"
     "POST /projects/{project_id}/documents/{document_id}/sections/{section_id}/chat"  = "chat"
+
+    # Rev 5 export + decision log (M4)
+    "POST /projects/{project_id}/documents/{document_id}/export"            = "start-export"
+    "GET /projects/{project_id}/export-jobs/{job_id}"                      = "get-export-job"
+    "GET /projects/{project_id}/documents/{document_id}/export/download"   = "download-export"
+    "GET /projects/{project_id}/documents/{document_id}/decision-log.csv"  = "decision-log"
   }
 }
 

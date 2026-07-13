@@ -53,9 +53,11 @@ data "aws_iam_policy_document" "api" {
   }
 
   statement {
-    sid       = "PresignPut"
-    effect    = "Allow"
-    actions   = ["s3:PutObject"]
+    sid    = "PresignObjects"
+    effect = "Allow"
+    # PutObject: presigned upload URLs. GetObject: presigned download URLs for
+    # the generated Rev 5 export.
+    actions   = ["s3:PutObject", "s3:GetObject"]
     resources = ["${aws_s3_bucket.documents.arn}/*"]
   }
 
@@ -98,9 +100,10 @@ data "aws_iam_policy_document" "worker" {
   }
 
   statement {
-    sid       = "ReadWriteDocuments"
-    effect    = "Allow"
-    actions   = ["s3:GetObject", "s3:DeleteObject", "s3:ListBucket"]
+    sid    = "ReadWriteDocuments"
+    effect = "Allow"
+    # PutObject: the worker writes the generated Rev 5 .docx export.
+    actions   = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:ListBucket"]
     resources = [aws_s3_bucket.documents.arn, "${aws_s3_bucket.documents.arn}/*"]
   }
 

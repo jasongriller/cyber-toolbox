@@ -24,6 +24,11 @@ def build_document_key(project_id: str, document_id: str, filename: str) -> str:
     return f"projects/{project_id}/documents/{document_id}.docx"
 
 
+def build_export_key(project_id: str, document_id: str) -> str:
+    """S3 key for the generated Rev 5 .docx."""
+    return f"projects/{project_id}/exports/{document_id}-rev5.docx"
+
+
 class DocumentStore:
     def __init__(self, bucket: str, kms_key_id: str, *, s3_client: Any = None) -> None:
         self._bucket = bucket
@@ -60,6 +65,27 @@ class DocumentStore:
     def get_bytes(self, key: str) -> bytes:
         resp = self._s3.get_object(Bucket=self._bucket, Key=key)
         return resp["Body"].read()
+
+    def put_bytes(self, key: str, data: bytes, content_type: str = DOCX_CONTENT_TYPE) -> None:
+        """Write bytes with CMK encryption (used for generated Rev 5 exports)."""
+        self._s3.put_object(
+            Bucket=self._bucket,
+            Key=key,
+            Body=data,
+            ContentType=content_type,
+            ServerSideEncryption="aws:kms",
+            SSEKMSKeyId=self._kms_key_id,
+        )
+
+    def presigned_get_url(self, key: str, *, download_name: str | None = None) -> dict[str, Any]:
+        """Presigned GET URL so the browser downloads the export directly from S3."""
+        params: dict[str, Any] = {"Bucket": self._bucket, "Key": key}
+        if download_name:
+            params["ResponseContentDisposition"] = f'attachment; filename="{download_name}"'
+        url = self._s3.generate_presigned_url(
+            "get_object", Params=params, ExpiresIn=_UPLOAD_URL_TTL_SECONDS
+        )
+        return {"url": url, "expires_in": _UPLOAD_URL_TTL_SECONDS}
 
     def delete_prefix(self, prefix: str) -> int:
         """Hard-delete every object under a prefix (used by project purge).

@@ -5,10 +5,11 @@ import { useState } from "react";
 import { ApiClient } from "./api/client";
 import MappingReview from "./components/MappingReview";
 import DraftEditor from "./components/DraftEditor";
+import ExportPanel from "./components/ExportPanel";
 
 const client = new ApiClient();
 
-type View = "mapping" | "drafting";
+type View = "mapping" | "drafting" | "export";
 
 export default function App() {
   const [projectId, setProjectId] = useState("");
@@ -20,8 +21,9 @@ export default function App() {
     <main style={{ fontFamily: "system-ui, sans-serif", padding: "2rem", maxWidth: 1040 }}>
       <h1>RMF Rev 5 Migrator</h1>
       <p style={{ color: "#666" }}>
-        Milestone M3 — control mapping review and Rev 5 drafting. Enter a project and document
-        id, then review the mapping and draft the Rev 5 language.
+        Milestone M4 — mapping review, Rev 5 drafting, and export. Enter a project and document
+        id, then review the mapping, draft the Rev 5 language, and export the Rev 5 document plus
+        the per-control decision log.
       </p>
 
       <form
@@ -61,16 +63,27 @@ export default function App() {
             >
               2 · Rev 5 editor
             </button>
+            <button onClick={() => setView("export")} disabled={view === "export"}>
+              3 · Export
+            </button>
           </nav>
 
-          {view === "mapping" ? (
+          {view === "mapping" && (
             <MappingReview
               client={client}
               projectId={open.projectId}
               documentId={open.documentId}
             />
-          ) : (
+          )}
+          {view === "drafting" && (
             <DraftEditor
+              client={client}
+              projectId={open.projectId}
+              documentId={open.documentId}
+            />
+          )}
+          {view === "export" && (
+            <ExportPanel
               client={client}
               projectId={open.projectId}
               documentId={open.documentId}

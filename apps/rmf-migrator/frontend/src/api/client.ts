@@ -11,8 +11,10 @@ import type {
   DocumentRecord,
   Draft,
   DraftsResponse,
+  ExportJob,
   MappingsResponse,
   ParseJob,
+  PresignedGet,
   Project,
   Section,
   UploadTarget,
@@ -163,6 +165,34 @@ export class ApiClient {
       `/projects/${projectId}/documents/${documentId}/sections/${sectionId}/chat`,
       { messages },
     );
+  }
+
+  // ---- Rev 5 export + decision log (M4) ----
+
+  startExport(projectId: string, documentId: string): Promise<{ job: ExportJob }> {
+    return this.request("POST", `/projects/${projectId}/documents/${documentId}/export`);
+  }
+
+  getExportJob(projectId: string, jobId: string): Promise<ExportJob> {
+    return this.request("GET", `/projects/${projectId}/export-jobs/${jobId}`);
+  }
+
+  getExportDownload(projectId: string, documentId: string): Promise<PresignedGet> {
+    return this.request(
+      "GET",
+      `/projects/${projectId}/documents/${documentId}/export/download`,
+    );
+  }
+
+  /** Fetch the decision-log CSV as text (not JSON). */
+  async getDecisionLogCsv(projectId: string, documentId: string): Promise<string> {
+    const res = await fetch(
+      joinUrl(this.baseUrl, `/projects/${projectId}/documents/${documentId}/decision-log.csv`),
+    );
+    if (!res.ok) {
+      throw new ApiError(res.status, res.statusText);
+    }
+    return res.text();
   }
 }
 

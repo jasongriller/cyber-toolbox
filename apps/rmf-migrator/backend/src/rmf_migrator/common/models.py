@@ -55,6 +55,8 @@ class DocumentStatus(enum.StrEnum):
     MAPPING_APPROVED = "mapping_approved"  # human confirmed mapping; ready for drafting
     DRAFTING = "drafting"  # LLM drafting Rev 5 text per section
     DRAFTED = "drafted"  # Rev 5 drafts ready for human review/edit
+    EXPORTING = "exporting"  # building the Rev 5 .docx
+    EXPORTED = "exported"  # Rev 5 .docx available for download
     FAILED = "failed"
 
 
@@ -115,6 +117,7 @@ class Document(BaseModel):
     uploaded_by: str = "anonymous"
     section_count: int = 0
     parse_error: str | None = None
+    export_key: str | None = None  # S3 key of the generated Rev 5 .docx, once exported
 
 
 class ParseJob(BaseModel):
@@ -192,6 +195,18 @@ class DraftJob(BaseModel):
     created_at: datetime = Field(default_factory=_now)
     updated_at: datetime = Field(default_factory=_now)
     section_count: int = 0
+    error_type: str | None = None
+
+
+class ExportJob(BaseModel):
+    """Tracks an async Rev 5 DOCX export for one document."""
+
+    job_id: str = Field(default_factory=lambda: _new_id("xjob"))
+    project_id: str
+    document_id: str
+    status: JobStatus = JobStatus.PENDING
+    created_at: datetime = Field(default_factory=_now)
+    updated_at: datetime = Field(default_factory=_now)
     error_type: str | None = None
 
 

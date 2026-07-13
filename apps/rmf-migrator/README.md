@@ -53,8 +53,8 @@ Moving an A&A package from NIST SP 800-53 Rev 4 to Rev 5 is tedious and error-pr
 | **M1** | Terraform skeleton + document upload & DOCX parse pipeline | ✅ landed |
 | **M2** | Section → control mapping (Bedrock) + review UI (human checkpoint) | ✅ landed |
 | **M3** | Side-by-side editor, per-control chat assistant, Bedrock Rev 5 drafting | ✅ landed |
-| **M4** | Structure-preserving Rev 5 DOCX export + per-control decision log | next |
-| **M5** | Coverage dashboard + conversion matrix exports (CSV/XLSX) | planned |
+| **M4** | Structure-preserving Rev 5 DOCX export + per-control decision log | ✅ landed |
+| **M5** | Coverage dashboard + conversion matrix exports (CSV/XLSX) | next |
 
 Public v1 release follows M5.
 

@@ -7,6 +7,7 @@ Single-table design keyed by ``PK``/``SK``:
     ParseJob       PK=PROJECT#<pid>        SK=JOB#<job_id>
     MappingJob     PK=PROJECT#<pid>        SK=MJOB#<job_id>
     DraftJob       PK=PROJECT#<pid>        SK=DJOB#<job_id>
+    ExportJob      PK=PROJECT#<pid>        SK=XJOB#<job_id>
     Section        PK=DOC#<did>            SK=SEC#<order padded>
     ControlMapping PK=DOC#<did>            SK=MAP#<section_id>
     Draft          PK=DOC#<did>            SK=DRAFT#<section_id>
@@ -31,6 +32,7 @@ from .models import (
     Document,
     Draft,
     DraftJob,
+    ExportJob,
     MappingJob,
     ParseJob,
     Project,
@@ -231,6 +233,22 @@ class Repository:
         resp = self._table.get_item(Key={"PK": _doc_pk(document_id), "SK": f"DRAFT#{section_id}"})
         item = resp.get("Item")
         return Draft(**_strip_keys(item)) if item else None
+
+    # ---- ExportJob ---------------------------------------------------------
+
+    def put_export_job(self, job: ExportJob) -> None:
+        item = _to_item(job)
+        item |= {
+            "PK": _project_pk(job.project_id),
+            "SK": f"XJOB#{job.job_id}",
+            "type": "export_job",
+        }
+        self._table.put_item(Item=item)
+
+    def get_export_job(self, project_id: str, job_id: str) -> ExportJob | None:
+        resp = self._table.get_item(Key={"PK": _project_pk(project_id), "SK": f"XJOB#{job_id}"})
+        item = resp.get("Item")
+        return ExportJob(**_strip_keys(item)) if item else None
 
     def list_drafts(self, document_id: str) -> list[Draft]:
         resp = self._table.query(

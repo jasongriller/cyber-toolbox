@@ -93,4 +93,32 @@ describe("ApiClient", () => {
     await client.approveDraft("p1", "d1", "s1");
     expect(spy.mock.calls[0][0]).toBe("/api/projects/p1/documents/d1/drafts/s1/approve");
   });
+
+  it("startExport POSTs to the export URL", async () => {
+    const spy = mockFetch(202, { job: { job_id: "xjob_1", status: "pending" } });
+    const client = new ApiClient("/api");
+    const res = await client.startExport("p1", "d1");
+    expect(spy.mock.calls[0][0]).toBe("/api/projects/p1/documents/d1/export");
+    expect(res.job.job_id).toBe("xjob_1");
+  });
+
+  it("getExportDownload GETs the download URL", async () => {
+    const spy = mockFetch(200, { url: "https://s3/...", expires_in: 300 });
+    const client = new ApiClient("/api");
+    const res = await client.getExportDownload("p1", "d1");
+    expect(spy.mock.calls[0][0]).toBe("/api/projects/p1/documents/d1/export/download");
+    expect(res.url).toContain("s3");
+  });
+
+  it("getDecisionLogCsv fetches CSV text", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("order,heading\n0,AC Policy\n", {
+        status: 200,
+        headers: { "Content-Type": "text/csv" },
+      }),
+    );
+    const client = new ApiClient("/api");
+    const csv = await client.getDecisionLogCsv("p1", "d1");
+    expect(csv).toContain("order,heading");
+  });
 });

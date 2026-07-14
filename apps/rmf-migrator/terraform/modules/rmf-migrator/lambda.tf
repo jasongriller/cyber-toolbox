@@ -9,11 +9,14 @@ resource "aws_security_group" "lambda" {
   description = "${local.name} in-VPC Lambda egress"
   vpc_id      = var.vpc_id
 
+  # HTTPS only. Every service the Lambdas reach (S3, DynamoDB, SQS, Bedrock,
+  # KMS, CloudWatch Logs — via VPC endpoints in private mode) is TLS on 443, so
+  # there is no reason to allow all-protocol egress.
   egress {
-    description = "All egress (reaches AWS service endpoints)"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
+    description = "HTTPS to AWS service endpoints"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
@@ -72,6 +75,10 @@ locals {
 resource "aws_cloudwatch_log_group" "api" {
   for_each = local.api_functions
 
+  # checkov:skip=CKV_AWS_338: Retention is the adopter's call via
+  # var.log_retention_days (default 30 days). These logs carry metadata only —
+  # never document content, prompts, or model responses — so a mandatory one-year
+  # retention is not warranted; adopters with a records requirement raise the var.
   name              = "/aws/lambda/${local.name}-${each.key}"
   retention_in_days = var.log_retention_days
   kms_key_id        = local.kms_key_arn
@@ -81,6 +88,16 @@ resource "aws_cloudwatch_log_group" "api" {
 resource "aws_lambda_function" "api" {
   for_each = local.api_functions
 
+  # checkov:skip=CKV_AWS_50: X-Ray tracing is left to the adopter; traces add a
+  # service dependency and cost, and carry no benefit the CUI-safe structured
+  # logs don't already provide.
+  # checkov:skip=CKV_AWS_115: Reserved concurrency is intentionally unset so the
+  # tool scales with the account default; adopters can cap it per their budget.
+  # checkov:skip=CKV_AWS_116: A Lambda DLQ applies to asynchronous invocations.
+  # These functions are invoked synchronously by API Gateway; the asynchronous
+  # path (the SQS worker) has a real dead-letter queue (aws_sqs_queue.parse_dlq).
+  # checkov:skip=CKV_AWS_272: Code signing requires an AWS Signer profile, which
+  # would force every adopter to run a signing pipeline to deploy this tool.
   function_name    = "${local.name}-${each.key}"
   role             = local.api_role_arns[try(each.value.role, "api")]
   runtime          = var.lambda_runtime
@@ -89,6 +106,9 @@ resource "aws_lambda_function" "api" {
   source_code_hash = local.source_hash
   timeout          = 29 # aligns with API Gateway integration timeout
   memory_size      = 512
+
+  # Encrypt environment variables with the project CMK, not the AWS-managed key.
+  kms_key_arn = local.kms_key_arn
 
   environment {
     variables = local.common_env
@@ -109,6 +129,8 @@ resource "aws_lambda_function" "api" {
 # ---- Worker ----------------------------------------------------------------
 
 resource "aws_cloudwatch_log_group" "worker" {
+  # checkov:skip=CKV_AWS_338: Retention is set by var.log_retention_days; these
+  # logs carry metadata only (see the API log group above).
   name              = "/aws/lambda/${local.name}-parse-worker"
   retention_in_days = var.log_retention_days
   kms_key_id        = local.kms_key_arn
@@ -116,6 +138,13 @@ resource "aws_cloudwatch_log_group" "worker" {
 }
 
 resource "aws_lambda_function" "worker" {
+  # checkov:skip=CKV_AWS_50: X-Ray tracing is left to the adopter (see above).
+  # checkov:skip=CKV_AWS_115: Reserved concurrency is intentionally unset.
+  # checkov:skip=CKV_AWS_116: This function is driven by SQS, which already has a
+  # dead-letter queue (aws_sqs_queue.parse_dlq) with maxReceiveCount = 3. A Lambda
+  # DLQ would only duplicate that.
+  # checkov:skip=CKV_AWS_272: Code signing would force adopters to run a signing
+  # pipeline to deploy this tool.
   function_name    = "${local.name}-parse-worker"
   role             = aws_iam_role.worker.arn
   runtime          = var.lambda_runtime
@@ -124,6 +153,9 @@ resource "aws_lambda_function" "worker" {
   source_code_hash = local.source_hash
   timeout          = var.worker_timeout_seconds
   memory_size      = 1024
+
+  # Encrypt environment variables with the project CMK, not the AWS-managed key.
+  kms_key_arn = local.kms_key_arn
 
   environment {
     variables = local.common_env

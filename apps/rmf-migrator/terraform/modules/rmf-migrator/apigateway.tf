@@ -67,12 +67,24 @@ resource "aws_apigatewayv2_integration" "api" {
 resource "aws_apigatewayv2_route" "this" {
   for_each = local.routes
 
+  # checkov:skip=CKV_AWS_309: No API-level authorizer, by design. This tool has no
+  # application-level authentication: in the intended (private) posture it has no
+  # public endpoint at all and access is gated by the adopter's own network
+  # controls — VPN, internal load balancer, or a tool portal that injects
+  # var.identity_header for attribution. Adding a Cognito/JWT authorizer here
+  # would duplicate controls the adopter already owns.
+  #
+  # NOTE: network_mode = "public" therefore exposes an UNAUTHENTICATED API and is
+  # intended only for dev/demo. Do not put CUI through a public deployment.
+  # See docs/DEPLOYMENT.md.
   api_id    = aws_apigatewayv2_api.this.id
   route_key = each.key
   target    = "integrations/${aws_apigatewayv2_integration.api[each.value].id}"
 }
 
 resource "aws_cloudwatch_log_group" "apigw" {
+  # checkov:skip=CKV_AWS_338: Retention is set by var.log_retention_days; access
+  # logs carry request metadata only, never bodies.
   name              = "/aws/apigateway/${local.name}"
   retention_in_days = var.log_retention_days
   kms_key_id        = local.kms_key_arn

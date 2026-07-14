@@ -46,11 +46,10 @@ variable "frame_ancestors" {
   default     = []
 }
 
-variable "app_base_path" {
-  description = "Base path the SPA is served under, so it can live behind a portal reverse proxy at e.g. /rmf-migrator/."
-  type        = string
-  default     = "/"
-}
+# NOTE: the SPA's base path (for serving under a portal sub-path such as
+# /rmf-migrator/) is a frontend build-time setting — set VITE_BASE_PATH when
+# building the bundle. It is deliberately not a Terraform variable, because this
+# module does not serve the SPA.
 
 # ---- Encryption --------------------------------------------------------------
 
@@ -121,4 +120,10 @@ variable "log_retention_days" {
   description = "CloudWatch log retention. Logs contain metadata only (never document content), but retention is still bounded by default."
   type        = number
   default     = 30
+}
+
+variable "noncurrent_version_expiration_days" {
+  description = "Days before a superseded (noncurrent) document version is expired from S3. Versioning protects against accidental overwrite; this stops old CUI versions accumulating forever."
+  type        = number
+  default     = 90
 }

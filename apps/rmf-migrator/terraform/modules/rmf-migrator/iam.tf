@@ -159,9 +159,14 @@ data "aws_iam_policy_document" "logs" {
   }
 }
 
-# ENI management for in-VPC Lambdas (private mode). AWS requires "*" resource
-# for these EC2 network actions.
+# ENI management for in-VPC Lambdas (private mode).
 data "aws_iam_policy_document" "vpc" {
+  # checkov:skip=CKV_AWS_111: AWS does not support resource-level permissions for
+  # these EC2 network-interface actions — "*" is required for a Lambda to attach
+  # to a VPC. This is the exact action set in the AWS-managed
+  # AWSLambdaVPCAccessExecutionRole policy, and nothing broader.
+  # checkov:skip=CKV_AWS_356: Same reason: the wildcard is on the resource, which
+  # AWS mandates for these actions; the action list itself is tightly scoped.
   statement {
     effect = "Allow"
     actions = [

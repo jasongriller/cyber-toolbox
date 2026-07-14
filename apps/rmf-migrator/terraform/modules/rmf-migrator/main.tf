@@ -21,7 +21,6 @@ locals {
 
   # When the module creates its own key, use that; otherwise the caller's.
   kms_key_arn = var.kms_key_arn != null ? var.kms_key_arn : aws_kms_key.this[0].arn
-  kms_key_id  = var.kms_key_arn != null ? var.kms_key_arn : aws_kms_key.this[0].key_id
 
   common_tags = merge(
     {

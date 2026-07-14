@@ -10,16 +10,16 @@
 locals {
   routes = {
     "POST /projects"                                            = "create-project"
-    "POST /projects/{project_id}/documents"                    = "request-upload"
+    "POST /projects/{project_id}/documents"                     = "request-upload"
     "POST /projects/{project_id}/documents/{document_id}/parse" = "enqueue-parse"
-    "GET /projects/{project_id}/jobs/{job_id}"                 = "get-job"
+    "GET /projects/{project_id}/jobs/{job_id}"                  = "get-job"
 
     # Mapping review (M2)
-    "GET /projects/{project_id}/documents/{document_id}"                    = "get-document"
-    "GET /projects/{project_id}/documents/{document_id}/sections"          = "list-sections"
-    "GET /projects/{project_id}/documents/{document_id}/mappings"          = "get-mappings"
+    "GET /projects/{project_id}/documents/{document_id}"                       = "get-document"
+    "GET /projects/{project_id}/documents/{document_id}/sections"              = "list-sections"
+    "GET /projects/{project_id}/documents/{document_id}/mappings"              = "get-mappings"
     "PUT /projects/{project_id}/documents/{document_id}/mappings/{section_id}" = "update-mapping"
-    "POST /projects/{project_id}/documents/{document_id}/mappings/approve" = "approve-mappings"
+    "POST /projects/{project_id}/documents/{document_id}/mappings/approve"     = "approve-mappings"
 
     # Rev 5 drafting + chat (M3)
     "GET /projects/{project_id}/documents/{document_id}/drafts"                       = "get-drafts"
@@ -28,14 +28,14 @@ locals {
     "POST /projects/{project_id}/documents/{document_id}/sections/{section_id}/chat"  = "chat"
 
     # Rev 5 export + decision log (M4)
-    "POST /projects/{project_id}/documents/{document_id}/export"            = "start-export"
-    "GET /projects/{project_id}/export-jobs/{job_id}"                      = "get-export-job"
-    "GET /projects/{project_id}/documents/{document_id}/export/download"   = "download-export"
-    "GET /projects/{project_id}/documents/{document_id}/decision-log.csv"  = "decision-log"
+    "POST /projects/{project_id}/documents/{document_id}/export"          = "start-export"
+    "GET /projects/{project_id}/export-jobs/{job_id}"                     = "get-export-job"
+    "GET /projects/{project_id}/documents/{document_id}/export/download"  = "download-export"
+    "GET /projects/{project_id}/documents/{document_id}/decision-log.csv" = "decision-log"
 
     # Coverage dashboard + conversion matrix (M5)
-    "GET /projects/{project_id}/coverage"                = "coverage"
-    "GET /projects/{project_id}/conversion-matrix.csv"  = "conversion-matrix"
+    "GET /projects/{project_id}/coverage"              = "coverage"
+    "GET /projects/{project_id}/conversion-matrix.csv" = "conversion-matrix"
   }
 }
 

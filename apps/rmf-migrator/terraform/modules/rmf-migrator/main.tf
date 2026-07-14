@@ -11,7 +11,7 @@ data "aws_region" "current" {}
 locals {
   partition  = data.aws_partition.current.partition
   account_id = data.aws_caller_identity.current.account_id
-  region     = data.aws_region.current.name
+  region     = data.aws_region.current.region
 
   name = var.name_prefix
 
@@ -32,13 +32,15 @@ locals {
   )
 }
 
-# Guardrail version must accompany a guardrail id.
-resource "terraform_data" "validate_guardrail" {
-  count = var.bedrock_guardrail_id != null && var.bedrock_guardrail_version == null ? 1 : 0
+# Cross-variable validation. Terraform's variable `validation` blocks can only see
+# their own variable, so these preconditions enforce the rules that span variables.
+# The conditions reference the variables directly (a constant `false` is rejected).
 
+# A guardrail version must accompany a guardrail id.
+resource "terraform_data" "validate_guardrail" {
   lifecycle {
     precondition {
-      condition     = false
+      condition     = var.bedrock_guardrail_id == null || var.bedrock_guardrail_version != null
       error_message = "bedrock_guardrail_version is required when bedrock_guardrail_id is set."
     }
   }
@@ -46,11 +48,11 @@ resource "terraform_data" "validate_guardrail" {
 
 # Private mode needs a VPC and subnets to place the Lambdas in.
 resource "terraform_data" "validate_private_network" {
-  count = local.is_private && (var.vpc_id == null || length(var.private_subnet_ids) == 0) ? 1 : 0
-
   lifecycle {
     precondition {
-      condition     = false
+      condition = var.network_mode != "private" || (
+        var.vpc_id != null && length(var.private_subnet_ids) > 0
+      )
       error_message = "network_mode = \"private\" requires vpc_id and at least one private_subnet_id."
     }
   }

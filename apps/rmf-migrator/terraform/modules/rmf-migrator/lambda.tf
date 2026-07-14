@@ -42,19 +42,19 @@ locals {
   # name -> { handler, role? }. role defaults to "api"; "worker" grants Bedrock
   # (the chat handler invokes the model from an API request).
   api_functions = {
-    create-project   = { handler = "rmf_migrator.handlers.create_project.handler" }
-    request-upload   = { handler = "rmf_migrator.handlers.request_upload.handler" }
-    enqueue-parse    = { handler = "rmf_migrator.handlers.enqueue_parse.handler" }
-    get-job          = { handler = "rmf_migrator.handlers.get_job.handler" }
-    get-document     = { handler = "rmf_migrator.handlers.review.get_document" }
-    list-sections    = { handler = "rmf_migrator.handlers.review.list_sections" }
-    get-mappings     = { handler = "rmf_migrator.handlers.review.get_mappings" }
-    update-mapping   = { handler = "rmf_migrator.handlers.review.update_mapping" }
-    approve-mappings = { handler = "rmf_migrator.handlers.review.approve_mappings" }
-    get-drafts       = { handler = "rmf_migrator.handlers.drafts.get_drafts" }
-    update-draft     = { handler = "rmf_migrator.handlers.drafts.update_draft" }
-    approve-draft    = { handler = "rmf_migrator.handlers.drafts.approve_draft" }
-    chat             = { handler = "rmf_migrator.handlers.chat.handler", role = "worker" }
+    create-project    = { handler = "rmf_migrator.handlers.create_project.handler" }
+    request-upload    = { handler = "rmf_migrator.handlers.request_upload.handler" }
+    enqueue-parse     = { handler = "rmf_migrator.handlers.enqueue_parse.handler" }
+    get-job           = { handler = "rmf_migrator.handlers.get_job.handler" }
+    get-document      = { handler = "rmf_migrator.handlers.review.get_document" }
+    list-sections     = { handler = "rmf_migrator.handlers.review.list_sections" }
+    get-mappings      = { handler = "rmf_migrator.handlers.review.get_mappings" }
+    update-mapping    = { handler = "rmf_migrator.handlers.review.update_mapping" }
+    approve-mappings  = { handler = "rmf_migrator.handlers.review.approve_mappings" }
+    get-drafts        = { handler = "rmf_migrator.handlers.drafts.get_drafts" }
+    update-draft      = { handler = "rmf_migrator.handlers.drafts.update_draft" }
+    approve-draft     = { handler = "rmf_migrator.handlers.drafts.approve_draft" }
+    chat              = { handler = "rmf_migrator.handlers.chat.handler", role = "worker" }
     start-export      = { handler = "rmf_migrator.handlers.export.enqueue_export" }
     get-export-job    = { handler = "rmf_migrator.handlers.export.get_export_job" }
     download-export   = { handler = "rmf_migrator.handlers.export.download_export" }

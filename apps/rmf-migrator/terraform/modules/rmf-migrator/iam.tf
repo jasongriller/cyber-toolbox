@@ -21,9 +21,9 @@ locals {
 
 data "aws_iam_policy_document" "kms_use" {
   statement {
-    sid     = "UseCMK"
-    effect  = "Allow"
-    actions = ["kms:Decrypt", "kms:GenerateDataKey", "kms:DescribeKey"]
+    sid       = "UseCMK"
+    effect    = "Allow"
+    actions   = ["kms:Decrypt", "kms:GenerateDataKey", "kms:DescribeKey"]
     resources = [local.kms_key_arn]
   }
 }

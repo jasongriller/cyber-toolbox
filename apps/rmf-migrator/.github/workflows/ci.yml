@@ -74,14 +74,19 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      # Scan the full repository history directly rather than via
-      # gitleaks-action, which diffs a push range — on the initial push that
-      # range starts at the root commit's (nonexistent) parent, so it errors out
-      # after scanning nothing. A direct `detect` always scans the whole history.
+      # Scan the full repository history with the gitleaks binary.
+      # Not gitleaks-action: it diffs the push range, which on an initial push
+      # starts at the root commit's nonexistent parent — it errors after scanning
+      # nothing. Not the docker image either: it runs as root against a
+      # runner-owned workspace, which git rejects as "dubious ownership".
+      # Running the binary as the runner user scans the whole history cleanly.
       - name: gitleaks (secret scan)
-        uses: docker://zricethezav/gitleaks:v8.24.3
-        with:
-          args: detect --source=/github/workspace --redact --no-banner --verbose
+        env:
+          GITLEAKS_VERSION: 8.24.3
+        run: |
+          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | tar -xz -C /tmp gitleaks
+          /tmp/gitleaks detect --source=. --redact --no-banner --verbose
       - name: checkov (Terraform IaC scan)
         uses: bridgecrewio/checkov-action@master
         with:

@@ -3,24 +3,24 @@
 # `make build` produces build/rmf-migrator-lambda.zip containing rmf_migrator/
 # plus its third-party dependencies at the archive root, which is the layout the
 # Terraform module's Lambda handlers expect (handler = rmf_migrator.handlers.*).
+#
+# The build itself lives in ../scripts/build_lambda.py, not in this Makefile, so
+# it runs on any host OS with no `make` or `zip` installed:
+#
+#     python scripts/build_lambda.py
+#
+# That script also cross-targets the Lambda runtime (manylinux / cp312). This is
+# not cosmetic: lxml and pydantic-core are compiled extensions, and building them
+# on Windows or macOS yields host-native binaries that import locally and then
+# fail at runtime in Lambda.
 
 PYTHON ?= python3
 BUILD_DIR := build
-PKG_DIR := $(BUILD_DIR)/package
-ZIP := $(BUILD_DIR)/rmf-migrator-lambda.zip
 
 .PHONY: build clean test lint fmt
 
-build: clean
-	mkdir -p $(PKG_DIR)
-	$(PYTHON) -m pip install . --target $(PKG_DIR)
-	# Bundle the NIST catalog data beside rmf_migrator/ so the catalog loader
-	# resolves it at runtime (private deployments have no internet to fetch it).
-	cp -r ../data $(PKG_DIR)/data
-	# Drop test/build metadata that bloats the artifact.
-	rm -rf $(PKG_DIR)/*.dist-info $(PKG_DIR)/*.egg-info
-	cd $(PKG_DIR) && zip -r -q ../../$(ZIP) . -x '*.pyc' -x '*__pycache__*'
-	@echo "built $(ZIP)"
+build:
+	$(PYTHON) ../scripts/build_lambda.py
 
 clean:
 	rm -rf $(BUILD_DIR)

@@ -94,7 +94,9 @@ def _is_withdrawn(control: dict[str, Any]) -> bool:
     return False
 
 
-def _walk_controls(node: dict[str, Any], family: str, out: list[dict[str, Any]]) -> None:
+def _walk_controls(
+    node: dict[str, Any], family: str, out: list[dict[str, Any]]
+) -> None:
     for control in node.get("controls", []):
         out.append(
             {
@@ -170,10 +172,12 @@ def main() -> int:
     rev5 = normalize_catalog(_download_json(REV5_URL))
 
     (CATALOG_DIR / "rev4_controls.json").write_text(
-        json.dumps({"revision": "4", "source": REV4_URL, "controls": rev4}, indent=2) + "\n"
+        json.dumps({"revision": "4", "source": REV4_URL, "controls": rev4}, indent=2)
+        + "\n"
     )
     (CATALOG_DIR / "rev5_controls.json").write_text(
-        json.dumps({"revision": "5", "source": REV5_URL, "controls": rev5}, indent=2) + "\n"
+        json.dumps({"revision": "5", "source": REV5_URL, "controls": rev5}, indent=2)
+        + "\n"
     )
 
     mapping = derive_mapping(rev4, rev5)
@@ -197,7 +201,8 @@ def main() -> int:
     for name, url in REV5_BASELINE_URLS.items():
         ids = extract_baseline_ids(_download_json(url))
         (BASELINE_DIR / f"rev5_{name}.json").write_text(
-            json.dumps({"baseline": name, "source": url, "control_ids": ids}, indent=2) + "\n"
+            json.dumps({"baseline": name, "source": url, "control_ids": ids}, indent=2)
+            + "\n"
         )
         baseline_counts[name] = len(ids)
 

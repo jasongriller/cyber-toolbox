@@ -5,16 +5,38 @@ The tool deploys entirely into your own AWS account via Terraform. It ships two 
 1. **Standalone root** (`terraform/examples/standalone`) — greenfield adopters. Creates everything.
 2. **Reusable module** (`terraform/modules/rmf-migrator`) — drop into your existing toolbox IaC, passing your VPC, subnets, and (optionally) KMS key as inputs.
 
-## 1. Build the Lambda package
+## 1. Pick a Bedrock model — and prove it works
+
+The model id is pure configuration, so *any* Bedrock model your account has
+enabled can drive the tool. Before you deploy, check that your candidate actually
+works with it:
 
 ```bash
-cd backend
-make build            # -> build/rmf-migrator-lambda.zip
+python scripts/check_bedrock_model.py openai.gpt-oss-120b-1:0 --region us-west-2
 ```
+
+This runs the tool's **real** mapping and drafting prompts against the model and
+reports whether it serves the Converse API, accepts a system prompt (where the
+prompt-injection hardening lives), and returns JSON the pipeline can parse. It
+creates no infrastructure and costs a fraction of a cent.
+
+A pass means the pipeline will work. Run it before `terraform apply`, not after.
+
+## 2. Build the Lambda package
+
+```bash
+python scripts/build_lambda.py     # -> backend/build/rmf-migrator-lambda.zip
+```
+
+Works on any host OS, with no `make` or `zip` needed. It cross-targets the Lambda
+runtime (manylinux / cp312) — this matters, because `lxml` and `pydantic-core` are
+compiled extensions and a naive build on Windows or macOS produces host-native
+binaries that import locally and then fail at runtime in Lambda. The script
+refuses to produce such an archive.
 
 Or download `rmf-migrator-lambda.zip` from a tagged GitHub release.
 
-## 2. Configure
+## 3. Configure
 
 ```bash
 cd terraform/examples/standalone
@@ -22,7 +44,7 @@ cp terraform.tfvars.example terraform.tfvars
 # edit terraform.tfvars: set bedrock_model_id, lambda_zip_path, region, network_mode
 ```
 
-## 3. Deploy
+## 4. Deploy
 
 ```bash
 terraform init

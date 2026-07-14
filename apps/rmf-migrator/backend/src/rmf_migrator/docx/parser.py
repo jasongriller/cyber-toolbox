@@ -123,6 +123,9 @@ def parse_docx_bytes(data: bytes, *, document_id: str, project_id: str) -> list[
 
     from docx import Document as DocxDocument  # imported lazily; heavy dependency
 
+    from rmf_migrator.common.limits import guard_docx_bytes
+
+    guard_docx_bytes(data)
     document = DocxDocument(io.BytesIO(data))
     return parse_paragraph_stream(
         iter_docx_paragraphs(document), document_id=document_id, project_id=project_id

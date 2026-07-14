@@ -156,6 +156,30 @@ def test_chat_handler_404_missing_section(deps):
     assert exc.value.status == 404
 
 
+def test_chat_handler_404_document_from_another_project(deps):
+    """A document may only be chatted about through its own project's path.
+
+    Sections and drafts are keyed by document_id alone, so without an ownership
+    check the project_id in the path would be decorative and project A's path
+    would happily serve project B's section.
+    """
+    deps.bedrock = FakeChatBedrock()
+    _, did, sid = _seed(deps)
+
+    other = Project(name="other")
+    deps.repo.put_project(other)
+
+    with pytest.raises(HttpError) as exc:
+        _chat(
+            _event(
+                {"messages": [{"role": "user", "content": "hi"}]},
+                {"project_id": other.project_id, "document_id": did, "section_id": sid},
+            ),
+            deps,
+        )
+    assert exc.value.status == 404
+
+
 def test_chat_handler_400_bad_messages(deps):
     deps.bedrock = FakeChatBedrock()
     pid, did, sid = _seed(deps)

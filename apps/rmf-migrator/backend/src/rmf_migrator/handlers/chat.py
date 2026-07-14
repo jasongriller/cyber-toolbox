@@ -27,6 +27,12 @@ def _chat(event: dict[str, Any], deps: Deps) -> dict[str, Any]:
     document_id = path_param(event, "document_id")
     section_id = path_param(event, "section_id")
 
+    # Sections and drafts are keyed by document_id alone, so without this the
+    # project_id in the path would be decorative and a document from another
+    # project would answer here.
+    if deps.repo.get_document(project_id, document_id) is None:
+        raise HttpError(404, "document not found")
+
     section = None
     for s in deps.repo.list_sections(document_id):
         if s.section_id == section_id:

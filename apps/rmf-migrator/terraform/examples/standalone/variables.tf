@@ -11,9 +11,14 @@ variable "name_prefix" {
 }
 
 variable "network_mode" {
-  description = "\"public\" for dev/demo, \"private\" for production."
+  description = "\"private\" for production (default). \"public\" exposes an UNAUTHENTICATED API and is for dev/demo only — never for CUI."
   type        = string
-  default     = "public"
+  default     = "private"
+
+  validation {
+    condition     = contains(["public", "private"], var.network_mode)
+    error_message = "network_mode must be \"public\" or \"private\"."
+  }
 }
 
 variable "bedrock_model_id" {

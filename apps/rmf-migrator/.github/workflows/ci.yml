@@ -88,16 +88,22 @@ jobs:
             | tar -xz -C /tmp gitleaks
           /tmp/gitleaks detect --source=. --redact --no-banner --verbose
       - name: checkov (Terraform IaC scan)
-        uses: bridgecrewio/checkov-action@master
+        # Pinned to a commit SHA: @master would run whatever was last pushed
+        # upstream against a checkout of this repo.
+        uses: bridgecrewio/checkov-action@7b972723c44fb3d256283fac96fae5d7c1894bb7 # v12.3114.0
         with:
           directory: terraform
           framework: terraform
           quiet: true
           soft_fail: false
+      # These gate the build. A known CVE fails CI rather than scrolling past in
+      # the log — if one lands, fix or upgrade the dependency. To accept a
+      # specific advisory, add it to the ignore list here with a reason, so the
+      # exception is a deliberate, reviewable act instead of a blanket `|| true`.
       - name: pip-audit
         run: |
-          pip install pip-audit
-          pip-audit -r backend/requirements-lock.txt || true
+          pip install 'pip-audit==2.10.1'
+          pip-audit -r backend/requirements-lock.txt
       - name: npm audit
         working-directory: frontend
-        run: npm audit --audit-level=high || true
+        run: npm audit --audit-level=high

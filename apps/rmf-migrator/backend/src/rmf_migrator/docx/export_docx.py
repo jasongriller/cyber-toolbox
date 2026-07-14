@@ -18,6 +18,8 @@ import io
 
 from docx import Document as DocxDocument
 
+from rmf_migrator.common.limits import guard_docx_bytes
+
 from .parser import heading_level
 
 
@@ -131,6 +133,7 @@ def export_rev5_docx(original_bytes: bytes, drafts_by_order: dict[int, str]) -> 
     ``drafts_by_order`` maps a section's order (as produced by the parser) to the
     replacement text. Sections whose order is absent are left unchanged.
     """
+    guard_docx_bytes(original_bytes)
     document = DocxDocument(io.BytesIO(original_bytes))
 
     for section in _walk_sections(document):

@@ -46,6 +46,8 @@ locals {
   # (the chat handler invokes the model from an API request).
   api_functions = {
     create-project    = { handler = "rmf_migrator.handlers.create_project.handler" }
+    list-projects     = { handler = "rmf_migrator.handlers.projects.list_projects" }
+    list-documents    = { handler = "rmf_migrator.handlers.projects.list_documents" }
     request-upload    = { handler = "rmf_migrator.handlers.request_upload.handler" }
     enqueue-parse     = { handler = "rmf_migrator.handlers.enqueue_parse.handler" }
     get-job           = { handler = "rmf_migrator.handlers.get_job.handler" }

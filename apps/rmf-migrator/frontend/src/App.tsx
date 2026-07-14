@@ -1,9 +1,10 @@
-// v1 shell. Enter a project id (and a document id for the per-document steps),
-// then work the pipeline: mapping review, Rev 5 editor, export, and the
-// project-level coverage dashboard. Full project navigation lands later.
+// Shell. Starts at the project browser (create a project, upload documents),
+// then opens a document into the review pipeline: mapping -> Rev 5 editor ->
+// export, plus the project-level coverage dashboard.
 
 import { useState } from "react";
 import { ApiClient } from "./api/client";
+import ProjectBrowser from "./components/ProjectBrowser";
 import MappingReview from "./components/MappingReview";
 import DraftEditor from "./components/DraftEditor";
 import ExportPanel from "./components/ExportPanel";
@@ -11,83 +12,83 @@ import CoverageDashboard from "./components/CoverageDashboard";
 
 const client = new ApiClient();
 
-type View = "mapping" | "drafting" | "export" | "dashboard";
+type View =
+  | { kind: "browse" }
+  | { kind: "mapping" | "drafting" | "export"; projectId: string; documentId: string }
+  | { kind: "coverage"; projectId: string };
 
 export default function App() {
-  const [projectId, setProjectId] = useState("");
-  const [documentId, setDocumentId] = useState("");
-  const [open, setOpen] = useState<{ projectId: string; documentId: string } | null>(null);
-  const [view, setView] = useState<View>("mapping");
+  const [view, setView] = useState<View>({ kind: "browse" });
 
-  const needsDocument = view !== "dashboard";
+  const openDocument = (projectId: string, documentId: string) =>
+    setView({ kind: "mapping", projectId, documentId });
+  const openCoverage = (projectId: string) => setView({ kind: "coverage", projectId });
+
+  const inDocument = view.kind === "mapping" || view.kind === "drafting" || view.kind === "export";
 
   return (
     <main style={{ fontFamily: "system-ui, sans-serif", padding: "2rem", maxWidth: 1040 }}>
       <h1>RMF Rev 5 Migrator</h1>
       <p style={{ color: "#666" }}>
-        Convert RMF Rev 4 policy documents to Rev 5. Enter a project id (and a document id for the
-        per-document steps), then review the control mapping, draft the Rev 5 language, export the
-        Rev 5 document, and check package coverage.
+        Convert RMF Rev 4 policy documents to Rev 5. Upload your Rev 4 policies, confirm the
+        control mapping, refine the drafted Rev 5 language, then export the document and check
+        package coverage.
       </p>
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (projectId) setOpen({ projectId, documentId });
-        }}
-        style={{ display: "flex", gap: "0.5rem", margin: "1rem 0" }}
-      >
-        <input
-          placeholder="project id"
-          value={projectId}
-          onChange={(e) => setProjectId(e.target.value)}
-          aria-label="project id"
-        />
-        <input
-          placeholder="document id (steps 1-3)"
-          value={documentId}
-          onChange={(e) => setDocumentId(e.target.value)}
-          aria-label="document id"
-        />
-        <button type="submit" disabled={!projectId}>
-          Open
+      {view.kind !== "browse" && (
+        <button onClick={() => setView({ kind: "browse" })} style={{ margin: "0.5rem 0 1rem" }}>
+          ← All projects
         </button>
-      </form>
+      )}
 
-      {open && (
+      {view.kind === "browse" && (
+        <ProjectBrowser
+          client={client}
+          onOpenDocument={openDocument}
+          onOpenCoverage={openCoverage}
+        />
+      )}
+
+      {inDocument && (
         <>
           <nav style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem", flexWrap: "wrap" }}>
-            <button onClick={() => setView("mapping")} disabled={view === "mapping"}>
-              1 · Mapping review
-            </button>
-            <button onClick={() => setView("drafting")} disabled={view === "drafting"}>
-              2 · Rev 5 editor
-            </button>
-            <button onClick={() => setView("export")} disabled={view === "export"}>
-              3 · Export
-            </button>
-            <button onClick={() => setView("dashboard")} disabled={view === "dashboard"}>
-              4 · Coverage
-            </button>
+            {(["mapping", "drafting", "export"] as const).map((kind, i) => (
+              <button
+                key={kind}
+                onClick={() =>
+                  setView({ kind, projectId: view.projectId, documentId: view.documentId })
+                }
+                disabled={view.kind === kind}
+              >
+                {i + 1} ·{" "}
+                {kind === "mapping"
+                  ? "Mapping review"
+                  : kind === "drafting"
+                    ? "Rev 5 editor"
+                    : "Export"}
+              </button>
+            ))}
+            <button onClick={() => openCoverage(view.projectId)}>4 · Coverage</button>
           </nav>
 
-          {needsDocument && !open.documentId && (
-            <p style={{ color: "#a15" }}>This step needs a document id — enter one above and reopen.</p>
+          {view.kind === "mapping" && (
+            <MappingReview
+              client={client}
+              projectId={view.projectId}
+              documentId={view.documentId}
+            />
           )}
-
-          {view === "mapping" && open.documentId && (
-            <MappingReview client={client} projectId={open.projectId} documentId={open.documentId} />
+          {view.kind === "drafting" && (
+            <DraftEditor client={client} projectId={view.projectId} documentId={view.documentId} />
           )}
-          {view === "drafting" && open.documentId && (
-            <DraftEditor client={client} projectId={open.projectId} documentId={open.documentId} />
-          )}
-          {view === "export" && open.documentId && (
-            <ExportPanel client={client} projectId={open.projectId} documentId={open.documentId} />
-          )}
-          {view === "dashboard" && (
-            <CoverageDashboard client={client} projectId={open.projectId} />
+          {view.kind === "export" && (
+            <ExportPanel client={client} projectId={view.projectId} documentId={view.documentId} />
           )}
         </>
+      )}
+
+      {view.kind === "coverage" && (
+        <CoverageDashboard client={client} projectId={view.projectId} />
       )}
     </main>
   );

@@ -68,6 +68,28 @@ export class ApiClient {
     return this.request<Project>("POST", "/projects", { name, baseline });
   }
 
+  listProjects(): Promise<{ projects: Project[] }> {
+    return this.request("GET", "/projects");
+  }
+
+  listDocuments(projectId: string): Promise<{ documents: DocumentRecord[] }> {
+    return this.request("GET", `/projects/${projectId}/documents`);
+  }
+
+  /**
+   * Register a document, PUT its bytes straight to S3, and kick off parsing.
+   * Parsing auto-chains into control mapping on the backend.
+   */
+  async uploadDocument(
+    projectId: string,
+    file: File,
+  ): Promise<{ document: DocumentRecord; job: ParseJob }> {
+    const { document, upload } = await this.registerDocument(projectId, file.name);
+    await this.uploadBytes(upload, file);
+    const { job } = await this.startParse(projectId, document.document_id);
+    return { document, job };
+  }
+
   registerDocument(
     projectId: string,
     filename: string,

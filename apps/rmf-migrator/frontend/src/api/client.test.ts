@@ -137,6 +137,56 @@ describe("ApiClient", () => {
     expect(spy.mock.calls[0][0]).toBe("/api/projects/p1/coverage");
   });
 
+  it("listProjects GETs /projects", async () => {
+    const spy = mockFetch(200, { projects: [{ project_id: "p1", name: "Alpha" }] });
+    const client = new ApiClient("/api");
+    const res = await client.listProjects();
+    expect(spy.mock.calls[0][0]).toBe("/api/projects");
+    expect(res.projects[0].name).toBe("Alpha");
+  });
+
+  it("listDocuments GETs the project's documents", async () => {
+    const spy = mockFetch(200, { documents: [] });
+    const client = new ApiClient("/api");
+    await client.listDocuments("p1");
+    expect(spy.mock.calls[0][0]).toBe("/api/projects/p1/documents");
+  });
+
+  it("uploadDocument registers, PUTs to S3, then starts parsing", async () => {
+    const spy = vi
+      .spyOn(globalThis, "fetch")
+      // 1. register document -> presigned target
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            document: { document_id: "d1" },
+            upload: { url: "https://s3.example/put", method: "PUT", headers: {}, expires_in: 300 },
+          }),
+          { status: 201, headers: { "Content-Type": "application/json" } },
+        ),
+      )
+      // 2. the S3 PUT itself
+      .mockResolvedValueOnce(new Response(null, { status: 200 }))
+      // 3. start parse
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ job: { job_id: "job1" } }), {
+          status: 202,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+
+    const client = new ApiClient("/api");
+    const file = new File(["x"], "ac-policy.docx");
+    const res = await client.uploadDocument("p1", file);
+
+    expect(spy.mock.calls[0][0]).toBe("/api/projects/p1/documents");
+    // Bytes go straight to S3, never through our API.
+    expect(spy.mock.calls[1][0]).toBe("https://s3.example/put");
+    expect(spy.mock.calls[1][1]?.method).toBe("PUT");
+    expect(spy.mock.calls[2][0]).toBe("/api/projects/p1/documents/d1/parse");
+    expect(res.job.job_id).toBe("job1");
+  });
+
   it("getConversionMatrixCsv fetches CSV text", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response("rev4_control,rev4_title\nAC-1,Policy\n", {

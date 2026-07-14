@@ -10,6 +10,8 @@
 locals {
   routes = {
     "POST /projects"                                            = "create-project"
+    "GET /projects"                                             = "list-projects"
+    "GET /projects/{project_id}/documents"                      = "list-documents"
     "POST /projects/{project_id}/documents"                     = "request-upload"
     "POST /projects/{project_id}/documents/{document_id}/parse" = "enqueue-parse"
     "GET /projects/{project_id}/jobs/{job_id}"                  = "get-job"

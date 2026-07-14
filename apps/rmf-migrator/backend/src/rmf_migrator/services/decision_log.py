@@ -13,6 +13,7 @@ from __future__ import annotations
 import csv
 import io
 
+from rmf_migrator.common.csv_safe import csv_safe_row
 from rmf_migrator.common.models import ControlMapping, Draft, Section
 
 COLUMNS = [
@@ -80,5 +81,5 @@ def to_csv(rows: list[dict[str, str]]) -> str:
     buffer = io.StringIO()
     writer = csv.DictWriter(buffer, fieldnames=COLUMNS)
     writer.writeheader()
-    writer.writerows(rows)
+    writer.writerows(csv_safe_row(row) for row in rows)
     return buffer.getvalue()

@@ -13,6 +13,7 @@ import io
 from dataclasses import dataclass
 
 from rmf_migrator.common.catalog import crosswalk, rev4_catalog
+from rmf_migrator.common.csv_safe import csv_safe_row
 
 COLUMNS = ["rev4_control", "rev4_title", "disposition", "rev5_controls", "covered_in"]
 
@@ -57,5 +58,5 @@ def to_csv(rows: list[dict[str, str]]) -> str:
     buffer = io.StringIO()
     writer = csv.DictWriter(buffer, fieldnames=COLUMNS)
     writer.writeheader()
-    writer.writerows(rows)
+    writer.writerows(csv_safe_row(row) for row in rows)
     return buffer.getvalue()

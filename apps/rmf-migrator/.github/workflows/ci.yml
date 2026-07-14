@@ -88,7 +88,9 @@ jobs:
             | tar -xz -C /tmp gitleaks
           /tmp/gitleaks detect --source=. --redact --no-banner --verbose
       - name: checkov (Terraform IaC scan)
-        uses: bridgecrewio/checkov-action@master
+        # Pinned to a commit SHA: @master would run whatever was last pushed
+        # upstream against a checkout of this repo.
+        uses: bridgecrewio/checkov-action@7b972723c44fb3d256283fac96fae5d7c1894bb7 # v12.3114.0
         with:
           directory: terraform
           framework: terraform

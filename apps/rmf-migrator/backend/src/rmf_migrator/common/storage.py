@@ -11,6 +11,8 @@ from typing import Any
 
 import boto3
 
+from rmf_migrator.common.limits import MAX_DOCX_BYTES, ObjectTooLarge
+
 # Only .docx is accepted in v1.
 DOCX_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
@@ -62,7 +64,18 @@ class DocumentStore:
             "expires_in": _UPLOAD_URL_TTL_SECONDS,
         }
 
-    def get_bytes(self, key: str) -> bytes:
+    def get_bytes(self, key: str, *, max_bytes: int | None = MAX_DOCX_BYTES) -> bytes:
+        """Download an object, refusing anything over ``max_bytes``.
+
+        The size is checked with HeadObject first so an oversized object is
+        never pulled into the Lambda's memory at all. Nothing constrains the
+        size of a presigned PUT, so this is where an oversized upload is caught.
+        """
+        if max_bytes is not None:
+            head = self._s3.head_object(Bucket=self._bucket, Key=key)
+            length = head.get("ContentLength")
+            if length is not None and length > max_bytes:
+                raise ObjectTooLarge(f"object {key} exceeds {max_bytes} bytes")
         resp = self._s3.get_object(Bucket=self._bucket, Key=key)
         return resp["Body"].read()
 

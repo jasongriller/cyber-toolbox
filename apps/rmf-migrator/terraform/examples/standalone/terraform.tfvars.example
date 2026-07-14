@@ -12,13 +12,17 @@ lambda_zip_path = "../../../backend/build/rmf-migrator-lambda.zip"
 
 # --- Common -----------------------------------------------------------------
 
-region       = "us-east-1" # us-gov-west-1 for GovCloud
-name_prefix  = "rmf-migrator"
-network_mode = "public" # "private" for production
+region      = "us-east-1" # us-gov-west-1 for GovCloud
+name_prefix = "rmf-migrator"
 
-# --- Private-mode only (network_mode = "private") ---------------------------
-# vpc_id             = "vpc-0123456789abcdef0"
-# private_subnet_ids = ["subnet-aaa", "subnet-bbb"]
+# "private" (the default) is the only posture fit for CUI. Setting this to
+# "public" stands up an UNAUTHENTICATED API — every route, including upload,
+# export, and Bedrock chat — reachable from the internet. Dev/demo only.
+network_mode = "private"
+
+# --- Private-mode inputs (required when network_mode = "private") ------------
+vpc_id             = "vpc-0123456789abcdef0"
+private_subnet_ids = ["subnet-aaa", "subnet-bbb"]
 
 # --- Optional integration ---------------------------------------------------
 # identity_header = "X-Remote-User"

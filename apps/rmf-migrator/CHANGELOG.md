@@ -4,7 +4,33 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0] - 2026-07-13
+## [1.0.1] - 2026-07-14
+
+First working release. v1.0.0 was withdrawn: its Terraform failed `terraform init`
+(a cross-variable guard used `condition = false`, which Terraform rejects), so it
+could not be deployed.
+
+### Fixed
+
+- **Terraform now initializes, validates, and lints cleanly.** Rewrote the
+  cross-variable preconditions (guardrail id/version, private-mode VPC inputs) to
+  reference the variables they guard. Removed two dead declarations.
+- **Lambda environment variables are encrypted with the project CMK**, closing a
+  gap against the project's "customer-managed key everywhere" posture.
+- **Lambda security-group egress narrowed to TCP 443**, instead of all protocols
+  and ports.
+- **S3 lifecycle configuration added.** Versioning was enabled, so superseded CUI
+  object versions would have accumulated indefinitely; they now expire (default
+  90 days) and aborted multipart uploads are cleaned up.
+- **Secret scanning actually scans.** The gitleaks CI step was diffing a push
+  range that starts at the root commit's nonexistent parent, so it errored after
+  scanning zero bytes. It now scans the full history.
+
+Remaining IaC-scanner findings are deliberate design decisions and carry inline
+justifications (notably: no API-level authorizer, because access is gated by the
+adopter's network — see `terraform/modules/rmf-migrator/apigateway.tf`).
+
+## [1.0.0] - 2026-07-13 [WITHDRAWN]
 
 First release. Full RMF Rev 4 → Rev 5 conversion pipeline, self-hosted in the
 adopter's own AWS account (GovCloud-ready), all LLM work via Amazon Bedrock.
@@ -47,4 +73,5 @@ adopter's own AWS account (GovCloud-ready), all LLM work via Amazon Bedrock.
   comparison workbook) are not yet represented; `same`/`renamed`/`withdrawn`/`new`
   are derived from the two catalogs.
 
+[1.0.1]: https://github.com/Redirishman/rmf-rev5-migrator/releases/tag/v1.0.1
 [1.0.0]: https://github.com/Redirishman/rmf-rev5-migrator/releases/tag/v1.0.0

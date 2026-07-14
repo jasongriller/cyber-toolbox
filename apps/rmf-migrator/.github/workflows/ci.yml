@@ -96,10 +96,14 @@ jobs:
           framework: terraform
           quiet: true
           soft_fail: false
+      # These gate the build. A known CVE fails CI rather than scrolling past in
+      # the log — if one lands, fix or upgrade the dependency. To accept a
+      # specific advisory, add it to the ignore list here with a reason, so the
+      # exception is a deliberate, reviewable act instead of a blanket `|| true`.
       - name: pip-audit
         run: |
-          pip install pip-audit
-          pip-audit -r backend/requirements-lock.txt || true
+          pip install 'pip-audit==2.10.1'
+          pip-audit -r backend/requirements-lock.txt
       - name: npm audit
         working-directory: frontend
-        run: npm audit --audit-level=high || true
+        run: npm audit --audit-level=high

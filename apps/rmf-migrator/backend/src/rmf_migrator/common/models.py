@@ -32,7 +32,10 @@ class Baseline(enum.StrEnum):
     """Selectable control baseline context; drives mapping/suggestion logic later."""
 
     DOD_CNSSI_1253 = "dod_cnssi_1253"
-    FEDRAMP = "fedramp"
+    FEDRAMP_LOW = "fedramp_low"
+    FEDRAMP_MODERATE = "fedramp_moderate"
+    FEDRAMP_HIGH = "fedramp_high"
+    FEDRAMP_LI_SAAS = "fedramp_li_saas"
     FIPS_199_LOW = "fips199_low"
     FIPS_199_MODERATE = "fips199_moderate"
     FIPS_199_HIGH = "fips199_high"

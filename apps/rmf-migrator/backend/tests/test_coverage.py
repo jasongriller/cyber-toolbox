@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import pytest
 
-from rmf_migrator.common.catalog import baseline_controls
+from rmf_migrator.common.catalog import (
+    baseline_controls,
+    li_saas_tailoring,
+    rev5_catalog,
+)
 from rmf_migrator.common.models import Baseline, Draft
 from rmf_migrator.services.coverage import (
     build_coverage,
@@ -40,6 +44,43 @@ def test_resolve_baseline_from_project():
     assert resolve_baseline(Baseline.GENERIC_800_53) is None
     # Override wins.
     assert resolve_baseline(Baseline.GENERIC_800_53, "moderate") == "moderate"
+
+
+def test_fedramp_project_resolves_to_a_fedramp_baseline():
+    # A FedRAMP project must not be measured against the NIST set of the same
+    # impact level — FedRAMP requires more.
+    assert resolve_baseline(Baseline.FEDRAMP_LOW) == "fedramp_low"
+    assert resolve_baseline(Baseline.FEDRAMP_MODERATE) == "fedramp_moderate"
+    assert resolve_baseline(Baseline.FEDRAMP_HIGH) == "fedramp_high"
+    assert resolve_baseline(Baseline.FEDRAMP_LI_SAAS) == "fedramp_li_saas"
+
+
+@pytest.mark.parametrize(
+    ("fedramp", "nist"),
+    [
+        ("fedramp_low", "low"),
+        ("fedramp_moderate", "moderate"),
+        ("fedramp_high", "high"),
+    ],
+)
+def test_fedramp_baseline_is_a_superset_of_nist(fedramp, nist):
+    fedramp_ids = baseline_controls(fedramp)
+    nist_ids = baseline_controls(nist)
+    assert nist_ids < fedramp_ids, "FedRAMP selects every NIST control at its level, plus more"
+
+
+def test_fedramp_baselines_only_reference_real_rev5_controls():
+    catalog = rev5_catalog()
+    for name in ("fedramp_low", "fedramp_moderate", "fedramp_high", "fedramp_li_saas"):
+        _, unknown = catalog.validate_ids(sorted(baseline_controls(name)))
+        assert unknown == [], f"{name} references control ids absent from the Rev 5 catalog"
+
+
+def test_li_saas_tailors_every_control_it_requires():
+    required = baseline_controls("fedramp_li_saas")
+    tailoring = li_saas_tailoring()
+    assert set(tailoring) == set(required)
+    assert tailoring["AC-1"] == "Attest"
 
 
 def test_resolve_baseline_rejects_bad_override():

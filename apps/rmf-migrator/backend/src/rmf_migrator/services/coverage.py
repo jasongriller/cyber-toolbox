@@ -16,15 +16,21 @@ from __future__ import annotations
 from rmf_migrator.common.catalog import BASELINE_NAMES, baseline_controls, crosswalk
 from rmf_migrator.common.models import Baseline, Draft
 
-# Map a project's declared baseline to a Rev 5 baseline control set. FedRAMP and
-# CNSSI 1253 don't correspond one-to-one to a NIST baseline (FedRAMP adds
-# controls; CNSSI 1253 uses per-C/I/A categorization), so those are documented
-# approximations the user can override.
+# Map a project's declared baseline to a Rev 5 baseline control set. The FedRAMP
+# levels resolve to FedRAMP's own baselines, which select a superset of the NIST
+# controls at the same impact level — measuring a FedRAMP package against the
+# NIST set would silently under-report its gaps.
+#
+# CNSSI 1253 still has no one-to-one NIST baseline (it categorizes C/I/A
+# separately), so it stays a documented approximation the user can override.
 _BASELINE_FOR_PROJECT: dict[Baseline, str | None] = {
     Baseline.FIPS_199_LOW: "low",
     Baseline.FIPS_199_MODERATE: "moderate",
     Baseline.FIPS_199_HIGH: "high",
-    Baseline.FEDRAMP: "moderate",
+    Baseline.FEDRAMP_LOW: "fedramp_low",
+    Baseline.FEDRAMP_MODERATE: "fedramp_moderate",
+    Baseline.FEDRAMP_HIGH: "fedramp_high",
+    Baseline.FEDRAMP_LI_SAAS: "fedramp_li_saas",
     Baseline.DOD_CNSSI_1253: "high",
     Baseline.GENERIC_800_53: None,
 }

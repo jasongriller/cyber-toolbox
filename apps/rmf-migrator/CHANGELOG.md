@@ -4,6 +4,32 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Real FedRAMP Rev 5 baselines.** `data/baselines/` now carries FedRAMP's own
+  Low (156), Moderate (323), High (410), and Tailored LI-SaaS baselines, parsed
+  from the FedRAMP Security Controls Baseline workbook by
+  `scripts/fetch_fedramp_baselines.py`. The LI-SaaS baseline also records each
+  control's tailoring action (`Attest`, `Document and Assess`, `NSO`, …).
+
+### Fixed
+
+- **FedRAMP projects are no longer scored against a NIST baseline.** A project
+  with the `fedramp` baseline resolved to NIST Moderate (287 controls), while
+  FedRAMP Moderate requires 323 — FedRAMP selects a strict superset at every
+  impact level, so coverage was over-reported and 36 required controls could not
+  appear as gaps. FedRAMP projects now measure against the FedRAMP baseline.
+
+### Changed
+
+- **Breaking:** the `fedramp` baseline value is replaced by `fedramp_low`,
+  `fedramp_moderate`, `fedramp_high`, and `fedramp_li_saas`, so a project records
+  the impact level it is actually authorized at instead of leaving it to be
+  guessed. Projects created with `fedramp` are not migrated; re-create them at the
+  correct level.
+
 ## [1.0.1] - 2026-07-14
 
 First working release. v1.0.0 was withdrawn: its Terraform failed `terraform init`

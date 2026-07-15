@@ -16,7 +16,7 @@ Why this exists instead of a shell one-liner:
 The archive layout matches what the Terraform module's handlers expect:
 
     rmf_migrator/...      the package
-    data/...              bundled NIST catalogs + baselines (no runtime fetch)
+    data/...              bundled NIST catalogs + NIST/FedRAMP baselines (no runtime fetch)
     <third-party deps>/   at the archive root
 
 Usage:
@@ -112,6 +112,12 @@ def build(output: Path, python_version: str, platform: str) -> Path:
         "data/catalogs/rev5_controls.json",
         "data/mappings/rev4_to_rev5.json",
         "data/baselines/rev5_low.json",
+        "data/baselines/rev5_moderate.json",
+        "data/baselines/rev5_high.json",
+        "data/baselines/fedramp_low.json",
+        "data/baselines/fedramp_moderate.json",
+        "data/baselines/fedramp_high.json",
+        "data/baselines/fedramp_li_saas.json",
     ]
     missing = [r for r in required if r not in names]
     if missing:

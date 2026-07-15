@@ -30,7 +30,7 @@ def test_defaults():
 
 
 def test_project_item_round_trip():
-    project = Project(name="Sys", baseline=Baseline.FEDRAMP, created_by="jdoe")
+    project = Project(name="Sys", baseline=Baseline.FEDRAMP_MODERATE, created_by="jdoe")
     item = _to_item(project)
     restored = Project(**_strip_keys(item))
     assert restored == project

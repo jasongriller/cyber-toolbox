@@ -71,14 +71,41 @@ mapping's `same` / `renamed` / `withdrawn` / `new` relationships are computed fr
 the two catalogs; `merged` / `split` relationships from NIST's official comparison
 workbook are layered on top over time.
 
+### Baselines
+
+Coverage and gap analysis measure a package against a baseline. Two families are
+bundled, and they are **not** interchangeable:
+
+| Baseline | Controls | Source |
+| --- | --- | --- |
+| NIST Low / Moderate / High | 149 / 287 / 370 | NIST OSCAL baseline profiles |
+| FedRAMP Low / Moderate / High | 156 / 323 / 410 | FedRAMP Security Controls Baseline workbook |
+| FedRAMP Tailored LI-SaaS | 156 (tailored Low) | same workbook, LI-SaaS sheet |
+
+FedRAMP selects a strict superset of the NIST controls at the same impact level,
+so scoring a FedRAMP package against a NIST baseline under-reports its gaps — a
+FedRAMP Moderate project is measured against all 323 controls. LI-SaaS covers the
+same controls as FedRAMP Low but records each control's tailoring action
+(`Attest`, `Document and Assess`, `NSO`, …), which the reviewer needs to read a
+gap correctly.
+
+FedRAMP retired the `GSA/fedramp-automation` OSCAL repository and the
+`automate.fedramp.gov` host during its 2026 consolidation. The surviving
+machine-readable publication of the Rev 5 baselines is the FedRAMP Security
+Controls Baseline workbook in FedRAMP's [`docs-legacy`](https://github.com/FedRAMP/docs-legacy)
+repository (stamped with a legacy notice dated 2026-06-23), which
+`scripts/fetch_fedramp_baselines.py` parses into `data/baselines/`. The script
+validates every id against the bundled Rev 5 catalog and fails if FedRAMP
+republishes the baselines in a shape it does not recognize.
+
 ## Repository layout
 
 ```
 backend/     Python Lambda source + tests
 frontend/    React + TypeScript SPA
 terraform/   Reusable module + standalone example root
-data/        Bundled NIST Rev4/Rev5 catalogs + Rev4→Rev5 mapping (public domain)
-scripts/     Maintainer tooling (fetch_catalogs.py regenerates data/)
+data/        Bundled NIST Rev4/Rev5 catalogs, Rev4→Rev5 mapping, NIST + FedRAMP baselines
+scripts/     Maintainer tooling (fetch_catalogs.py, fetch_fedramp_baselines.py regenerate data/)
 docs/        Architecture and deployment docs
 ```
 

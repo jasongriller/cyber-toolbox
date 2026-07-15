@@ -2,7 +2,10 @@
 
 export type Baseline =
   | "dod_cnssi_1253"
-  | "fedramp"
+  | "fedramp_low"
+  | "fedramp_moderate"
+  | "fedramp_high"
+  | "fedramp_li_saas"
   | "fips199_low"
   | "fips199_moderate"
   | "fips199_high"

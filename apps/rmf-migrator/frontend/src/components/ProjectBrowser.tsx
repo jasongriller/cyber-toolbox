@@ -21,7 +21,10 @@ const BASELINES: { value: Baseline; label: string }[] = [
   { value: "fips199_low", label: "FIPS 199 Low" },
   { value: "fips199_moderate", label: "FIPS 199 Moderate" },
   { value: "fips199_high", label: "FIPS 199 High" },
-  { value: "fedramp", label: "FedRAMP" },
+  { value: "fedramp_low", label: "FedRAMP Low" },
+  { value: "fedramp_moderate", label: "FedRAMP Moderate" },
+  { value: "fedramp_high", label: "FedRAMP High" },
+  { value: "fedramp_li_saas", label: "FedRAMP Tailored LI-SaaS" },
   { value: "dod_cnssi_1253", label: "DoD / CNSSI 1253" },
 ];
 

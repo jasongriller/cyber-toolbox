@@ -16,6 +16,10 @@ dev = [
     "pytest-cov>=5.0",
     "moto[s3,dynamodb,sqs]>=5.0",
     "ruff>=0.5",
+    # Used only by scripts/fetch_fedramp_baselines.py, which a maintainer runs to
+    # regenerate data/baselines/ from FedRAMP's published workbook. Not a runtime
+    # dependency: the generated JSON is committed and bundled.
+    "openpyxl>=3.1",
 ]
 
 [build-system]

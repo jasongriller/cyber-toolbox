@@ -133,17 +133,47 @@ def rev5_catalog() -> Catalog:
     return Catalog("5", _load_controls("rev5_controls.json"))
 
 
-BASELINE_NAMES = ("low", "moderate", "high")
+# Baseline name -> the file under data/baselines/ that holds its control ids.
+# The "low"/"moderate"/"high" sets are the NIST SP 800-53 Rev 5 baselines; the
+# "fedramp_*" sets are FedRAMP's own Rev 5 baselines, which select a superset of
+# the NIST set at the same impact level (FedRAMP Moderate = 323 controls vs NIST
+# Moderate's 287). Measuring a FedRAMP package against a NIST baseline therefore
+# under-reports its gaps, so the two are kept distinct.
+_BASELINE_FILES = {
+    "low": "rev5_low.json",
+    "moderate": "rev5_moderate.json",
+    "high": "rev5_high.json",
+    "fedramp_low": "fedramp_low.json",
+    "fedramp_moderate": "fedramp_moderate.json",
+    "fedramp_high": "fedramp_high.json",
+    "fedramp_li_saas": "fedramp_li_saas.json",
+}
+
+BASELINE_NAMES = tuple(_BASELINE_FILES)
 
 
-@lru_cache(maxsize=8)
+@lru_cache(maxsize=16)
 def baseline_controls(name: str) -> frozenset[str]:
-    """Return the Rev 5 control ids required by a baseline (low/moderate/high)."""
-    if name not in BASELINE_NAMES:
+    """Return the Rev 5 control ids a baseline requires."""
+    filename = _BASELINE_FILES.get(name)
+    if filename is None:
         raise CatalogError(f"unknown baseline {name!r}; expected one of {BASELINE_NAMES}")
     data_dir = _find_data_dir()
-    raw = json.loads((data_dir / "baselines" / f"rev5_{name}.json").read_text())
+    raw = json.loads((data_dir / "baselines" / filename).read_text())
     return frozenset(raw["control_ids"])
+
+
+@lru_cache(maxsize=1)
+def li_saas_tailoring() -> dict[str, str]:
+    """Per-control tailoring action for the FedRAMP LI-SaaS baseline.
+
+    LI-SaaS covers the same controls as FedRAMP Low but tailors how each is
+    satisfied ("Attest", "Document and Assess", "NSO", ...), which a reviewer
+    needs in order to read a gap correctly.
+    """
+    data_dir = _find_data_dir()
+    raw = json.loads((data_dir / "baselines" / "fedramp_li_saas.json").read_text())
+    return dict(raw.get("tailoring_actions", {}))
 
 
 @lru_cache(maxsize=1)

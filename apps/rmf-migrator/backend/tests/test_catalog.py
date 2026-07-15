@@ -90,3 +90,21 @@ def test_crosswalk_new_in_rev5_includes_sr_family():
 
 def test_crosswalk_rev5_for_same_control():
     assert crosswalk().rev5_for("AC-2") == ["AC-2"]
+
+
+def test_crosswalk_predecessors_links_new_control_to_rev4_origin():
+    # SR-5 is new in Rev 5; SA-12(1) was renumbered into it, so a reverse
+    # lookup recovers the Rev 4 origin the "new" row alone does not show.
+    assert crosswalk().predecessors("SR-5") == ["SA-12(1)"]
+
+
+def test_crosswalk_predecessors_aggregates_and_sorts():
+    # Several Rev 4 controls fold into AC-2 (its own same-id row, plus splits
+    # and an incorporated enhancement); all are returned, unique and sorted.
+    preds = crosswalk().predecessors("AC-2")
+    assert preds == sorted(set(preds))
+    assert {"AC-2", "AC-13", "SC-14"} <= set(preds)
+
+
+def test_crosswalk_predecessors_unknown_control_is_empty():
+    assert crosswalk().predecessors("ZZ-99") == []

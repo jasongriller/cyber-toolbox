@@ -28,9 +28,16 @@ def test_build_rows_enriches_disposition_and_rev5():
 
 
 def test_build_rows_marks_withdrawn():
+    rows = {r["rev4_control"]: r for r in build_rows([Contribution("SC-19", "d.docx", "H")])}
+    assert rows["SC-19"]["disposition"] == "withdrawn"
+    assert rows["SC-19"]["rev5_controls"] == ""
+
+
+def test_build_rows_marks_split_with_successors():
+    # AC-13 was incorporated into two Rev 5 controls -> disposition "split".
     rows = {r["rev4_control"]: r for r in build_rows([Contribution("AC-13", "d.docx", "H")])}
-    assert rows["AC-13"]["disposition"] == "withdrawn"
-    assert rows["AC-13"]["rev5_controls"] == ""
+    assert rows["AC-13"]["disposition"] == "split"
+    assert rows["AC-13"]["rev5_controls"] == "AC-2, AU-6"
 
 
 def test_build_rows_sorted():

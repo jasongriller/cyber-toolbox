@@ -1,5 +1,5 @@
 {
-  "note": "Relationships 'same'/'renamed'/'withdrawn'/'new' are derived automatically by comparing the two catalogs. 'merged'/'split'/'incorporated' relationships require NIST's official SP 800-53 Rev 5 to Rev 4 comparison workbook and should be layered on top.",
+  "note": "Relationships 'same'/'renamed'/'new' are derived by comparing the two catalogs (source 'derived:id-diff'). Controls dropped in Rev 5 are classified 'moved'/'incorporated'/'split' from the withdrawn control's OSCAL successor links, or 'withdrawn' if it has none (source 'catalog:successor-links').",
   "mappings": [
     {
       "rev4_id": "AC-1",
@@ -51,9 +51,12 @@
     },
     {
       "rev4_id": "AC-13",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "AC-2",
+        "AU-6"
+      ],
+      "relationship": "split",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "AC-14",
@@ -65,15 +68,19 @@
     },
     {
       "rev4_id": "AC-14(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "AC-14"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "AC-15",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "MP-3"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "AC-16",
@@ -205,9 +212,11 @@
     },
     {
       "rev4_id": "AC-17(5)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SI-4"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "AC-17(6)",
@@ -219,15 +228,19 @@
     },
     {
       "rev4_id": "AC-17(7)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "AC-3(10)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "AC-17(8)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "CM-7"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "AC-17(9)",
@@ -255,9 +268,11 @@
     },
     {
       "rev4_id": "AC-18(2)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SI-4"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "AC-18(3)",
@@ -293,21 +308,27 @@
     },
     {
       "rev4_id": "AC-19(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "MP-7"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "AC-19(2)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "MP-7"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "AC-19(3)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "MP-7"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "AC-19(4)",
@@ -343,9 +364,11 @@
     },
     {
       "rev4_id": "AC-2(10)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "AC-2"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "AC-2(11)",
@@ -557,9 +580,11 @@
     },
     {
       "rev4_id": "AC-3(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "AC-6"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "AC-3(10)",
@@ -603,9 +628,12 @@
     },
     {
       "rev4_id": "AC-3(6)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "MP-4",
+        "SC-28"
+      ],
+      "relationship": "split",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "AC-3(7)",
@@ -697,9 +725,11 @@
     },
     {
       "rev4_id": "AC-4(16)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "AC-4"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "AC-4(17)",
@@ -711,9 +741,11 @@
     },
     {
       "rev4_id": "AC-4(18)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "AC-16"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "AC-4(19)",
@@ -917,9 +949,11 @@
     },
     {
       "rev4_id": "AC-7(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "AC-7"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "AC-7(2)",
@@ -1043,9 +1077,11 @@
     },
     {
       "rev4_id": "AT-3(4)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "AT-2(4)"
+      ],
+      "relationship": "moved",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "AT-4",
@@ -1057,9 +1093,11 @@
     },
     {
       "rev4_id": "AT-5",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "PM-15"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "AU-1",
@@ -1111,9 +1149,11 @@
     },
     {
       "rev4_id": "AU-10(5)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SI-7"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "AU-11",
@@ -1205,9 +1245,11 @@
     },
     {
       "rev4_id": "AU-14(2)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "AU-14"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "AU-14(3)",
@@ -1219,9 +1261,11 @@
     },
     {
       "rev4_id": "AU-15",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "AU-5(5)"
+      ],
+      "relationship": "moved",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "AU-16",
@@ -1257,27 +1301,35 @@
     },
     {
       "rev4_id": "AU-2(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "AU-12"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "AU-2(2)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "AU-12"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "AU-2(3)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "AU-2"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "AU-2(4)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "AC-6(9)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "AU-3",
@@ -1297,9 +1349,11 @@
     },
     {
       "rev4_id": "AU-3(2)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "PL-9"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "AU-4",
@@ -1375,15 +1429,19 @@
     },
     {
       "rev4_id": "AU-6(10)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "AU-6"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "AU-6(2)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SI-4"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "AU-6(3)",
@@ -1459,9 +1517,11 @@
     },
     {
       "rev4_id": "AU-7(2)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "AU-7(1)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "AU-8",
@@ -1473,15 +1533,19 @@
     },
     {
       "rev4_id": "AU-8(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SC-45(1)"
+      ],
+      "relationship": "moved",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "AU-8(2)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SC-45(2)"
+      ],
+      "relationship": "moved",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "AU-9",
@@ -1589,39 +1653,51 @@
     },
     {
       "rev4_id": "CA-3(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SC-7(25)"
+      ],
+      "relationship": "moved",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "CA-3(2)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SC-7(26)"
+      ],
+      "relationship": "moved",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "CA-3(3)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SC-7(27)"
+      ],
+      "relationship": "moved",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "CA-3(4)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SC-7(28)"
+      ],
+      "relationship": "moved",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "CA-3(5)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SC-7(5)"
+      ],
+      "relationship": "moved",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "CA-4",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "CA-2"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "CA-5",
@@ -1665,9 +1741,11 @@
     },
     {
       "rev4_id": "CA-7(2)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "CA-2"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "CA-7(3)",
@@ -1751,9 +1829,11 @@
     },
     {
       "rev4_id": "CM-11(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "CM-8(3)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "CM-11(2)",
@@ -1773,9 +1853,11 @@
     },
     {
       "rev4_id": "CM-2(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "CM-2"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "CM-2(2)",
@@ -1795,15 +1877,19 @@
     },
     {
       "rev4_id": "CM-2(4)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "CM-7(4)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "CM-2(5)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "CM-7(5)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "CM-2(6)",
@@ -1919,15 +2005,19 @@
     },
     {
       "rev4_id": "CM-5(2)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "CM-3(7)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "CM-5(3)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "CM-14"
+      ],
+      "relationship": "moved",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "CM-5(4)",
@@ -1955,9 +2045,11 @@
     },
     {
       "rev4_id": "CM-5(7)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SI-7"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "CM-6",
@@ -1985,15 +2077,19 @@
     },
     {
       "rev4_id": "CM-6(3)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SI-7"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "CM-6(4)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "CM-4"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "CM-7",
@@ -2085,9 +2181,11 @@
     },
     {
       "rev4_id": "CM-8(5)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "CM-8"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "CM-8(6)",
@@ -2155,9 +2253,11 @@
     },
     {
       "rev4_id": "CP-10(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "CP-4"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "CP-10(2)",
@@ -2183,9 +2283,11 @@
     },
     {
       "rev4_id": "CP-10(5)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SI-13"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "CP-10(6)",
@@ -2253,9 +2355,11 @@
     },
     {
       "rev4_id": "CP-2(4)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "CP-2(3)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "CP-2(5)",
@@ -2355,9 +2459,11 @@
     },
     {
       "rev4_id": "CP-5",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "CP-2"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "CP-6",
@@ -2433,9 +2539,11 @@
     },
     {
       "rev4_id": "CP-7(5)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "CP-7"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "CP-7(6)",
@@ -2527,9 +2635,11 @@
     },
     {
       "rev4_id": "CP-9(4)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "CP-9"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "CP-9(5)",
@@ -2605,9 +2715,11 @@
     },
     {
       "rev4_id": "IA-2(11)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "IA-2(6)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "IA-2(12)",
@@ -2635,15 +2747,19 @@
     },
     {
       "rev4_id": "IA-2(3)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "IA-2(1)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "IA-2(4)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "IA-2(2)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "IA-2(5)",
@@ -2663,9 +2779,11 @@
     },
     {
       "rev4_id": "IA-2(7)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "IA-2(6)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "IA-2(8)",
@@ -2677,9 +2795,11 @@
     },
     {
       "rev4_id": "IA-2(9)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "IA-2(8)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "IA-3",
@@ -2699,9 +2819,11 @@
     },
     {
       "rev4_id": "IA-3(2)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "IA-3(1)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "IA-3(3)",
@@ -2737,15 +2859,19 @@
     },
     {
       "rev4_id": "IA-4(2)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "IA-12(1)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "IA-4(3)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "IA-12(2)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "IA-4(4)",
@@ -2773,9 +2899,11 @@
     },
     {
       "rev4_id": "IA-4(7)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "IA-12(4)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "IA-5",
@@ -2803,9 +2931,12 @@
     },
     {
       "rev4_id": "IA-5(11)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "IA-2(1)",
+        "IA-2(2)"
+      ],
+      "relationship": "split",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "IA-5(12)",
@@ -2849,15 +2980,19 @@
     },
     {
       "rev4_id": "IA-5(3)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "IA-12(4)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "IA-5(4)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "IA-5(1)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "IA-5(5)",
@@ -2941,9 +3076,11 @@
     },
     {
       "rev4_id": "IA-8(3)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "IA-8(2)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "IA-8(4)",
@@ -2971,15 +3108,19 @@
     },
     {
       "rev4_id": "IA-9(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "IA-9"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "IA-9(2)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "IA-9"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "IR-1",
@@ -2991,9 +3132,11 @@
     },
     {
       "rev4_id": "IR-10",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "IR-4(11)"
+      ],
+      "relationship": "moved",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "IR-2",
@@ -3221,9 +3364,11 @@
     },
     {
       "rev4_id": "IR-9(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "IR-9"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "IR-9(2)",
@@ -3267,9 +3412,11 @@
     },
     {
       "rev4_id": "MA-2(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "MA-2"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "MA-2(2)",
@@ -3337,9 +3484,12 @@
     },
     {
       "rev4_id": "MA-4(2)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "MA-1",
+        "MA-4"
+      ],
+      "relationship": "split",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "MA-4(3)",
@@ -3479,15 +3629,19 @@
     },
     {
       "rev4_id": "MP-2(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "MP-4(2)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "MP-2(2)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SC-28(1)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "MP-3",
@@ -3507,9 +3661,11 @@
     },
     {
       "rev4_id": "MP-4(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SC-28(1)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "MP-4(2)",
@@ -3529,15 +3685,19 @@
     },
     {
       "rev4_id": "MP-5(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "MP-5"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "MP-5(2)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "MP-5"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "MP-5(3)",
@@ -3549,9 +3709,11 @@
     },
     {
       "rev4_id": "MP-5(4)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SC-28(1)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "MP-6",
@@ -3587,21 +3749,27 @@
     },
     {
       "rev4_id": "MP-6(4)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "MP-6"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "MP-6(5)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "MP-6"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "MP-6(6)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "MP-6"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "MP-6(7)",
@@ -3629,9 +3797,11 @@
     },
     {
       "rev4_id": "MP-7(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "MP-7"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "MP-7(2)",
@@ -3699,9 +3869,11 @@
     },
     {
       "rev4_id": "PE-10(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "PE-10"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "PE-11",
@@ -3769,9 +3941,11 @@
     },
     {
       "rev4_id": "PE-13(3)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "PE-13(2)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "PE-13(4)",
@@ -3847,9 +4021,11 @@
     },
     {
       "rev4_id": "PE-18(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "PE-23"
+      ],
+      "relationship": "moved",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "PE-19",
@@ -3957,9 +4133,11 @@
     },
     {
       "rev4_id": "PE-3(6)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "CA-8"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "PE-4",
@@ -3979,9 +4157,11 @@
     },
     {
       "rev4_id": "PE-5(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "PE-5"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "PE-5(2)",
@@ -3993,9 +4173,11 @@
     },
     {
       "rev4_id": "PE-5(3)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "PE-22"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "PE-6",
@@ -4039,9 +4221,12 @@
     },
     {
       "rev4_id": "PE-7",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "PE-2",
+        "PE-3"
+      ],
+      "relationship": "split",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "PE-8",
@@ -4061,9 +4246,11 @@
     },
     {
       "rev4_id": "PE-8(2)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "PE-2"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "PE-9",
@@ -4107,27 +4294,35 @@
     },
     {
       "rev4_id": "PL-2(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "PL-7"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "PL-2(2)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "PL-8"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "PL-2(3)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "PL-2"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "PL-3",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "PL-2"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "PL-4",
@@ -4147,15 +4342,19 @@
     },
     {
       "rev4_id": "PL-5",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "RA-8"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "PL-6",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "PL-2"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "PL-7",
@@ -4415,9 +4614,11 @@
     },
     {
       "rev4_id": "PS-6(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "PS-3"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "PS-6(2)",
@@ -4477,9 +4678,11 @@
     },
     {
       "rev4_id": "RA-4",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "RA-3"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "RA-5",
@@ -4491,9 +4694,11 @@
     },
     {
       "rev4_id": "RA-5(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "RA-5"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "RA-5(10)",
@@ -4545,9 +4750,11 @@
     },
     {
       "rev4_id": "RA-5(7)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "CM-8"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "RA-5(8)",
@@ -4559,9 +4766,11 @@
     },
     {
       "rev4_id": "RA-5(9)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "CA-8"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "RA-6",
@@ -4715,111 +4924,149 @@
     },
     {
       "rev4_id": "SA-12(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SR-5"
+      ],
+      "relationship": "moved",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-12(10)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SR-4(3)"
+      ],
+      "relationship": "moved",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-12(11)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SR-6(1)"
+      ],
+      "relationship": "moved",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-12(12)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SR-8"
+      ],
+      "relationship": "moved",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-12(13)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "MA-6",
+        "RA-9"
+      ],
+      "relationship": "split",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-12(14)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SR-4(1)",
+        "SR-4(2)"
+      ],
+      "relationship": "split",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-12(15)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SR-3"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-12(2)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SR-6"
+      ],
+      "relationship": "moved",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-12(3)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SR-3"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-12(4)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SR-3(1)"
+      ],
+      "relationship": "moved",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-12(5)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SR-3(2)"
+      ],
+      "relationship": "moved",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-12(6)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SR-5(1)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-12(7)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SR-5(2)"
+      ],
+      "relationship": "moved",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-12(8)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "RA-3(2)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-12(9)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SR-7"
+      ],
+      "relationship": "moved",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-13",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SA-8"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-14",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "RA-9"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-14(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SA-20"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-15",
@@ -4871,9 +5118,11 @@
     },
     {
       "rev4_id": "SA-15(4)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SA-11(2)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-15(5)",
@@ -4909,9 +5158,11 @@
     },
     {
       "rev4_id": "SA-15(9)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SA-3(2)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-16",
@@ -4987,51 +5238,67 @@
     },
     {
       "rev4_id": "SA-18",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SR-9"
+      ],
+      "relationship": "moved",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-18(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SR-9(1)"
+      ],
+      "relationship": "moved",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-18(2)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SR-10"
+      ],
+      "relationship": "moved",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-19",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SR-11"
+      ],
+      "relationship": "moved",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-19(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SR-11(1)"
+      ],
+      "relationship": "moved",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-19(2)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SR-11(2)"
+      ],
+      "relationship": "moved",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-19(3)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SR-12"
+      ],
+      "relationship": "moved",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-19(4)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SR-11(3)"
+      ],
+      "relationship": "moved",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-2",
@@ -5059,9 +5326,11 @@
     },
     {
       "rev4_id": "SA-21(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SA-21"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-22",
@@ -5073,9 +5342,11 @@
     },
     {
       "rev4_id": "SA-22(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SA-22"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-3",
@@ -5127,9 +5398,11 @@
     },
     {
       "rev4_id": "SA-4(4)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "CM-8(9)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-4(5)",
@@ -5181,45 +5454,61 @@
     },
     {
       "rev4_id": "SA-5(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SA-4(1)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-5(2)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SA-4(2)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-5(3)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SA-4(2)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-5(4)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SA-4(2)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-5(5)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SA-4(2)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-6",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "CM-10",
+        "SI-7"
+      ],
+      "relationship": "split",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-7",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "CM-11",
+        "SI-7"
+      ],
+      "relationship": "split",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SA-8",
@@ -5343,15 +5632,19 @@
     },
     {
       "rev4_id": "SC-12(4)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SC-12(3)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SC-12(5)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SC-12(3)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SC-13",
@@ -5363,33 +5656,51 @@
     },
     {
       "rev4_id": "SC-13(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SC-13"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SC-13(2)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SC-13"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SC-13(3)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SC-13"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SC-13(4)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SC-13"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SC-14",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "AC-2",
+        "AC-3",
+        "AC-5",
+        "AC-6",
+        "SI-3",
+        "SI-4",
+        "SI-5",
+        "SI-7",
+        "SI-10"
+      ],
+      "relationship": "split",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SC-15",
@@ -5409,9 +5720,11 @@
     },
     {
       "rev4_id": "SC-15(2)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SC-7"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SC-15(3)",
@@ -5533,9 +5846,11 @@
     },
     {
       "rev4_id": "SC-20(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SC-20"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SC-20(2)",
@@ -5555,9 +5870,11 @@
     },
     {
       "rev4_id": "SC-21(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SC-21"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SC-22",
@@ -5585,9 +5902,11 @@
     },
     {
       "rev4_id": "SC-23(2)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "AC-12(1)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SC-23(3)",
@@ -5599,9 +5918,11 @@
     },
     {
       "rev4_id": "SC-23(4)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SC-23(3)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SC-23(5)",
@@ -5637,9 +5958,11 @@
     },
     {
       "rev4_id": "SC-26(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SC-35"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SC-27",
@@ -5747,9 +6070,11 @@
     },
     {
       "rev4_id": "SC-30(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SC-29(1)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SC-30(2)",
@@ -5825,9 +6150,11 @@
     },
     {
       "rev4_id": "SC-33",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SC-8"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SC-34",
@@ -5855,9 +6182,11 @@
     },
     {
       "rev4_id": "SC-34(3)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SC-51"
+      ],
+      "relationship": "moved",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SC-35",
@@ -5941,9 +6270,11 @@
     },
     {
       "rev4_id": "SC-4(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SC-4"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SC-4(2)",
@@ -6027,9 +6358,11 @@
     },
     {
       "rev4_id": "SC-42(3)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SC-42"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SC-43",
@@ -6097,9 +6430,11 @@
     },
     {
       "rev4_id": "SC-7(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SC-7"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SC-7(10)",
@@ -6183,9 +6518,11 @@
     },
     {
       "rev4_id": "SC-7(2)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SC-7"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SC-7(20)",
@@ -6245,9 +6582,11 @@
     },
     {
       "rev4_id": "SC-7(6)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SC-7(18)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SC-7(7)",
@@ -6315,9 +6654,11 @@
     },
     {
       "rev4_id": "SC-9",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SC-8"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SI-1",
@@ -6409,9 +6750,11 @@
     },
     {
       "rev4_id": "SI-13(2)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SI-7(16)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SI-13(3)",
@@ -6487,9 +6830,11 @@
     },
     {
       "rev4_id": "SI-2(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "PL-9"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SI-2(2)",
@@ -6541,9 +6886,11 @@
     },
     {
       "rev4_id": "SI-3(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "PL-9"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SI-3(10)",
@@ -6555,15 +6902,19 @@
     },
     {
       "rev4_id": "SI-3(2)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SI-3"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SI-3(3)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "AC-6(10)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SI-3(4)",
@@ -6575,9 +6926,11 @@
     },
     {
       "rev4_id": "SI-3(5)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "MP-7"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SI-3(6)",
@@ -6589,9 +6942,11 @@
     },
     {
       "rev4_id": "SI-3(7)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SI-3"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SI-3(8)",
@@ -6603,9 +6958,11 @@
     },
     {
       "rev4_id": "SI-3(9)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "AC-17(10)"
+      ],
+      "relationship": "moved",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SI-4",
@@ -6777,9 +7134,11 @@
     },
     {
       "rev4_id": "SI-4(6)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "AC-6(10)"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SI-4(7)",
@@ -6791,9 +7150,11 @@
     },
     {
       "rev4_id": "SI-4(8)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SI-4"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SI-4(9)",
@@ -6829,9 +7190,11 @@
     },
     {
       "rev4_id": "SI-6(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SI-6"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SI-6(2)",
@@ -6875,9 +7238,11 @@
     },
     {
       "rev4_id": "SI-7(11)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "CM-7(6)"
+      ],
+      "relationship": "moved",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SI-7(12)",
@@ -6889,15 +7254,19 @@
     },
     {
       "rev4_id": "SI-7(13)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "CM-7(7)"
+      ],
+      "relationship": "moved",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SI-7(14)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "CM-7(8)"
+      ],
+      "relationship": "moved",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SI-7(15)",
@@ -6933,9 +7302,11 @@
     },
     {
       "rev4_id": "SI-7(4)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "SR-9"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SI-7(5)",
@@ -6987,9 +7358,11 @@
     },
     {
       "rev4_id": "SI-8(1)",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "PL-9"
+      ],
+      "relationship": "incorporated",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": "SI-8(2)",
@@ -7009,9 +7382,14 @@
     },
     {
       "rev4_id": "SI-9",
-      "rev5_ids": [],
-      "relationship": "withdrawn",
-      "source": "derived:id-diff"
+      "rev5_ids": [
+        "AC-2",
+        "AC-3",
+        "AC-5",
+        "AC-6"
+      ],
+      "relationship": "split",
+      "source": "catalog:successor-links"
     },
     {
       "rev4_id": null,

@@ -52,7 +52,7 @@ class Control:
 class MappingRow:
     rev4_id: str | None
     rev5_ids: tuple[str, ...]
-    relationship: str  # same | renamed | withdrawn | new | merged | split | incorporated
+    relationship: str  # same | renamed | new | moved | incorporated | split | withdrawn
     source: str
 
 

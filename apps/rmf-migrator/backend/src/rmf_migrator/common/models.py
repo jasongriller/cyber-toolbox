@@ -185,7 +185,7 @@ class DispositionNote(BaseModel):
 
     rev4_id: str
     rev5_ids: list[str] = Field(default_factory=list)
-    relationship: str  # same | renamed | withdrawn | new | merged | split | incorporated
+    relationship: str  # same | renamed | new | moved | incorporated | split | withdrawn
 
 
 class DraftJob(BaseModel):

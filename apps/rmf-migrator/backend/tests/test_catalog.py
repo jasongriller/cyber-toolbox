@@ -52,11 +52,35 @@ def test_crosswalk_ac1_is_renamed():
 
 
 def test_crosswalk_reports_withdrawn_control():
-    # AC-13 was withdrawn in Rev 5.
-    row = crosswalk().disposition("AC-13")
+    # SC-19 (VoIP) was withdrawn in Rev 5 with no successor control.
+    row = crosswalk().disposition("SC-19")
     assert row is not None
     assert row.relationship == "withdrawn"
     assert row.rev5_ids == ()
+
+
+def test_crosswalk_split_control_carries_successors():
+    # AC-13 was incorporated into two Rev 5 controls -> "split", not a dead end.
+    row = crosswalk().disposition("AC-13")
+    assert row is not None
+    assert row.relationship == "split"
+    assert set(row.rev5_ids) == {"AC-2", "AU-6"}
+
+
+def test_crosswalk_incorporated_control_carries_single_successor():
+    # CA-4 was incorporated into CA-2 -> "incorporated".
+    row = crosswalk().disposition("CA-4")
+    assert row is not None
+    assert row.relationship == "incorporated"
+    assert row.rev5_ids == ("CA-2",)
+
+
+def test_crosswalk_moved_control_carries_new_id():
+    # AU-15 was renumbered to AU-5(5) in Rev 5 -> "moved".
+    row = crosswalk().disposition("AU-15")
+    assert row is not None
+    assert row.relationship == "moved"
+    assert row.rev5_ids == ("AU-5(5)",)
 
 
 def test_crosswalk_new_in_rev5_includes_sr_family():

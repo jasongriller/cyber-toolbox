@@ -66,7 +66,12 @@ def _targets_and_dispositions(
             notes.append(DispositionNote(rev4_id=rid, rev5_ids=[], relationship="unknown"))
             continue
         notes.append(
-            DispositionNote(rev4_id=rid, rev5_ids=list(row.rev5_ids), relationship=row.relationship)
+            DispositionNote(
+                rev4_id=rid,
+                rev5_ids=list(row.rev5_ids),
+                relationship=row.relationship,
+                source=row.source,
+            )
         )
         rev5_ids.extend(row.rev5_ids)
     # De-duplicate rev5 targets, preserve order.

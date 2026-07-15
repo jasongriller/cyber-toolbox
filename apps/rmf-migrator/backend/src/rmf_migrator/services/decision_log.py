@@ -38,7 +38,8 @@ def _disposition_str(draft: Draft | None) -> str:
     parts = []
     for note in draft.dispositions:
         forward = "/".join(note.rev5_ids) if note.rev5_ids else "—"
-        parts.append(f"{note.rev4_id}->{forward} ({note.relationship})")
+        qualifier = f"{note.relationship}; {note.source}" if note.source else note.relationship
+        parts.append(f"{note.rev4_id}->{forward} ({qualifier})")
     return "; ".join(parts)
 
 

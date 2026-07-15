@@ -79,7 +79,13 @@ def coverage(event: dict[str, Any], _context: Any = None) -> dict[str, Any]:
 
 
 def _conversion_matrix(event: dict[str, Any], deps: Deps) -> dict[str, Any]:
-    project_id, _ = _require_project(deps, event)
+    project_id, project = _require_project(deps, event)
+
+    override = _query(event, "baseline")
+    try:
+        baseline_name = resolve_baseline(project.baseline, override)
+    except ValueError as exc:
+        raise HttpError(400, str(exc)) from exc
 
     contributions: list[Contribution] = []
     for document in deps.repo.list_documents(project_id):
@@ -93,10 +99,11 @@ def _conversion_matrix(event: dict[str, Any], deps: Deps) -> dict[str, Any]:
                     Contribution(rev4_id=rev4_id, filename=document.filename, heading=heading)
                 )
 
-    csv_text = to_csv(build_rows(contributions))
+    csv_text = to_csv(build_rows(contributions, baseline=baseline_name))
     log_event(
         "conversion_matrix.exported",
         project_id=project_id,
+        baseline=baseline_name or "none",
         contribution_count=len(contributions),
     )
     return {

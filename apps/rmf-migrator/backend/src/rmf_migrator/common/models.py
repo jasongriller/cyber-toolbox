@@ -186,6 +186,7 @@ class DispositionNote(BaseModel):
     rev4_id: str
     rev5_ids: list[str] = Field(default_factory=list)
     relationship: str  # same | renamed | new | moved | incorporated | split | withdrawn
+    source: str = ""  # provenance of the mapping row: derived:id-diff | catalog:successor-links
 
 
 class DraftJob(BaseModel):

@@ -60,6 +60,14 @@ All v1 milestones are implemented. The tool now runs the full pipeline end to en
 upload → parse → control mapping (human-reviewed) → Rev 5 drafting → structure-preserving
 export → package coverage & gap analysis.
 
+Beyond v1, the package can also be exported as a NIST **OSCAL component-definition**
+(model v1.1.2) for import into a GRC platform: each approved Rev 5 draft becomes an
+`implemented-requirement`, tagged with the originating Rev 4 control and its
+disposition (`renamed` / `incorporated` / `split` / `moved`). A component-definition
+is emitted rather than a full SSP because the tool holds control-implementation
+narratives but not the system-characteristics (authorization boundary,
+categorization, information types) an SSP requires.
+
 ## Control data
 
 The NIST SP 800-53 catalogs (Rev 4 and Rev 5) and a derived Rev 4 → Rev 5

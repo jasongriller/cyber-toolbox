@@ -38,6 +38,7 @@ locals {
     # Coverage dashboard + conversion matrix (M5)
     "GET /projects/{project_id}/coverage"              = "coverage"
     "GET /projects/{project_id}/conversion-matrix.csv" = "conversion-matrix"
+    "GET /projects/{project_id}/oscal.json"            = "oscal"
   }
 }
 

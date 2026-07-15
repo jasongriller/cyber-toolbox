@@ -1,13 +1,15 @@
-"""API handlers for package-level coverage and the conversion matrix.
+"""API handlers for package-level coverage, the conversion matrix, and OSCAL.
 
   GET .../projects/{project_id}/coverage[?baseline=low|moderate|high]
   GET .../projects/{project_id}/conversion-matrix.csv
+  GET .../projects/{project_id}/oscal.json
 
-Both aggregate across every document in the project.
+All aggregate across every document in the project.
 """
 
 from __future__ import annotations
 
+import json
 from typing import Any
 
 from rmf_migrator.common.http import (
@@ -20,6 +22,14 @@ from rmf_migrator.common.logging import log_event
 from rmf_migrator.handlers.deps import Deps
 from rmf_migrator.services.conversion_matrix import Contribution, build_rows, to_csv
 from rmf_migrator.services.coverage import build_coverage, resolve_baseline
+from rmf_migrator.services.oscal_export import build_component_definition
+
+
+def _project_drafts(deps: Deps, project_id: str):
+    drafts = []
+    for document in deps.repo.list_documents(project_id):
+        drafts.extend(deps.repo.list_drafts(document.document_id))
+    return drafts
 
 
 def _require_project(deps: Deps, event: dict[str, Any]):
@@ -46,9 +56,7 @@ def _coverage(event: dict[str, Any], deps: Deps) -> dict[str, Any]:
     except ValueError as exc:
         raise HttpError(400, str(exc)) from exc
 
-    drafts = []
-    for document in deps.repo.list_documents(project_id):
-        drafts.extend(deps.repo.list_drafts(document.document_id))
+    drafts = _project_drafts(deps, project_id)
 
     result = build_coverage(drafts, baseline_name=baseline_name)
     log_event(
@@ -104,5 +112,41 @@ def _conversion_matrix(event: dict[str, Any], deps: Deps) -> dict[str, Any]:
 def conversion_matrix(event: dict[str, Any], _context: Any = None) -> dict[str, Any]:
     try:
         return _conversion_matrix(event, Deps.build())
+    except HttpError as err:
+        return error_response(err)
+
+
+# ---- GET OSCAL component-definition -----------------------------------------
+
+
+def _oscal(event: dict[str, Any], deps: Deps) -> dict[str, Any]:
+    project_id, project = _require_project(deps, event)
+
+    drafts = _project_drafts(deps, project_id)
+    document = build_component_definition(project, drafts)
+
+    requirement_count = len(
+        document["component-definition"]["components"][0]["control-implementations"][0][
+            "implemented-requirements"
+        ]
+    )
+    log_event(
+        "oscal.exported",
+        project_id=project_id,
+        requirement_count=requirement_count,
+    )
+    return {
+        "statusCode": 200,
+        "headers": {
+            "Content-Type": "application/json",
+            "Content-Disposition": f'attachment; filename="oscal-component-{project_id}.json"',
+        },
+        "body": json.dumps(document, indent=2),
+    }
+
+
+def oscal(event: dict[str, Any], _context: Any = None) -> dict[str, Any]:
+    try:
+        return _oscal(event, Deps.build())
     except HttpError as err:
         return error_response(err)

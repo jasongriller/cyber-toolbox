@@ -235,6 +235,15 @@ export class ApiClient {
     }
     return res.text();
   }
+
+  /** Fetch the OSCAL component-definition as pretty-printed JSON text. */
+  async getOscalJson(projectId: string): Promise<string> {
+    const res = await fetch(joinUrl(this.baseUrl, `/projects/${projectId}/oscal.json`));
+    if (!res.ok) {
+      throw new ApiError(res.status, res.statusText);
+    }
+    return res.text();
+  }
 }
 
 /** Parse a comma/space separated control-id string into a normalized list. */

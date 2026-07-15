@@ -66,6 +66,7 @@ locals {
     decision-log      = { handler = "rmf_migrator.handlers.export.decision_log" }
     coverage          = { handler = "rmf_migrator.handlers.coverage.coverage" }
     conversion-matrix = { handler = "rmf_migrator.handlers.coverage.conversion_matrix" }
+    oscal             = { handler = "rmf_migrator.handlers.coverage.oscal" }
   }
 
   api_role_arns = {

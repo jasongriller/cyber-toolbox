@@ -37,15 +37,28 @@ export default function CoverageDashboard({ client, projectId }: Props) {
     void load();
   }, [load]);
 
+  const downloadBlob = (data: string, mime: string, filename: string) => {
+    const url = URL.createObjectURL(new Blob([data], { type: mime }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const downloadMatrix = async () => {
     try {
       const csv = await client.getConversionMatrixCsv(projectId);
-      const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `conversion-matrix-${projectId}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
+      downloadBlob(csv, "text/csv", `conversion-matrix-${projectId}.csv`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const downloadOscal = async () => {
+    try {
+      const jsonText = await client.getOscalJson(projectId);
+      downloadBlob(jsonText, "application/json", `oscal-component-${projectId}.json`);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
@@ -72,6 +85,7 @@ export default function CoverageDashboard({ client, projectId }: Props) {
           Refresh
         </button>
         <button onClick={() => void downloadMatrix()}>Download conversion matrix (CSV)</button>
+        <button onClick={() => void downloadOscal()}>Download OSCAL (JSON)</button>
       </div>
 
       {error && <p style={{ color: "#b00" }}>Error: {error}</p>}

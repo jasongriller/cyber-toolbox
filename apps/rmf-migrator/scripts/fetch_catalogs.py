@@ -163,8 +163,9 @@ def _dropped_disposition(
     """Classify a Rev 4 control that is not carried forward under its own id.
 
     Uses the withdrawn control's successor links, keeping only targets that are
-    real, non-withdrawn Rev 5 controls (drops family-level and enhancement-only
-    pointers). Returns (relationship, ordered unique rev5 target ids).
+    real, non-withdrawn Rev 5 controls (enhancements are kept; family-level
+    pointers and links to withdrawn controls are dropped). Returns
+    (relationship, ordered unique rev5 target ids).
     """
     seen: set[str] = set()
     moved: list[str] = []

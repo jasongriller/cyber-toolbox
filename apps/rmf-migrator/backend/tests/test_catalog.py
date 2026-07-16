@@ -52,11 +52,35 @@ def test_crosswalk_ac1_is_renamed():
 
 
 def test_crosswalk_reports_withdrawn_control():
-    # AC-13 was withdrawn in Rev 5.
-    row = crosswalk().disposition("AC-13")
+    # SC-19 (VoIP) was withdrawn in Rev 5 with no successor control.
+    row = crosswalk().disposition("SC-19")
     assert row is not None
     assert row.relationship == "withdrawn"
     assert row.rev5_ids == ()
+
+
+def test_crosswalk_split_control_carries_successors():
+    # AC-13 was incorporated into two Rev 5 controls -> "split", not a dead end.
+    row = crosswalk().disposition("AC-13")
+    assert row is not None
+    assert row.relationship == "split"
+    assert set(row.rev5_ids) == {"AC-2", "AU-6"}
+
+
+def test_crosswalk_incorporated_control_carries_single_successor():
+    # CA-4 was incorporated into CA-2 -> "incorporated".
+    row = crosswalk().disposition("CA-4")
+    assert row is not None
+    assert row.relationship == "incorporated"
+    assert row.rev5_ids == ("CA-2",)
+
+
+def test_crosswalk_moved_control_carries_new_id():
+    # AU-15 was renumbered to AU-5(5) in Rev 5 -> "moved".
+    row = crosswalk().disposition("AU-15")
+    assert row is not None
+    assert row.relationship == "moved"
+    assert row.rev5_ids == ("AU-5(5)",)
 
 
 def test_crosswalk_new_in_rev5_includes_sr_family():
@@ -66,3 +90,21 @@ def test_crosswalk_new_in_rev5_includes_sr_family():
 
 def test_crosswalk_rev5_for_same_control():
     assert crosswalk().rev5_for("AC-2") == ["AC-2"]
+
+
+def test_crosswalk_predecessors_links_new_control_to_rev4_origin():
+    # SR-5 is new in Rev 5; SA-12(1) was renumbered into it, so a reverse
+    # lookup recovers the Rev 4 origin the "new" row alone does not show.
+    assert crosswalk().predecessors("SR-5") == ["SA-12(1)"]
+
+
+def test_crosswalk_predecessors_aggregates_and_sorts():
+    # Several Rev 4 controls fold into AC-2 (its own same-id row, plus splits
+    # and an incorporated enhancement); all are returned, unique and sorted.
+    preds = crosswalk().predecessors("AC-2")
+    assert preds == sorted(set(preds))
+    assert {"AC-2", "AC-13", "SC-14"} <= set(preds)
+
+
+def test_crosswalk_predecessors_unknown_control_is_empty():
+    assert crosswalk().predecessors("ZZ-99") == []

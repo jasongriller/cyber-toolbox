@@ -12,10 +12,18 @@ import csv
 import io
 from dataclasses import dataclass
 
-from rmf_migrator.common.catalog import crosswalk, rev4_catalog
+from rmf_migrator.common.catalog import baseline_controls, crosswalk, rev4_catalog
 from rmf_migrator.common.csv_safe import csv_safe_row
 
-COLUMNS = ["rev4_control", "rev4_title", "disposition", "rev5_controls", "covered_in"]
+COLUMNS = [
+    "rev4_control",
+    "rev4_title",
+    "disposition",
+    "rev5_controls",
+    "targets_outside_baseline",
+    "source",
+    "covered_in",
+]
 
 
 @dataclass(frozen=True)
@@ -27,9 +35,12 @@ class Contribution:
     heading: str
 
 
-def build_rows(contributions: list[Contribution]) -> list[dict[str, str]]:
+def build_rows(
+    contributions: list[Contribution], baseline: str | None = None
+) -> list[dict[str, str]]:
     cat4 = rev4_catalog()
     cross = crosswalk()
+    baseline_ids = baseline_controls(baseline) if baseline else None
 
     locations: dict[str, set[str]] = {}
     for c in contributions:
@@ -40,14 +51,17 @@ def build_rows(contributions: list[Contribution]) -> list[dict[str, str]]:
     for rev4_id in sorted(locations):
         control = cat4.get(rev4_id)
         row = cross.disposition(rev4_id)
-        rev5_ids = ", ".join(row.rev5_ids) if row and row.rev5_ids else ""
+        targets = list(row.rev5_ids) if row and row.rev5_ids else []
         relationship = row.relationship if row else "unknown"
+        outside = [t for t in targets if t not in baseline_ids] if baseline_ids is not None else []
         rows.append(
             {
                 "rev4_control": rev4_id,
                 "rev4_title": control.title if control else "",
                 "disposition": relationship,
-                "rev5_controls": rev5_ids,
+                "rev5_controls": ", ".join(targets),
+                "targets_outside_baseline": ", ".join(outside),
+                "source": row.source if row else "",
                 "covered_in": "; ".join(sorted(locations[rev4_id])),
             }
         )

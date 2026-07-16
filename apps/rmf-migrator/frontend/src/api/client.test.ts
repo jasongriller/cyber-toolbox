@@ -198,4 +198,17 @@ describe("ApiClient", () => {
     const csv = await client.getConversionMatrixCsv("p1");
     expect(csv).toContain("rev4_control");
   });
+
+  it("getOscalJson fetches the component-definition JSON text", async () => {
+    const spy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response('{"component-definition":{}}', {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+    const client = new ApiClient("/api");
+    const text = await client.getOscalJson("p1");
+    expect(spy.mock.calls[0][0]).toBe("/api/projects/p1/oscal.json");
+    expect(text).toContain("component-definition");
+  });
 });

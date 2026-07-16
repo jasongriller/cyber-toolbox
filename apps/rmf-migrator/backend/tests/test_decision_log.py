@@ -65,6 +65,32 @@ def test_build_rows_joins_mapping_and_draft():
     assert row["draft_finalized"] == "yes"
 
 
+def test_disposition_string_includes_successor_link_source():
+    sections = [_section("s1", 0, "SC")]
+    drafts = [
+        Draft(
+            project_id="p",
+            document_id="d",
+            section_id="s1",
+            order=0,
+            rev4_control_ids=["AC-13"],
+            rev5_control_ids=["AC-2", "AU-6"],
+            dispositions=[
+                DispositionNote(
+                    rev4_id="AC-13",
+                    rev5_ids=["AC-2", "AU-6"],
+                    relationship="split",
+                    source="catalog:successor-links",
+                )
+            ],
+            status=DraftStatus.PROPOSED,
+        )
+    ]
+    row = build_rows(sections, [], drafts)[0]
+    assert "split" in row["disposition"]
+    assert "catalog:successor-links" in row["disposition"]
+
+
 def test_build_rows_sorted_by_order():
     sections = [_section("s2", 1, "B"), _section("s1", 0, "A")]
     rows = build_rows(sections, [], [])

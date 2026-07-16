@@ -52,7 +52,7 @@ class Control:
 class MappingRow:
     rev4_id: str | None
     rev5_ids: tuple[str, ...]
-    relationship: str  # same | renamed | withdrawn | new | merged | split | incorporated
+    relationship: str  # same | renamed | new | moved | incorporated | split | withdrawn
     source: str
 
 
@@ -95,6 +95,16 @@ class Crosswalk:
     def rev5_for(self, rev4_id: str) -> list[str]:
         row = self._by_rev4.get(rev4_id)
         return list(row.rev5_ids) if row else []
+
+    def predecessors(self, rev5_id: str) -> list[str]:
+        """Rev 4 controls whose requirement maps forward into ``rev5_id``.
+
+        Inverts the forward mapping. For a control new in Rev 5 (e.g. ``SR-5``)
+        this recovers the Rev 4 origin that a plain "new" row does not carry,
+        because a moved/incorporated/split Rev 4 control names it as a target.
+        """
+        preds = {r.rev4_id for r in self._rows if r.rev4_id is not None and rev5_id in r.rev5_ids}
+        return sorted(preds)
 
     def new_in_rev5(self) -> list[str]:
         """Rev 5 controls with no Rev 4 predecessor (e.g. the SR family)."""

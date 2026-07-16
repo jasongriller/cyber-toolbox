@@ -66,10 +66,17 @@ def test_build_draft_records_disposition_relationship():
 
 
 def test_build_draft_handles_withdrawn_control():
-    # AC-13 was withdrawn in Rev 5 -> no Rev 5 target.
-    draft = build_draft(_section(), _mapping(control_ids=["AC-13"]), FakeBedrock())
+    # SC-19 (VoIP) was withdrawn in Rev 5 with no successor -> no Rev 5 target.
+    draft = build_draft(_section(), _mapping(control_ids=["SC-19"]), FakeBedrock())
     assert draft.rev5_control_ids == []
     assert draft.dispositions[0].relationship == "withdrawn"
+
+
+def test_build_draft_carries_split_control_successors_forward():
+    # AC-13 was incorporated into AC-2 + AU-6 -> both become drafting targets.
+    draft = build_draft(_section(), _mapping(control_ids=["AC-13"]), FakeBedrock())
+    assert set(draft.rev5_control_ids) == {"AC-2", "AU-6"}
+    assert draft.dispositions[0].relationship == "split"
 
 
 def test_build_draft_prompt_includes_targets_and_untrusted_markers():

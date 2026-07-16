@@ -14,12 +14,19 @@ Usage:
     python scripts/fetch_catalogs.py
 
 The derived mapping captures relationships that are computable from the two
-catalogs alone: controls present in both ("same"), removed in Rev 5
-("withdrawn"), and added in Rev 5 ("new"). Relationships that require NIST's
-editorial judgment (merged / split / incorporated-into) come from the official
-"SP 800-53 Rev 5 to Rev 4 comparison workbook" and should be layered on top;
-this script marks the mapping's ``source`` accordingly so the app can show how
-much confidence to place in each row.
+catalogs alone: controls present in both ("same" / "renamed") and added in Rev 5
+("new"). For controls dropped in Rev 5 it additionally reads the editorial
+"where did it go" judgment that NIST encodes directly on each withdrawn control
+in the OSCAL catalog via ``incorporated-into`` and ``moved-to`` links (the same
+information published in the "SP 800-53 Rev 5 to Rev 4 comparison workbook"):
+
+  * ``moved``        -- renumbered to a single new Rev 5 id (moved-to link)
+  * ``incorporated`` -- folded into one Rev 5 control (single incorporated-into)
+  * ``split``        -- folded into several Rev 5 controls (multiple links)
+  * ``withdrawn``    -- dropped with no successor control
+
+Each row's ``source`` records whether it came from the plain id diff or from the
+catalog's successor links, so the app can show how much confidence to place in it.
 """
 
 from __future__ import annotations
@@ -94,6 +101,34 @@ def _is_withdrawn(control: dict[str, Any]) -> bool:
     return False
 
 
+# Successor link relations NIST places on a withdrawn control to say where its
+# requirement went in Rev 5.
+_SUCCESSOR_RELS = ("incorporated-into", "moved-to")
+
+
+def _href_to_id(href: str) -> str:
+    """Resolve an OSCAL link href to a canonical control display id.
+
+    Hrefs point at a control (``#ac-6``) or a statement within one
+    (``#ac-2_smt.k``); both resolve to the containing control ("AC-6" / "AC-2").
+    A family-level href (``#sr``) resolves to a non-control ("SR-") and is
+    filtered out later by validating targets against the real Rev 5 id set.
+    """
+    oscal_id = href.lstrip("#").split("_", 1)[0]
+    return _canonical_id(oscal_id)
+
+
+def _successor_links(control: dict[str, Any]) -> list[tuple[str, str]]:
+    """(relation, canonical target id) pairs from a control's successor links."""
+    out: list[tuple[str, str]] = []
+    for link in control.get("links", []):
+        rel = link.get("rel")
+        href = link.get("href")
+        if rel in _SUCCESSOR_RELS and href:
+            out.append((rel, _href_to_id(href)))
+    return out
+
+
 def _walk_controls(
     node: dict[str, Any], family: str, out: list[dict[str, Any]]
 ) -> None:
@@ -106,6 +141,7 @@ def _walk_controls(
                 "family": family,
                 "is_enhancement": "." in control["id"],
                 "withdrawn": _is_withdrawn(control),
+                "successors": _successor_links(control),
             }
         )
         # Enhancements are nested controls.
@@ -121,6 +157,35 @@ def normalize_catalog(catalog_json: dict[str, Any]) -> list[dict[str, Any]]:
     return controls
 
 
+def _dropped_disposition(
+    successors: list[tuple[str, str]], rev5_ids: set[str]
+) -> tuple[str, list[str]]:
+    """Classify a Rev 4 control that is not carried forward under its own id.
+
+    Uses the withdrawn control's successor links, keeping only targets that are
+    real, non-withdrawn Rev 5 controls (enhancements are kept; family-level
+    pointers and links to withdrawn controls are dropped). Returns
+    (relationship, ordered unique rev5 target ids).
+    """
+    seen: set[str] = set()
+    moved: list[str] = []
+    incorporated: list[str] = []
+    for rel, target in successors:
+        if target not in rev5_ids or target in seen:
+            continue
+        seen.add(target)
+        (moved if rel == "moved-to" else incorporated).append(target)
+
+    if incorporated:
+        # A control folded into >1 target was split; into exactly one, incorporated.
+        # Any moved-to targets are unusual alongside incorporated-into but kept.
+        targets = list(dict.fromkeys(incorporated + moved))
+        return ("split" if len(targets) > 1 else "incorporated"), targets
+    if moved:
+        return ("moved" if len(moved) == 1 else "split"), moved
+    return "withdrawn", []
+
+
 def derive_mapping(
     rev4: list[dict[str, Any]], rev5: list[dict[str, Any]]
 ) -> list[dict[str, Any]]:
@@ -128,6 +193,8 @@ def derive_mapping(
     rev5_ids = {c["id"] for c in rev5 if not c["withdrawn"]}
     rev5_title = {c["id"]: c["title"] for c in rev5}
     rev4_title = {c["id"]: c["title"] for c in rev4}
+    # Successor links live on the withdrawn control in the Rev 5 catalog.
+    rev5_successors = {c["id"]: c.get("successors", []) for c in rev5}
 
     rows: list[dict[str, Any]] = []
     for cid in sorted(rev4_ids):
@@ -142,12 +209,17 @@ def derive_mapping(
                 }
             )
         else:
+            relationship, targets = _dropped_disposition(
+                rev5_successors.get(cid, []), rev5_ids
+            )
             rows.append(
                 {
                     "rev4_id": cid,
-                    "rev5_ids": [],
-                    "relationship": "withdrawn",
-                    "source": "derived:id-diff",
+                    "rev5_ids": targets,
+                    "relationship": relationship,
+                    "source": "catalog:successor-links"
+                    if relationship != "withdrawn"
+                    else "derived:id-diff",
                 }
             )
     # Controls new in Rev 5.
@@ -171,12 +243,23 @@ def main() -> int:
     rev4 = normalize_catalog(_download_json(REV4_URL))
     rev5 = normalize_catalog(_download_json(REV5_URL))
 
+    # Successor links are only needed to derive the mapping below; keep them out
+    # of the committed catalog files, whose loader ignores them anyway.
+    def _catalog_controls(controls: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        return [{k: v for k, v in c.items() if k != "successors"} for c in controls]
+
     (CATALOG_DIR / "rev4_controls.json").write_text(
-        json.dumps({"revision": "4", "source": REV4_URL, "controls": rev4}, indent=2)
+        json.dumps(
+            {"revision": "4", "source": REV4_URL, "controls": _catalog_controls(rev4)},
+            indent=2,
+        )
         + "\n"
     )
     (CATALOG_DIR / "rev5_controls.json").write_text(
-        json.dumps({"revision": "5", "source": REV5_URL, "controls": rev5}, indent=2)
+        json.dumps(
+            {"revision": "5", "source": REV5_URL, "controls": _catalog_controls(rev5)},
+            indent=2,
+        )
         + "\n"
     )
 
@@ -185,10 +268,11 @@ def main() -> int:
         json.dumps(
             {
                 "note": (
-                    "Relationships 'same'/'renamed'/'withdrawn'/'new' are derived "
-                    "automatically by comparing the two catalogs. 'merged'/'split'/"
-                    "'incorporated' relationships require NIST's official SP 800-53 "
-                    "Rev 5 to Rev 4 comparison workbook and should be layered on top."
+                    "Relationships 'same'/'renamed'/'new' are derived by comparing "
+                    "the two catalogs (source 'derived:id-diff'). Controls dropped in "
+                    "Rev 5 are classified 'moved'/'incorporated'/'split' from the "
+                    "withdrawn control's OSCAL successor links, or 'withdrawn' if it "
+                    "has none (source 'catalog:successor-links')."
                 ),
                 "mappings": mapping,
             },

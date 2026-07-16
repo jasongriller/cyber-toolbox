@@ -12,11 +12,12 @@ from rmf_migrator.common.models import (
     ControlMapping,
     Document,
     Draft,
+    DraftStatus,
     MappingStatus,
     Project,
     Section,
 )
-from rmf_migrator.handlers.coverage import _conversion_matrix, _coverage
+from rmf_migrator.handlers.coverage import _conversion_matrix, _coverage, _oscal
 
 
 def _event(path=None, query=None):
@@ -101,3 +102,46 @@ def test_conversion_matrix_csv_spans_documents(deps):
     assert "rev4_control,rev4_title" in body
     assert "AC-1" in body and "AU-2" in body
     assert "ac.docx" in body and "au.docx" in body
+
+
+def _seed_project_with_approved_draft(deps):
+    project = Project(name="Sys", baseline=Baseline.FIPS_199_LOW)
+    deps.repo.put_project(project)
+    pid = project.project_id
+    document = Document(project_id=pid, filename="ac.docx", s3_key="k")
+    deps.repo.put_document(document)
+    deps.repo.put_drafts(
+        [
+            Draft(
+                project_id=pid,
+                document_id=document.document_id,
+                section_id="sec-1",
+                order=0,
+                rev4_control_ids=["AC-2"],
+                rev5_control_ids=["AC-2"],
+                draft_text="Approved Rev 5 language.",
+                status=DraftStatus.APPROVED,
+            )
+        ]
+    )
+    return pid
+
+
+def test_oscal_export_returns_component_definition(deps):
+    pid = _seed_project_with_approved_draft(deps)
+    resp = _oscal(_event(path={"project_id": pid}), deps)
+    assert resp["statusCode"] == 200
+    assert resp["headers"]["Content-Type"] == "application/json"
+    assert "oscal-component" in resp["headers"]["Content-Disposition"]
+    body = json.loads(resp["body"])
+    reqs = body["component-definition"]["components"][0]["control-implementations"][0][
+        "implemented-requirements"
+    ]
+    assert [r["control-id"] for r in reqs] == ["ac-2"]
+    assert reqs[0]["description"] == "Approved Rev 5 language."
+
+
+def test_oscal_export_404_missing_project(deps):
+    with pytest.raises(HttpError) as exc:
+        _oscal(_event(path={"project_id": "proj_missing"}), deps)
+    assert exc.value.status == 404

@@ -53,9 +53,7 @@ def build_rows(
         row = cross.disposition(rev4_id)
         targets = list(row.rev5_ids) if row and row.rev5_ids else []
         relationship = row.relationship if row else "unknown"
-        outside = (
-            [t for t in targets if t not in baseline_ids] if baseline_ids is not None else []
-        )
+        outside = [t for t in targets if t not in baseline_ids] if baseline_ids is not None else []
         rows.append(
             {
                 "rev4_control": rev4_id,

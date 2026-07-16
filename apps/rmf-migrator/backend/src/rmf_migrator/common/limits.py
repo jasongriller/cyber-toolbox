@@ -34,23 +34,45 @@ class DocxTooLarge(ValueError):
     """Raised when .docx bytes exceed a size or decompression-ratio limit."""
 
 
+# Members are decompressed in bounded chunks so the guard's own memory use stays
+# flat no matter how large the archive claims — or actually turns out — to be.
+_DECOMPRESS_CHUNK = 1024 * 1024  # 1 MB
+
+
 def guard_docx_bytes(data: bytes) -> None:
     """Reject .docx bytes that would decompress to an unreasonable size.
 
-    Reads only the zip central directory (member metadata), never the member
-    contents, so the check itself cannot be turned into the attack.
+    The zip central directory's declared member sizes are attacker-controlled: a
+    crafted archive can under-report them so a metadata-only check waves it
+    through, then decompress to gigabytes and OOM the worker. So this never
+    trusts the declared sizes. It streams each member through a bounded buffer,
+    tracking the *actual* decompressed total, and aborts the instant that total
+    crosses the ceiling — before the bytes can accumulate in memory.
     """
     if len(data) > MAX_DOCX_BYTES:
         raise DocxTooLarge(f"document exceeds {MAX_DOCX_BYTES} bytes")
 
+    # Two independent ceilings, whichever is tighter: an absolute cap and a
+    # compression-ratio cap relative to the bytes on the wire.
+    ceiling = MAX_UNCOMPRESSED_BYTES
+    if data:
+        ceiling = min(ceiling, MAX_COMPRESSION_RATIO * len(data))
+
+    total = 0
     try:
         with zipfile.ZipFile(io.BytesIO(data)) as archive:
-            total = sum(info.file_size for info in archive.infolist())
+            for info in archive.infolist():
+                if info.is_dir():
+                    continue
+                with archive.open(info) as member:
+                    while True:
+                        chunk = member.read(_DECOMPRESS_CHUNK)
+                        if not chunk:
+                            break
+                        total += len(chunk)
+                        if total > ceiling:
+                            raise DocxTooLarge(
+                                "document decompresses past the allowed size/ratio limit"
+                            )
     except zipfile.BadZipFile as exc:
         raise DocxTooLarge("document is not a readable .docx archive") from exc
-
-    if total > MAX_UNCOMPRESSED_BYTES:
-        raise DocxTooLarge(f"document decompresses to more than {MAX_UNCOMPRESSED_BYTES} bytes")
-
-    if data and total / len(data) > MAX_COMPRESSION_RATIO:
-        raise DocxTooLarge("document compression ratio exceeds the allowed maximum")

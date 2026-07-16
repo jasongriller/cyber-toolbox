@@ -218,8 +218,11 @@ def run_export_job(project_id: str, document_id: str, job_id: str, deps: Deps) -
     try:
         original = deps.store.get_bytes(document.s3_key)
         drafts = deps.repo.list_drafts(document_id)
-        # Use each section's authoritative (edited-or-proposed) Rev 5 text.
-        drafts_by_order = {d.order: d.effective_text() for d in drafts}
+        # Use each section's authoritative (edited-or-proposed) Rev 5 text. A
+        # draft can legitimately be empty — build_draft leaves draft_text=""
+        # when automatic drafting fails — and replacing a section with empty
+        # text would delete its original content, so those are skipped.
+        drafts_by_order = {d.order: text for d in drafts if (text := d.effective_text()).strip()}
         new_docx = export_rev5_docx(original, drafts_by_order)
 
         export_key = build_export_key(project_id, document_id)

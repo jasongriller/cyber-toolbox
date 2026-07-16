@@ -94,6 +94,28 @@ def test_run_export_job_writes_rev5_docx(deps):
     assert "Purpose statement." in out[0].text  # preamble preserved
 
 
+def test_run_export_job_keeps_original_text_for_empty_drafts(deps):
+    # A draft whose effective text is empty (e.g. the failed-drafting fallback
+    # sets draft_text="") must leave the original section untouched, not blank it.
+    pid, did = _seed(deps)
+    sections = deps.repo.list_sections(did)
+    ac2 = next(s for s in sections if s.order == 2)
+    draft = deps.repo.get_draft(did, ac2.section_id)
+    draft.draft_text = ""
+    draft.edited_text = None
+    deps.repo.put_draft(draft)
+    job = ExportJob(project_id=pid, document_id=did)
+    deps.repo.put_export_job(job)
+
+    run_export_job(pid, did, job.job_id, deps)
+
+    document = deps.repo.get_document(pid, did)
+    out_bytes = deps.store.get_bytes(document.export_key)
+    out = {s.order: s for s in parse_docx_bytes(out_bytes, document_id="d", project_id="p")}
+    assert out[2].text == "Old AC-2 body."  # original preserved, not deleted
+    assert out[1].text == "New Rev 5 AC policy text."  # non-empty draft still applied
+
+
 def test_export_dispatch_via_process_event(deps):
     pid, did = _seed(deps)
     job = ExportJob(project_id=pid, document_id=did)

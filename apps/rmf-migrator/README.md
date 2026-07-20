@@ -123,7 +123,7 @@ Contributors do **not** need a GovCloud account. See [`docs/DEVELOPMENT.md`](doc
 
 ## Security
 
-This tool handles CUI. If you find a security issue, please follow [`SECURITY.md`](SECURITY.md) rather than opening a public issue.
+If you find a security issue, please follow [`SECURITY.md`](SECURITY.md) rather than opening a public issue.
 
 ## License
 

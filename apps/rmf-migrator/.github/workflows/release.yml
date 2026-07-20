@@ -33,10 +33,26 @@ jobs:
           npm run build
           cd dist && zip -r ../../frontend-bundle.zip . && cd ../..
 
+      - name: Extract changelog notes for this tag
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v start="## [$version]" '
+            index($0, start) == 1 { grab = 1 }
+            grab && $0 ~ /^## \[/ && index($0, start) != 1 { exit }
+            grab { print }
+          ' CHANGELOG.md | tail -n +2 | sed '/./,$!d' > RELEASE_NOTES.md
+          printf '\n**Full Changelog:** https://github.com/%s/commits/%s\n' \
+            "$GITHUB_REPOSITORY" "$GITHUB_REF_NAME" >> RELEASE_NOTES.md
+          [ -s RELEASE_NOTES.md ] || echo "Release $GITHUB_REF_NAME" > RELEASE_NOTES.md
+
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             backend/build/rmf-migrator-lambda.zip
             frontend-bundle.zip
-          generate_release_notes: true
+          # Notes come from CHANGELOG.md (see previous step), not GitHub's
+          # auto-generated PR summary, which re-appends a "What's Changed"
+          # section on every workflow run.
+          body_path: RELEASE_NOTES.md
+          generate_release_notes: false

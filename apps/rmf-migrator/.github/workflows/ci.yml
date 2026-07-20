@@ -55,7 +55,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
       - name: Format
         run: terraform fmt -check -recursive
         working-directory: terraform
@@ -65,7 +65,7 @@ jobs:
           terraform init -backend=false
           terraform validate
       - name: tflint
-        uses: terraform-linters/setup-tflint@v4
+        uses: terraform-linters/setup-tflint@v6
       - run: tflint --recursive
         working-directory: terraform
 

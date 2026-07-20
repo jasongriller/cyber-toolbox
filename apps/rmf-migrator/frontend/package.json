@@ -1,7 +1,7 @@
 {
   "name": "rmf-migrator-frontend",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.1.0",
   "type": "module",
   "description": "React SPA for rmf-rev5-migrator.",
   "scripts": {
@@ -12,6 +12,10 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@fontsource/barlow": "^5.3.0",
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@fontsource/ibm-plex-sans": "^5.3.0",
+    "@phosphor-icons/react": "^2.1.10",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

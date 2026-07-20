@@ -25,7 +25,9 @@ def test_ids_are_prefixed_and_unique():
 
 def test_defaults():
     assert Project(name="a").baseline == Baseline.GENERIC_800_53
-    assert Document(project_id="p", filename="f", s3_key="k").status == DocumentStatus.UPLOADED
+    assert (
+        Document(project_id="p", filename="f", s3_key="k").status == DocumentStatus.UPLOAD_PENDING
+    )
     assert ParseJob(project_id="p", document_id="d").status == JobStatus.PENDING
 
 

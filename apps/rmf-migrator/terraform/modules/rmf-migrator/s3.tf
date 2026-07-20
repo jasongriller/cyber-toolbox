@@ -71,9 +71,9 @@ resource "aws_s3_bucket_versioning" "documents" {
   }
 }
 
-# CORS: allow the SPA origin to PUT directly to S3 via presigned URL. In private
-# mode the SPA origin is internal; frame_ancestors/app origin is configured by
-# the adopter. Kept permissive on method, pinned on headers used by presign.
+# CORS: allow only configured SPA origins to PUT via presigned URL. Private-mode
+# validation requires an explicit allowlist; the wildcard fallback is public
+# demo mode only. Methods and headers stay pinned to the presigned upload.
 resource "aws_s3_bucket_cors_configuration" "documents" {
   bucket = aws_s3_bucket.documents.id
 

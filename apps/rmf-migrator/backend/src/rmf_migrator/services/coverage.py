@@ -14,7 +14,7 @@ whether the language satisfies the control.
 from __future__ import annotations
 
 from rmf_migrator.common.catalog import BASELINE_NAMES, baseline_controls, crosswalk
-from rmf_migrator.common.models import Baseline, Draft
+from rmf_migrator.common.models import Baseline, Draft, DraftStatus
 
 # Map a project's declared baseline to a Rev 5 baseline control set. The FedRAMP
 # levels resolve to FedRAMP's own baselines, which select a superset of the NIST
@@ -48,7 +48,8 @@ def resolve_baseline(project_baseline: Baseline, override: str | None = None) ->
 def covered_controls(drafts: list[Draft]) -> set[str]:
     covered: set[str] = set()
     for draft in drafts:
-        covered.update(draft.rev5_control_ids)
+        if draft.status == DraftStatus.APPROVED:
+            covered.update(draft.rev5_control_ids)
     return covered
 
 

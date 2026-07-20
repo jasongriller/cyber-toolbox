@@ -12,6 +12,7 @@ from rmf_migrator.common.models import (
     Document,
     DocumentStatus,
     Draft,
+    DraftStatus,
     Project,
     Section,
 )
@@ -27,7 +28,7 @@ def _event(path=None):
     return {"body": None, "pathParameters": path or {}, "headers": {}}
 
 
-def _seed(deps, *, status=DocumentStatus.DRAFTED, export_key=None):
+def _seed(deps, *, status=DocumentStatus.REVIEW_APPROVED, export_key=None):
     project = Project(name="Sys")
     deps.repo.put_project(project)
     pid = project.project_id
@@ -56,14 +57,15 @@ def _seed(deps, *, status=DocumentStatus.DRAFTED, export_key=None):
                 order=0,
                 rev5_control_ids=["AC-1"],
                 draft_text="text",
+                status=DraftStatus.APPROVED,
             )
         ]
     )
     return pid, did
 
 
-def test_enqueue_export_when_drafted(deps):
-    pid, did = _seed(deps, status=DocumentStatus.DRAFTED)
+def test_enqueue_export_when_review_approved(deps):
+    pid, did = _seed(deps, status=DocumentStatus.REVIEW_APPROVED)
     resp = _enqueue_export(_event(path={"project_id": pid, "document_id": did}), deps)
     assert resp["statusCode"] == 202
     job = json.loads(resp["body"])["job"]

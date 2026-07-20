@@ -47,6 +47,7 @@ locals {
   api_functions = {
     create-project    = { handler = "rmf_migrator.handlers.create_project.handler" }
     list-projects     = { handler = "rmf_migrator.handlers.projects.list_projects" }
+    delete-project    = { handler = "rmf_migrator.handlers.projects.delete_project" }
     list-documents    = { handler = "rmf_migrator.handlers.projects.list_documents" }
     request-upload    = { handler = "rmf_migrator.handlers.request_upload.handler" }
     enqueue-parse     = { handler = "rmf_migrator.handlers.enqueue_parse.handler" }

@@ -110,9 +110,32 @@ def parse_paragraph_stream(
     return sections
 
 
+def iter_docx_blocks(parent) -> Iterator:  # noqa: ANN001
+    """Yield paragraphs from document bodies and table cells in reading order."""
+    from docx.oxml.table import CT_Tbl
+    from docx.oxml.text.paragraph import CT_P
+    from docx.table import Table, _Cell
+    from docx.text.paragraph import Paragraph as DocxParagraph
+
+    container = parent._tc if isinstance(parent, _Cell) else parent.element.body  # noqa: SLF001
+    for child in container.iterchildren():
+        if isinstance(child, CT_P):
+            yield DocxParagraph(child, parent)
+        elif isinstance(child, CT_Tbl):
+            table = Table(child, parent)
+            seen_cells: set[int] = set()
+            for row in table.rows:
+                for cell in row.cells:
+                    cell_id = id(cell._tc)  # noqa: SLF001
+                    if cell_id in seen_cells:
+                        continue
+                    seen_cells.add(cell_id)
+                    yield from iter_docx_blocks(cell)
+
+
 def iter_docx_paragraphs(document) -> Iterator[Paragraph]:  # noqa: ANN001 (python-docx type)
-    """Adapt a python-docx Document into a Paragraph stream in reading order."""
-    for para in document.paragraphs:
+    """Adapt a DOCX, including table cells, into a paragraph stream."""
+    for para in iter_docx_blocks(document):
         style_name = para.style.name if para.style is not None else None
         yield Paragraph(style=style_name or "Normal", text=para.text)
 
@@ -123,10 +146,12 @@ def parse_docx_bytes(data: bytes, *, document_id: str, project_id: str) -> list[
 
     from docx import Document as DocxDocument  # imported lazily; heavy dependency
 
-    from rmf_migrator.common.limits import guard_docx_bytes
+    from rmf_migrator.common.limits import guard_docx_bytes, guard_parsed_sections
 
     guard_docx_bytes(data)
     document = DocxDocument(io.BytesIO(data))
-    return parse_paragraph_stream(
+    sections = parse_paragraph_stream(
         iter_docx_paragraphs(document), document_id=document_id, project_id=project_id
     )
+    guard_parsed_sections(sections)
+    return sections

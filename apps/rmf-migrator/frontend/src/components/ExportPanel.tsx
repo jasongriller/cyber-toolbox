@@ -3,7 +3,9 @@
 // backend; this triggers it and polls the job to completion.
 
 import { useCallback, useEffect, useState } from "react";
+import { DownloadSimple, FileDoc, FileCsv } from "@phosphor-icons/react";
 import { ApiClient } from "../api/client";
+import { waitForExportJob } from "../api/polling";
 import type { DocumentStatus } from "../api/types";
 
 interface Props {
@@ -11,8 +13,6 @@ interface Props {
   projectId: string;
   documentId: string;
 }
-
-const POLL_MS = 2000;
 
 export default function ExportPanel({ client, projectId, documentId }: Props) {
   const [status, setStatus] = useState<DocumentStatus | null>(null);
@@ -38,13 +38,7 @@ export default function ExportPanel({ client, projectId, documentId }: Props) {
     setError(null);
     try {
       const { job } = await client.startExport(projectId, documentId);
-      // Poll the export job until it finishes.
-      for (;;) {
-        await new Promise((r) => setTimeout(r, POLL_MS));
-        const j = await client.getExportJob(projectId, job.job_id);
-        if (j.status === "succeeded") break;
-        if (j.status === "failed") throw new Error(`export failed (${j.error_type ?? "unknown"})`);
-      }
+      await waitForExportJob(client, projectId, job.job_id);
       await refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -78,29 +72,40 @@ export default function ExportPanel({ client, projectId, documentId }: Props) {
   };
 
   const exported = status === "exported";
-  const canExport = status === "drafted" || status === "exported" || status === "exporting";
+  const canExport =
+    status === "review_approved" || status === "exported" || status === "exporting";
 
   return (
     <section>
-      <h2>Export</h2>
-      <p>
-        Status: <strong>{status ?? "loading…"}</strong>
-      </p>
-      {error && <p style={{ color: "#b00" }}>Error: {error}</p>}
+      <div className="section-head">
+        <h2>Export</h2>
+        <span className={exported ? "pill pill--ok" : "pill"}>{status ?? "loading…"}</span>
+      </div>
+      {error && <p className="banner banner--error">{error}</p>}
 
-      <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-        <button disabled={busy || !canExport} onClick={() => void generate()}>
-          {busy ? "Generating…" : "Generate Rev 5 .docx"}
+      <div className="toolbar">
+        <button className="btn btn--accent" disabled={busy || !canExport} onClick={() => void generate()}>
+          {busy ? (
+            <>
+              <span className="spinner" /> Generating…
+            </>
+          ) : (
+            <>
+              <FileDoc size={15} /> Generate Rev 5 .docx
+            </>
+          )}
         </button>
-        <button disabled={!exported} onClick={() => void downloadDocx()}>
-          Download Rev 5 .docx
+        <button className="btn" disabled={!exported} onClick={() => void downloadDocx()}>
+          <DownloadSimple size={15} /> Download Rev 5 .docx
         </button>
-        <button onClick={() => void downloadCsv()}>Download decision log (CSV)</button>
+        <button className="btn" onClick={() => void downloadCsv()}>
+          <FileCsv size={15} /> Download decision log (CSV)
+        </button>
       </div>
 
       {!canExport && status !== null && (
-        <p style={{ color: "#666", marginTop: "0.5rem" }}>
-          Approve the control mapping and drafts before exporting.
+        <p className="banner banner--info" style={{ marginTop: "1rem", marginBottom: 0 }}>
+          Approve the control mapping and every draft before exporting.
         </p>
       )}
     </section>

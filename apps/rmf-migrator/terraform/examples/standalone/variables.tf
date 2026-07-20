@@ -50,7 +50,7 @@ variable "identity_header" {
 }
 
 variable "frame_ancestors" {
-  description = "Origins allowed to embed the SPA (optional)."
+  description = "Trusted browser origins for API/S3 CORS and the SPA CSP (required in private mode)."
   type        = list(string)
   default     = []
 }

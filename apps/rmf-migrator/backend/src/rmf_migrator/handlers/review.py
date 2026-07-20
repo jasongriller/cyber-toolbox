@@ -27,6 +27,7 @@ from rmf_migrator.common.http import (
 )
 from rmf_migrator.common.logging import log_event
 from rmf_migrator.common.models import DocumentStatus, MappingStatus
+from rmf_migrator.common.sections import hydrate_section_texts
 from rmf_migrator.handlers.deps import Deps
 
 
@@ -59,7 +60,7 @@ def get_document(event: dict[str, Any], _context: Any = None) -> dict[str, Any]:
 
 def _list_sections(event: dict[str, Any], deps: Deps) -> dict[str, Any]:
     _, document_id, _ = _load_document(deps, event)
-    sections = deps.repo.list_sections(document_id)
+    sections = hydrate_section_texts(deps.repo.list_sections(document_id), deps.store)
     return json_response(200, {"sections": [s.model_dump() for s in sections]})
 
 
@@ -109,7 +110,9 @@ def _validate_control_ids(raw: Any) -> list[str]:
 
 
 def _update_mapping(event: dict[str, Any], deps: Deps) -> dict[str, Any]:
-    project_id, document_id, _ = _load_document(deps, event)
+    project_id, document_id, document = _load_document(deps, event)
+    if document.status != DocumentStatus.MAPPED:
+        raise HttpError(409, "mapping can only be edited while the document is mapped")
     section_id = path_param(event, "section_id")
 
     mapping = deps.repo.get_mapping(document_id, section_id)
@@ -149,7 +152,19 @@ def update_mapping(event: dict[str, Any], _context: Any = None) -> dict[str, Any
 def _approve_mappings(event: dict[str, Any], deps: Deps) -> dict[str, Any]:
     project_id, document_id, document = _load_document(deps, event)
 
-    if document.status not in (DocumentStatus.MAPPED, DocumentStatus.MAPPING_APPROVED):
+    if document.status == DocumentStatus.MAPPING_APPROVED:
+        from rmf_migrator.handlers.worker import enqueue_drafting
+
+        draft_job = enqueue_drafting(deps, project_id, document_id)
+        return json_response(
+            200,
+            {
+                "document_status": document.status,
+                "approved_count": len(deps.repo.list_mappings(document_id)),
+                "draft_job_id": draft_job.job_id,
+            },
+        )
+    if document.status != DocumentStatus.MAPPED:
         raise HttpError(
             409,
             f"document is not ready for mapping approval (status: {document.status})",
@@ -158,6 +173,8 @@ def _approve_mappings(event: dict[str, Any], deps: Deps) -> dict[str, Any]:
     identity = resolve_identity(event, deps.config.identity_header)
     now = datetime.now(UTC)
     mappings = deps.repo.list_mappings(document_id)
+    if not mappings or (document.section_count > 0 and len(mappings) != document.section_count):
+        raise HttpError(409, "mapping set is incomplete; refresh or rerun mapping")
 
     for mapping in mappings:
         # Freeze the effective set as the authoritative final set.
@@ -169,7 +186,11 @@ def _approve_mappings(event: dict[str, Any], deps: Deps) -> dict[str, Any]:
         deps.repo.put_mapping(mapping)
 
     document.status = DocumentStatus.MAPPING_APPROVED
-    deps.repo.put_document(document)
+    if not deps.repo.put_document_if_status(document, {DocumentStatus.MAPPED}):
+        latest = deps.repo.get_document(project_id, document_id)
+        if latest is None or latest.status != DocumentStatus.MAPPING_APPROVED:
+            raise HttpError(409, "document state changed; refresh and try again")
+        document = latest
 
     # Auto-chain into Rev 5 drafting now that the mapping is confirmed.
     from rmf_migrator.handlers.worker import enqueue_drafting

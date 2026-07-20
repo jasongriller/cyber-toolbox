@@ -7,6 +7,7 @@
 // document lands in "mapped" ready for the human review checkpoint.
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ArrowRight, Trash } from "@phosphor-icons/react";
 import { ApiClient } from "../api/client";
 import type { Baseline, DocumentRecord, DocumentStatus, Project } from "../api/types";
 
@@ -29,7 +30,15 @@ const BASELINES: { value: Baseline; label: string }[] = [
 ];
 
 // Statuses where the backend is still working and the list should keep refreshing.
-const BUSY: DocumentStatus[] = ["uploaded", "parsing", "parsed", "mapping", "drafting", "exporting"];
+const BUSY: DocumentStatus[] = [
+  "upload_pending",
+  "uploaded",
+  "parsing",
+  "parsed",
+  "mapping",
+  "drafting",
+  "exporting",
+];
 
 const POLL_MS = 2500;
 
@@ -115,34 +124,55 @@ export default function ProjectBrowser({ client, onOpenDocument, onOpenCoverage 
     }
   };
 
+  const purgeProject = async () => {
+    if (!selected) return;
+    const confirmation = window.prompt(
+      `This permanently deletes every document, export, and audit record in ${selected.name}. ` +
+        `Type ${selected.project_id} to continue.`,
+    );
+    if (confirmation !== selected.project_id) return;
+
+    setBusy(true);
+    try {
+      await client.deleteProject(selected.project_id);
+      setSelected(null);
+      setDocuments([]);
+      await loadProjects();
+    } catch (e) {
+      fail(e);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <section>
-      {error && <p style={{ color: "#b00" }}>Error: {error}</p>}
+      {error && <p className="banner banner--error">{error}</p>}
 
-      <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap" }}>
+      <div className="two-col">
         {/* ---- Projects ---- */}
-        <div style={{ flex: "1 1 300px" }}>
-          <h2>Projects</h2>
-          <p style={hint}>A project is one system&apos;s A&amp;A package.</p>
+        <div>
+          <div className="section-head">
+            <h2>Projects</h2>
+          </div>
+          <p className="muted" style={{ marginTop: 0 }}>
+            A project is one system&apos;s A&amp;A package.
+          </p>
 
           {projects.length === 0 ? (
-            <p style={hint}>No projects yet — create one below.</p>
+            <p className="muted">No projects yet. Create one below.</p>
           ) : (
-            <ul style={list}>
+            <ul className="rowlist">
               {projects.map((p) => (
                 <li key={p.project_id}>
                   <button
+                    className="row-select"
+                    aria-current={selected?.project_id === p.project_id}
                     onClick={() => setSelected(p)}
-                    style={{
-                      ...rowButton,
-                      fontWeight: selected?.project_id === p.project_id ? 700 : 400,
-                    }}
                   >
-                    {p.name}
-                    <span style={hint}>
-                      {" "}
-                      · {p.baseline} · {p.document_count} doc
-                      {p.document_count === 1 ? "" : "s"}
+                    <span className="row-title">{p.name}</span>
+                    <span className="mono muted">
+                      {p.baseline} · {p.document_count} doc{p.document_count === 1 ? "" : "s"}
                     </span>
                   </button>
                 </li>
@@ -150,18 +180,21 @@ export default function ProjectBrowser({ client, onOpenDocument, onOpenCoverage 
             </ul>
           )}
 
-          <form onSubmit={createProject} style={{ marginTop: "1rem" }}>
+          <form onSubmit={createProject} className="toolbar" style={{ marginTop: "1rem" }}>
             <input
-              placeholder="new project name"
+              className="field"
+              style={{ flex: "1 1 160px" }}
+              placeholder="New project name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               aria-label="new project name"
             />
             <select
+              className="field"
+              style={{ flex: "0 1 auto", width: "auto" }}
               value={baseline}
               onChange={(e) => setBaseline(e.target.value as Baseline)}
               aria-label="baseline"
-              style={{ marginLeft: "0.5rem" }}
             >
               {BASELINES.map((b) => (
                 <option key={b.value} value={b.value}>
@@ -169,52 +202,63 @@ export default function ProjectBrowser({ client, onOpenDocument, onOpenCoverage 
                 </option>
               ))}
             </select>
-            <button type="submit" disabled={busy || !name.trim()} style={{ marginLeft: "0.5rem" }}>
+            <button className="btn btn--accent" type="submit" disabled={busy || !name.trim()}>
               Create
             </button>
           </form>
         </div>
 
         {/* ---- Documents ---- */}
-        <div style={{ flex: "1 1 380px" }}>
-          <h2>Documents</h2>
-          {!selected ? (
-            <p style={hint}>Select a project to see its policy documents.</p>
-          ) : (
-            <>
-              <p style={hint}>
-                {selected.name} — upload the Rev 4 policy documents for this system.
-              </p>
+        <div>
+          <div className="section-head">
+            <h2>Documents</h2>
+            {selected && <span className="mono muted">{selected.name}</span>}
+          </div>
 
+          {!selected ? (
+            <p className="muted">Select a project to see its policy documents.</p>
+          ) : (
+            <div className="stack">
               {documents.length === 0 ? (
-                <p style={hint}>No documents yet.</p>
+                <p className="muted">
+                  No documents yet. Upload the Rev 4 policy documents for this system.
+                </p>
               ) : (
-                <table style={{ borderCollapse: "collapse", width: "100%" }}>
-                  <tbody>
-                    {documents.map((d) => (
-                      <tr key={d.document_id}>
-                        <td style={cell}>{d.filename}</td>
-                        <td style={cell}>
-                          <StatusBadge status={d.status} />
-                        </td>
-                        <td style={cell}>
-                          {d.section_count > 0 ? `${d.section_count} sections` : ""}
-                        </td>
-                        <td style={cell}>
-                          <button
-                            onClick={() => onOpenDocument(selected.project_id, d.document_id)}
-                            disabled={BUSY.includes(d.status) && d.status !== "parsed"}
-                          >
-                            Open
-                          </button>
-                        </td>
+                <div className="table-wrap">
+                  <table className="data">
+                    <thead>
+                      <tr>
+                        <th>Document</th>
+                        <th>Status</th>
+                        <th>Sections</th>
+                        <th></th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {documents.map((d) => (
+                        <tr key={d.document_id}>
+                          <td>{d.filename}</td>
+                          <td>
+                            <StatusBadge status={d.status} />
+                          </td>
+                          <td className="num">{d.section_count > 0 ? d.section_count : ""}</td>
+                          <td>
+                            <button
+                              className="btn btn--sm"
+                              onClick={() => onOpenDocument(selected.project_id, d.document_id)}
+                              disabled={BUSY.includes(d.status) && d.status !== "parsed"}
+                            >
+                              Open
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
 
-              <div style={{ marginTop: "1rem" }}>
+              <div className="file-drop">
                 <input
                   ref={fileInput}
                   type="file"
@@ -226,16 +270,29 @@ export default function ProjectBrowser({ client, onOpenDocument, onOpenCoverage 
                     if (file) void upload(file);
                   }}
                 />
-                {busy && <span style={hint}> uploading…</span>}
-                <p style={hint}>
+                {busy && (
+                  <span className="loading" style={{ marginLeft: "0.5rem" }}>
+                    <span className="spinner" /> uploading…
+                  </span>
+                )}
+                <p className="muted" style={{ margin: "0.5rem 0 0" }}>
                   .docx only. Upload starts parsing and control mapping automatically.
                 </p>
               </div>
 
-              <button style={{ marginTop: "0.5rem" }} onClick={() => onOpenCoverage(selected.project_id)}>
-                Package coverage &amp; gaps →
-              </button>
-            </>
+              <div className="toolbar">
+                <button className="btn" onClick={() => onOpenCoverage(selected.project_id)}>
+                  Package coverage &amp; gaps <ArrowRight size={14} />
+                </button>
+                <button
+                  className="btn btn--danger"
+                  disabled={busy}
+                  onClick={() => void purgeProject()}
+                >
+                  <Trash size={14} /> Delete project
+                </button>
+              </div>
+            </div>
           )}
         </div>
       </div>
@@ -244,29 +301,8 @@ export default function ProjectBrowser({ client, onOpenDocument, onOpenCoverage 
 }
 
 function StatusBadge({ status }: { status: DocumentStatus }) {
-  const working = BUSY.includes(status);
+  const working = BUSY.includes(status) && status !== "parsed";
   const failed = status === "failed";
-  const color = failed ? "#b00" : working ? "#a70" : "#160";
-  return (
-    <span style={{ color }}>
-      {working && status !== "parsed" ? `${status}…` : status}
-    </span>
-  );
+  const cls = failed ? "pill pill--crit" : working ? "pill pill--work" : "pill pill--ok";
+  return <span className={cls}>{status}</span>;
 }
-
-const hint: React.CSSProperties = { color: "#666", fontSize: "0.85rem" };
-const list: React.CSSProperties = { listStyle: "none", padding: 0, margin: 0 };
-const rowButton: React.CSSProperties = {
-  background: "none",
-  border: "none",
-  padding: "0.35rem 0",
-  cursor: "pointer",
-  textAlign: "left",
-  width: "100%",
-  font: "inherit",
-};
-const cell: React.CSSProperties = {
-  borderBottom: "1px solid #eee",
-  padding: "0.4rem 0.5rem 0.4rem 0",
-  textAlign: "left",
-};

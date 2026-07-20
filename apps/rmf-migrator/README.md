@@ -4,7 +4,7 @@ Convert RMF **Rev 4** security policy documents to **Rev 5** with LLM assistance
 
 `rmf-rev5-migrator` is an open-source tool for Assessment & Authorization (A&A) teams. Upload your existing Rev 4 policy documents (`.docx`), and the tool maps each section to its controls, applies NIST's official Rev 4 → Rev 5 control mapping, drafts updated Rev 5 language via **Amazon Bedrock**, surfaces coverage gaps, and exports a structure-preserving Rev 5 document plus a full per-control decision log.
 
-> **Status:** Pre-release, in active development. Milestone M1 (ingest & parse pipeline) is landing first. See [Roadmap](#roadmap).
+> **Status:** v1.1.0. Full pipeline works end to end — upload → map → draft → export → coverage. Operating instructions: [docs/USER_MANUAL.md](docs/USER_MANUAL.md).
 
 ---
 
@@ -15,7 +15,7 @@ Moving an A&A package from NIST SP 800-53 Rev 4 to Rev 5 is tedious and error-pr
 ## Design principles
 
 - **Runs in your boundary.** Everything deploys via Terraform into *your* AWS account. Documents never leave it. GovCloud (`us-gov-west-1`) is a supported target; commercial regions work for development.
-- **Private by default.** No public endpoints. The app is served from a VPC-internal load balancer; access is via your existing network controls (VPN, portal, bastion). No application-level authentication to configure.
+- **Authenticated by default.** Production mode puts Lambdas in your VPC and requires AWS SigV4 on every API route. Serve the SPA through an internal signing proxy or portal so browser users inherit your existing IAM/identity controls.
 - **CUI-aware.** Document content and LLM prompts/responses are never written to logs. All data at rest is encrypted with a customer-managed KMS key. Hard delete purges everything.
 - **Human-verified.** The LLM proposes; a person confirms. The section→control mapping is reviewed and corrected *before* any drafting happens.
 - **Toolbox-friendly.** Built to slot into a security team's internal tool portal — configurable base path, deep links, and a Terraform module that consumes your existing VPC/KMS/ALB.
@@ -30,7 +30,7 @@ Moving an A&A package from NIST SP 800-53 Rev 4 to Rev 5 is tedious and error-pr
          │  React SPA (static, S3 origin)   │
          └────────────────┬────────────────┘
                           │  /api/*
-                   Private API Gateway
+              IAM-protected API Gateway
                           │
                     Lambda (Python)
               ┌───────────┼───────────────┐

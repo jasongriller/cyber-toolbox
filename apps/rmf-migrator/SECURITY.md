@@ -12,7 +12,7 @@ Please include: affected component, version/commit, reproduction steps, and impa
 
 This tool is designed to be self-hosted inside the adopter's own AWS account and to process Controlled Unclassified Information (CUI). Security-relevant properties the project commits to:
 
-- **No public attack surface by default.** The reference deployment exposes no public endpoints; access is gated by the adopter's network controls.
+- **No anonymous API access by default.** Production mode requires AWS SigV4 on every API route and places Lambda compute in the adopter's VPC. API Gateway HTTP API v2 still has an AWS edge hostname, so adopters requiring network-private browser access must put an internal signing proxy/portal in front of it.
 - **CUI never enters logs.** Document text, prompts, and model responses are excluded from CloudWatch by design. Reports of content leaking into logs are treated as high severity.
 - **Encryption at rest** with a customer-managed KMS key across S3, DynamoDB, and SQS.
 - **Least-privilege IAM.** Lambda roles are scoped to named resources.

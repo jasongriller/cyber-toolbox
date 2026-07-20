@@ -6,6 +6,7 @@
 // polls until drafts are ready.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ChatCircleDots, Check } from "@phosphor-icons/react";
 import { ApiClient } from "../api/client";
 import type { Draft, DocumentStatus, Section } from "../api/types";
 import ChatPanel from "./ChatPanel";
@@ -71,7 +72,12 @@ export default function DraftEditor({ client, projectId, documentId }: Props) {
   const save = async (sectionId: string) => {
     setBusy(true);
     try {
-      const updated = await client.updateDraft(projectId, documentId, sectionId, text[sectionId] ?? "");
+      const updated = await client.updateDraft(
+        projectId,
+        documentId,
+        sectionId,
+        text[sectionId] ?? "",
+      );
       setDrafts((prev) => prev.map((d) => (d.section_id === sectionId ? updated : d)));
       setError(null);
     } catch (e) {
@@ -86,8 +92,10 @@ export default function DraftEditor({ client, projectId, documentId }: Props) {
     try {
       // Persist current edits first so approval freezes what the reviewer sees.
       await client.updateDraft(projectId, documentId, sectionId, text[sectionId] ?? "");
-      const updated = await client.approveDraft(projectId, documentId, sectionId);
-      setDrafts((prev) => prev.map((d) => (d.section_id === sectionId ? updated : d)));
+      await client.approveDraft(projectId, documentId, sectionId);
+      // The last approved section advances the document to review_approved.
+      // Reload both the drafts and document status so Export reflects that gate.
+      await load();
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -97,55 +105,68 @@ export default function DraftEditor({ client, projectId, documentId }: Props) {
   };
 
   if (status !== null && DRAFTING.includes(status)) {
-    return <p>Drafting Rev 5 language ({status})… this refreshes automatically.</p>;
+    return (
+      <div className="panel">
+        <span className="loading">
+          <span className="spinner" /> Drafting Rev 5 language ({status}). This refreshes
+          automatically.
+        </span>
+      </div>
+    );
   }
+
+  const approvedCount = drafts.filter((d) => d.status === "approved").length;
 
   return (
     <section>
-      <h2>Rev 5 draft editor</h2>
-      <p>
-        Status: <strong>{status ?? "loading…"}</strong>
-      </p>
-      {error && <p style={{ color: "#b00" }}>Error: {error}</p>}
+      <div className="section-head">
+        <h2>Rev 5 draft editor</h2>
+        <span className="mono muted">
+          {approvedCount}/{drafts.length} approved
+        </span>
+      </div>
+      {error && <p className="banner banner--error">{error}</p>}
 
       {drafts.map((d) => {
         const section = sectionById[d.section_id];
         const approved = d.status === "approved";
+        const chatOpen = openChat === d.section_id;
         return (
-          <article key={d.section_id} style={card}>
-            <h3 style={{ margin: "0 0 0.25rem" }}>
-              {section?.heading || <em>(preamble)</em>}{" "}
-              <span style={{ fontWeight: 400, color: "#666" }}>
+          <article key={d.section_id} className="draft-card">
+            <div className="draft-card__head">
+              <h3>{section?.heading || <em className="muted">(preamble)</em>}</h3>
+              <span className="draft-card__target">
                 → {d.rev5_control_ids.join(", ") || "no Rev 5 target"}
               </span>
-            </h3>
-            <p style={{ margin: "0 0 0.5rem", fontSize: "0.85rem", color: "#666" }}>
-              {d.dispositions
-                .map((n) => `${n.rev4_id}→${n.rev5_ids.join("/") || "—"} (${n.relationship})`)
-                .join("  ·  ")}
-              {"  ·  "}
-              <span>state: {d.status}</span>
+              <span className={approved ? "pill pill--ok" : "pill"}>{d.status}</span>
+            </div>
+            <p className="disp">
+              {d.dispositions.map((n) => (
+                <span key={n.rev4_id}>
+                  {n.rev4_id} → {n.rev5_ids.join("/") || "none"} ({n.relationship})
+                </span>
+              ))}
             </p>
 
-            <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-              <div style={{ flex: "1 1 320px" }}>
-                <label style={lbl}>Original (Rev 4)</label>
-                <textarea readOnly value={section?.text ?? ""} style={{ ...ta, background: "#f7f7f7" }} />
+            <div className="grid-2">
+              <div>
+                <label className="field-label">Original (Rev 4)</label>
+                <textarea className="field" readOnly value={section?.text ?? ""} />
               </div>
-              <div style={{ flex: "1 1 320px" }}>
-                <label style={lbl}>Proposed Rev 5</label>
+              <div>
+                <label className="field-label">Proposed Rev 5</label>
                 <textarea
+                  className="field"
                   value={text[d.section_id] ?? ""}
                   disabled={approved || busy}
                   onChange={(e) => setText((t) => ({ ...t, [d.section_id]: e.target.value }))}
-                  style={ta}
                   aria-label={`rev5 draft for ${section?.heading ?? d.section_id}`}
                 />
               </div>
             </div>
 
             {d.suggestions.length > 0 && (
-              <details style={{ marginTop: "0.5rem" }}>
+              <details className="suggest">
                 <summary>Suggestions ({d.suggestions.length})</summary>
                 <ul>
                   {d.suggestions.map((s, i) => (
@@ -155,25 +176,30 @@ export default function DraftEditor({ client, projectId, documentId }: Props) {
               </details>
             )}
 
-            <div style={{ marginTop: "0.5rem", display: "flex", gap: "0.5rem" }}>
+            <div className="actionbar">
               {!approved && (
                 <>
-                  <button disabled={busy} onClick={() => void save(d.section_id)}>
+                  <button className="btn" disabled={busy} onClick={() => void save(d.section_id)}>
                     Save
                   </button>
-                  <button disabled={busy} onClick={() => void approve(d.section_id)}>
-                    Approve section
+                  <button
+                    className="btn btn--accent"
+                    disabled={busy}
+                    onClick={() => void approve(d.section_id)}
+                  >
+                    <Check size={14} /> Approve section
                   </button>
                 </>
               )}
               <button
+                className="btn btn--ghost"
                 onClick={() => setOpenChat((c) => (c === d.section_id ? null : d.section_id))}
               >
-                {openChat === d.section_id ? "Hide assistant" : "Ask assistant"}
+                <ChatCircleDots size={14} /> {chatOpen ? "Hide assistant" : "Ask assistant"}
               </button>
             </div>
 
-            {openChat === d.section_id && (
+            {chatOpen && (
               <ChatPanel
                 client={client}
                 projectId={projectId}
@@ -187,12 +213,3 @@ export default function DraftEditor({ client, projectId, documentId }: Props) {
     </section>
   );
 }
-
-const card: React.CSSProperties = {
-  border: "1px solid #ddd",
-  borderRadius: 6,
-  padding: "1rem",
-  marginBottom: "1rem",
-};
-const lbl: React.CSSProperties = { display: "block", fontSize: "0.8rem", color: "#555" };
-const ta: React.CSSProperties = { width: "100%", minHeight: 140, fontFamily: "inherit" };

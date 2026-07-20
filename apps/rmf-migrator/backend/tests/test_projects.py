@@ -7,8 +7,8 @@ import json
 import pytest
 
 from rmf_migrator.common.http import HttpError
-from rmf_migrator.common.models import Baseline, Document, Project
-from rmf_migrator.handlers.projects import _list_documents, _list_projects
+from rmf_migrator.common.models import Baseline, Document, ParseJob, Project, Section
+from rmf_migrator.handlers.projects import _delete_project, _list_documents, _list_projects
 
 
 def _event(path=None):
@@ -73,3 +73,73 @@ def test_list_documents_404_unknown_project(deps):
     with pytest.raises(HttpError) as exc:
         _list_documents(_event(path={"project_id": "proj_missing"}), deps)
     assert exc.value.status == 404
+
+
+def test_delete_project_requires_exact_confirmation(deps):
+    project = Project(name="Sys")
+    deps.repo.put_project(project)
+
+    with pytest.raises(HttpError) as exc:
+        _delete_project(
+            {
+                "body": json.dumps({"confirm_project_id": "wrong"}),
+                "pathParameters": {"project_id": project.project_id},
+                "headers": {},
+            },
+            deps,
+        )
+
+    assert exc.value.status == 400
+    assert deps.repo.get_project(project.project_id) is not None
+
+
+def test_delete_project_purges_metadata_and_all_s3_versions(deps):
+    project = Project(name="Sys")
+    deps.repo.put_project(project)
+    pid = project.project_id
+    document = Document(
+        project_id=pid,
+        filename="ac.docx",
+        s3_key=f"projects/{pid}/documents/ac.docx",
+    )
+    deps.repo.put_document(document)
+    deps.repo.put_sections(
+        [Section(document_id=document.document_id, project_id=pid, order=0, level=1)]
+    )
+    job = ParseJob(project_id=pid, document_id=document.document_id)
+    deps.repo.put_job(job)
+
+    s3 = deps.store._s3  # noqa: SLF001
+    s3.put_bucket_versioning(
+        Bucket=deps.config.documents_bucket,
+        VersioningConfiguration={"Status": "Enabled"},
+    )
+    for body in (b"v1", b"v2"):
+        s3.put_object(
+            Bucket=deps.config.documents_bucket,
+            Key=document.s3_key,
+            Body=body,
+        )
+    s3.delete_object(Bucket=deps.config.documents_bucket, Key=document.s3_key)
+
+    response = _delete_project(
+        {
+            "body": json.dumps({"confirm_project_id": pid}),
+            "pathParameters": {"project_id": pid},
+            "headers": {"X-Remote-User": "reviewer"},
+        },
+        deps,
+    )
+
+    payload = json.loads(response["body"])
+    assert payload["deleted_object_versions"] == 3
+    assert deps.repo.get_project(pid) is None
+    assert deps.repo.get_document(pid, document.document_id) is None
+    assert deps.repo.list_sections(document.document_id) == []
+    assert deps.repo.get_job(pid, job.job_id) is None
+    versions = s3.list_object_versions(
+        Bucket=deps.config.documents_bucket,
+        Prefix=f"projects/{pid}/",
+    )
+    assert versions.get("Versions", []) == []
+    assert versions.get("DeleteMarkers", []) == []

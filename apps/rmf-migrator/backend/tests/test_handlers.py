@@ -59,6 +59,17 @@ def test_create_project_anonymous_without_header(deps):
     assert json.loads(resp["body"])["created_by"] == "anonymous"
 
 
+def test_create_project_records_sigv4_principal_without_proxy_header(deps):
+    event = _event(body={"name": "Sys"})
+    event["requestContext"] = {
+        "authorizer": {"iam": {"userArn": "arn:aws:iam::123456789012:role/reviewer"}}
+    }
+
+    resp = _create(event, deps)
+
+    assert json.loads(resp["body"])["created_by"].endswith(":role/reviewer")
+
+
 def test_create_project_requires_name(deps):
     with pytest.raises(HttpError) as exc:
         _create(_event(body={}), deps)
@@ -85,7 +96,7 @@ def test_request_upload_returns_presigned_url(deps):
     assert payload["upload"]["method"] == "PUT"
     assert "url" in payload["upload"]
     assert payload["upload"]["headers"]["x-amz-server-side-encryption"] == "aws:kms"
-    assert payload["document"]["status"] == DocumentStatus.UPLOADED.value
+    assert payload["document"]["status"] == DocumentStatus.UPLOAD_PENDING.value
 
 
 def test_request_upload_rejects_non_docx(deps):
@@ -126,6 +137,12 @@ def test_enqueue_parse_sends_sqs_and_creates_job(deps):
     )
     did = up["document"]["document_id"]
 
+    deps.store._s3.put_object(  # noqa: SLF001
+        Bucket=deps.config.documents_bucket,
+        Key=up["document"]["s3_key"],
+        Body=_make_docx_bytes(),
+    )
+
     resp = _enqueue(_event(path={"project_id": pid, "document_id": did}), deps)
     assert resp["statusCode"] == 202
 
@@ -134,6 +151,54 @@ def test_enqueue_parse_sends_sqs_and_creates_job(deps):
     body = json.loads(msgs[0]["Body"])
     assert body["document_id"] == did
     assert body["project_id"] == pid
+
+
+def test_enqueue_parse_failure_keeps_failed_document_retryable(deps):
+    """A failed SQS send must restore failure_stage so the retry gate re-admits."""
+    import dataclasses
+
+    project = json.loads(_create(_event(body={"name": "S"}), deps)["body"])
+    pid = project["project_id"]
+    up = json.loads(
+        _request_upload(_event(body={"filename": "a.docx"}, path={"project_id": pid}), deps)["body"]
+    )
+    did = up["document"]["document_id"]
+
+    # Upload bytes that are not a .docx so the first parse attempt fails.
+    deps.store._s3.put_object(  # noqa: SLF001
+        Bucket=deps.config.documents_bucket,
+        Key=up["document"]["s3_key"],
+        Body=b"not a docx",
+    )
+    job = json.loads(_enqueue(_event(path={"project_id": pid, "document_id": did}), deps)["body"])[
+        "job"
+    ]
+    with pytest.raises(Exception, match="docx"):
+        run_parse_job(pid, did, job["job_id"], deps)
+    document = deps.repo.get_document(pid, did)
+    assert document.status == DocumentStatus.FAILED
+    assert document.failure_stage == "parse"
+
+    class _BoomSqs:
+        def send_message(self, **_kwargs):
+            raise RuntimeError("sqs unavailable")
+
+    broken = dataclasses.replace(deps, sqs=_BoomSqs())
+    with pytest.raises(RuntimeError):
+        _enqueue(_event(path={"project_id": pid, "document_id": did}), broken)
+
+    document = deps.repo.get_document(pid, did)
+    assert document.status == DocumentStatus.FAILED
+    assert document.failure_stage == "parse"  # retry gate still open
+
+    # And the retry proceeds once SQS works again.
+    deps.store._s3.put_object(  # noqa: SLF001
+        Bucket=deps.config.documents_bucket,
+        Key=up["document"]["s3_key"],
+        Body=_make_docx_bytes(),
+    )
+    resp = _enqueue(_event(path={"project_id": pid, "document_id": did}), deps)
+    assert resp["statusCode"] == 202
 
 
 def test_enqueue_parse_404_missing_document(deps):
@@ -221,6 +286,11 @@ def test_get_job_returns_status(deps):
         _request_upload(_event(body={"filename": "a.docx"}, path={"project_id": pid}), deps)["body"]
     )
     did = up["document"]["document_id"]
+    deps.store._s3.put_object(  # noqa: SLF001
+        Bucket=deps.config.documents_bucket,
+        Key=up["document"]["s3_key"],
+        Body=_make_docx_bytes(),
+    )
     job = json.loads(_enqueue(_event(path={"project_id": pid, "document_id": did}), deps)["body"])[
         "job"
     ]

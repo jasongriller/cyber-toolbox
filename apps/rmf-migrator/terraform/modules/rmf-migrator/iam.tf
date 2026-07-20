@@ -48,6 +48,8 @@ data "aws_iam_policy_document" "api" {
       "dynamodb:UpdateItem",
       "dynamodb:Query",
       "dynamodb:Scan",
+      "dynamodb:DeleteItem",
+      "dynamodb:BatchWriteItem",
     ]
     resources = [aws_dynamodb_table.this.arn]
   }
@@ -57,8 +59,20 @@ data "aws_iam_policy_document" "api" {
     effect = "Allow"
     # PutObject: presigned upload URLs. GetObject: presigned download URLs for
     # the generated Rev 5 export.
-    actions   = ["s3:PutObject", "s3:GetObject"]
+    actions = [
+      "s3:PutObject",
+      "s3:GetObject",
+      "s3:DeleteObject",
+      "s3:DeleteObjectVersion",
+    ]
     resources = ["${aws_s3_bucket.documents.arn}/*"]
+  }
+
+  statement {
+    sid       = "ListObjectVersionsForPurge"
+    effect    = "Allow"
+    actions   = ["s3:ListBucket", "s3:ListBucketVersions"]
+    resources = [aws_s3_bucket.documents.arn]
   }
 
   statement {

@@ -50,6 +50,7 @@ class JobStatus(enum.StrEnum):
 
 
 class DocumentStatus(enum.StrEnum):
+    UPLOAD_PENDING = "upload_pending"  # registered; object not yet verified in S3
     UPLOADED = "uploaded"  # object in S3, not yet parsed
     PARSING = "parsing"
     PARSED = "parsed"  # sections extracted; ready for control mapping
@@ -58,6 +59,7 @@ class DocumentStatus(enum.StrEnum):
     MAPPING_APPROVED = "mapping_approved"  # human confirmed mapping; ready for drafting
     DRAFTING = "drafting"  # LLM drafting Rev 5 text per section
     DRAFTED = "drafted"  # Rev 5 drafts ready for human review/edit
+    REVIEW_APPROVED = "review_approved"  # every generated draft is human-approved
     EXPORTING = "exporting"  # building the Rev 5 .docx
     EXPORTED = "exported"  # Rev 5 .docx available for download
     FAILED = "failed"
@@ -105,6 +107,7 @@ class Section(BaseModel):
     heading: str = ""  # heading text ("" for preamble)
     parent_id: str | None = None
     text: str = ""  # body text under this heading, above child headings
+    text_s3_key: str | None = None  # oversized body text externalized from DynamoDB
     char_length: int = 0  # convenience for UI/logging without loading text
 
 
@@ -115,11 +118,13 @@ class Document(BaseModel):
     project_id: str
     filename: str
     s3_key: str
-    status: DocumentStatus = DocumentStatus.UPLOADED
+    status: DocumentStatus = DocumentStatus.UPLOAD_PENDING
     uploaded_at: datetime = Field(default_factory=_now)
     uploaded_by: str = "anonymous"
     section_count: int = 0
     parse_error: str | None = None
+    failure_stage: str | None = None
+    active_job_id: str | None = None
     export_key: str | None = None  # S3 key of the generated Rev 5 .docx, once exported
 
 
@@ -212,6 +217,7 @@ class ExportJob(BaseModel):
     created_at: datetime = Field(default_factory=_now)
     updated_at: datetime = Field(default_factory=_now)
     error_type: str | None = None
+    previous_document_status: DocumentStatus = DocumentStatus.REVIEW_APPROVED
 
 
 class Draft(BaseModel):

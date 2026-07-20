@@ -26,7 +26,7 @@ private_subnet_ids = ["subnet-aaa", "subnet-bbb"]
 
 # --- Optional integration ---------------------------------------------------
 # identity_header = "X-Remote-User"
-# frame_ancestors = ["https://toolbox.internal.example.gov"]
+frame_ancestors = ["https://toolbox.internal.example.gov"]
 
 tags = {
   environment = "dev"

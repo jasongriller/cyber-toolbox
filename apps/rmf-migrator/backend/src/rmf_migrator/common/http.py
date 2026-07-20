@@ -55,12 +55,15 @@ def path_param(event: dict[str, Any], name: str) -> str:
 
 
 def resolve_identity(event: dict[str, Any], identity_header: str | None) -> str:
-    """Return the caller identity from the configured trusted header, or
-    'anonymous' when no header is configured or present.
+    """Return a trusted proxy identity, then fall back to the SigV4 principal.
 
     Header lookup is case-insensitive, matching API Gateway's behavior.
     """
-    if not identity_header:
-        return "anonymous"
-    headers = {k.lower(): v for k, v in (event.get("headers") or {}).items()}
-    return headers.get(identity_header.lower()) or "anonymous"
+    if identity_header:
+        headers = {k.lower(): v for k, v in (event.get("headers") or {}).items()}
+        if identity := headers.get(identity_header.lower()):
+            return identity
+
+    authorizer = (event.get("requestContext") or {}).get("authorizer") or {}
+    iam = authorizer.get("iam") or {}
+    return iam.get("userArn") or iam.get("callerId") or "anonymous"

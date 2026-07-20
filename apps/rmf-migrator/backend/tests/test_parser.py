@@ -9,9 +9,12 @@ covered by ``test_docx_adapter`` which is skipped when python-docx is absent.
 
 from __future__ import annotations
 
-import pytest
+import io
 
-from rmf_migrator.docx.parser import Paragraph, parse_paragraph_stream
+import pytest
+from docx import Document as DocxDocument
+
+from rmf_migrator.docx.parser import Paragraph, parse_docx_bytes, parse_paragraph_stream
 
 
 def _p(style: str, text: str) -> Paragraph:
@@ -135,3 +138,23 @@ def test_ids_reference_this_document_and_project():
     sections = parse_paragraph_stream(stream, document_id="doc_XYZ", project_id="proj_ABC")
     assert sections[0].document_id == "doc_XYZ"
     assert sections[0].project_id == "proj_ABC"
+
+
+def test_docx_adapter_includes_table_cell_text_in_document_order():
+    doc = DocxDocument()
+    doc.add_heading("Access Control Policy", level=1)
+    table = doc.add_table(rows=1, cols=1)
+    table.cell(0, 0).paragraphs[0].add_run("Table-based implementation detail.")
+    doc.add_heading("AU-2 Audit Events", level=1)
+    doc.add_paragraph("Audit body.")
+    buf = io.BytesIO()
+    doc.save(buf)
+
+    sections = parse_docx_bytes(buf.getvalue(), document_id="doc_1", project_id="proj_1")
+
+    assert [section.heading for section in sections] == [
+        "Access Control Policy",
+        "AU-2 Audit Events",
+    ]
+    assert sections[0].text == "Table-based implementation detail."
+    assert sections[1].text == "Audit body."

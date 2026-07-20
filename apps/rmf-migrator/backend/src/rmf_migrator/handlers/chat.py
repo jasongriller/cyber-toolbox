@@ -18,6 +18,7 @@ from rmf_migrator.common.http import (
     path_param,
 )
 from rmf_migrator.common.logging import log_event
+from rmf_migrator.common.sections import hydrate_section_texts
 from rmf_migrator.handlers.deps import Deps
 from rmf_migrator.services.chat import ChatError, reply, validate_messages
 
@@ -34,7 +35,7 @@ def _chat(event: dict[str, Any], deps: Deps) -> dict[str, Any]:
         raise HttpError(404, "document not found")
 
     section = None
-    for s in deps.repo.list_sections(document_id):
+    for s in hydrate_section_texts(deps.repo.list_sections(document_id), deps.store):
         if s.section_id == section_id:
             section = s
             break

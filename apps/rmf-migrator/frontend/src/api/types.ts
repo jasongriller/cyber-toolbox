@@ -14,6 +14,7 @@ export type Baseline =
 export type JobStatus = "pending" | "running" | "succeeded" | "failed";
 
 export type DocumentStatus =
+  | "upload_pending"
   | "uploaded"
   | "parsing"
   | "parsed"
@@ -22,6 +23,7 @@ export type DocumentStatus =
   | "mapping_approved"
   | "drafting"
   | "drafted"
+  | "review_approved"
   | "exporting"
   | "exported"
   | "failed";
@@ -49,6 +51,8 @@ export interface DocumentRecord {
   uploaded_by: string;
   section_count: number;
   parse_error: string | null;
+  failure_stage?: string | null;
+  active_job_id?: string | null;
 }
 
 export interface UploadTarget {
@@ -163,4 +167,10 @@ export interface Coverage {
   coverage_pct: number | null;
   baseline_gaps: string[];
   new_in_rev5_gaps: string[];
+}
+
+export interface ProjectPurgeResult {
+  project_id: string;
+  deleted_object_versions: number;
+  deleted_records: number;
 }

@@ -1,6 +1,11 @@
 output "api_endpoint" {
-  description = "Base URL of the HTTP API. In private mode this is reached only from inside the adopter's network."
+  description = "Base URL of the HTTP API. Private mode requires AWS SigV4 authentication; browsers normally reach it through an internal signing proxy."
   value       = aws_apigatewayv2_api.this.api_endpoint
+}
+
+output "api_execution_arn" {
+  description = "Execution ARN to scope execute-api:Invoke permissions for trusted SigV4 callers."
+  value       = "${aws_apigatewayv2_api.this.execution_arn}/*/*"
 }
 
 output "documents_bucket" {

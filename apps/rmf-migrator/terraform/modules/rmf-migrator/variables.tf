@@ -18,7 +18,7 @@ variable "tags" {
 # ---- Network -----------------------------------------------------------------
 
 variable "network_mode" {
-  description = "\"private\" (default) exposes no public endpoints; the app is reached over the adopter's own network (VPN/portal). \"public\" fronts the API/SPA publicly for demos/dev. GovCloud production should stay \"private\"."
+  description = "\"private\" (default) runs Lambdas in the supplied VPC and requires AWS_IAM authentication on every API route. \"public\" exposes an unauthenticated API for demos/dev. GovCloud production should stay \"private\"."
   type        = string
   default     = "private"
 
@@ -41,7 +41,7 @@ variable "private_subnet_ids" {
 }
 
 variable "frame_ancestors" {
-  description = "Origins allowed to embed the SPA in an iframe (CSP frame-ancestors), e.g. your internal tool portal. Empty list = same-origin only."
+  description = "Trusted browser origins allowed by API and S3 CORS, e.g. your internal tool portal. Apply the same values to the SPA's CSP frame-ancestors directive. At least one is required in private mode."
   type        = list(string)
   default     = []
 }

@@ -47,6 +47,8 @@ jobs:
         run: npm run lint
       - name: Test
         run: npm test --if-present
+      - name: Production build
+        run: npm run build
 
   terraform:
     name: Terraform (fmt + validate + lint)

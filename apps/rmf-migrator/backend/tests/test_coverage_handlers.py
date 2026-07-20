@@ -56,6 +56,7 @@ def _seed_project_with_two_docs(deps, baseline=Baseline.FIPS_199_LOW):
                     order=0,
                     rev4_control_ids=controls,
                     rev5_control_ids=controls,
+                    status=DraftStatus.APPROVED,
                 )
             ]
         )

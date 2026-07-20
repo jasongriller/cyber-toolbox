@@ -68,8 +68,15 @@ The HTTP API is reachable directly. Quickest to stand up. Do not put CUI through
 
 ### `private` (production, recommended for CUI)
 
-- Set `network_mode = "private"` and pass `vpc_id` + `private_subnet_ids`.
+- Set `network_mode = "private"` and pass `vpc_id`, `private_subnet_ids`, and
+  the trusted SPA/portal origin(s) in `frame_ancestors`. Those origins become
+  the API and presigned-upload CORS allowlist; private mode never defaults CORS
+  to `*`.
 - Lambdas run inside your VPC with an egress-only security group.
+- Every API route requires AWS Signature Version 4 (`AWS_IAM`). Grant trusted
+  callers `execute-api:Invoke` on this API. A browser cannot sign these requests
+  by itself; normally the SPA calls an internal portal/proxy at `/api`, and that
+  trusted proxy signs the upstream request with a tightly scoped IAM role.
 - **You must provide VPC endpoints** in that VPC so in-VPC Lambdas reach AWS services without internet egress:
 
   | Service | Endpoint type |
@@ -81,7 +88,11 @@ The HTTP API is reachable directly. Quickest to stand up. Do not put CUI through
   | CloudWatch Logs (`com.amazonaws.<region>.logs`) | Interface |
   | KMS (`com.amazonaws.<region>.kms`) | Interface |
 
-- The HTTP API is fronted from inside your network (internal ALB or `execute-api` VPC endpoint) and the SPA is served from your internal load balancer. This front-door wiring is finalized in the frontend milestone; until then the API is defined and deployable, and reachable per your network configuration.
+- API Gateway HTTP API v2 does not offer the REST API `PRIVATE` endpoint type.
+  Its AWS edge hostname therefore remains network-reachable, but unsigned or
+  unauthorized calls are rejected before Lambda invocation. If policy requires
+  the browser-facing endpoint itself to be network-private, expose only your
+  internal signing proxy and block direct client use of the output API URL.
 
 ## Encryption
 

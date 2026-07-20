@@ -19,6 +19,7 @@ from rmf_migrator.common.http import (
     path_param,
 )
 from rmf_migrator.common.logging import log_event
+from rmf_migrator.common.models import MappingStatus
 from rmf_migrator.handlers.deps import Deps
 from rmf_migrator.services.conversion_matrix import Contribution, build_rows, to_csv
 from rmf_migrator.services.coverage import build_coverage, resolve_baseline
@@ -93,6 +94,8 @@ def _conversion_matrix(event: dict[str, Any], deps: Deps) -> dict[str, Any]:
             s.section_id: s.heading for s in deps.repo.list_sections(document.document_id)
         }
         for mapping in deps.repo.list_mappings(document.document_id):
+            if mapping.status != MappingStatus.APPROVED:
+                continue
             heading = heading_by_section.get(mapping.section_id, "")
             for rev4_id in mapping.effective_control_ids():
                 contributions.append(

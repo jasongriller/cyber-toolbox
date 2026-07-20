@@ -18,13 +18,12 @@ from rmf_migrator.common.http import (
     path_param,
 )
 from rmf_migrator.common.logging import log_event
-from rmf_migrator.common.models import DocumentStatus
+from rmf_migrator.common.models import DocumentStatus, DraftStatus, ExportJob, JobStatus
 from rmf_migrator.handlers.deps import Deps
 from rmf_migrator.services.decision_log import build_rows, to_csv
 
 _EXPORTABLE = {
-    DocumentStatus.DRAFTED,
-    DocumentStatus.EXPORTING,
+    DocumentStatus.REVIEW_APPROVED,
     DocumentStatus.EXPORTED,
 }
 
@@ -42,12 +41,47 @@ def _load(deps: Deps, event: dict[str, Any]):
 
 
 def _enqueue_export(event: dict[str, Any], deps: Deps) -> dict[str, Any]:
-    from rmf_migrator.handlers.worker import enqueue_export
+    from rmf_migrator.handlers.worker import enqueue_export as enqueue_export_job
 
     project_id, document_id, document = _load(deps, event)
+    if document.status == DocumentStatus.EXPORTING and document.active_job_id:
+        existing = deps.repo.get_export_job(project_id, document.active_job_id)
+        if existing is not None:
+            return json_response(202, {"job": existing.model_dump()})
     if document.status not in _EXPORTABLE:
         raise HttpError(409, f"document is not ready to export (status: {document.status})")
-    job = enqueue_export(deps, project_id, document_id)
+
+    drafts = deps.repo.list_drafts(document_id)
+    if not drafts or any(draft.status != DraftStatus.APPROVED for draft in drafts):
+        raise HttpError(409, "every generated draft must be approved before export")
+
+    previous_status = document.status
+    job = ExportJob(
+        project_id=project_id,
+        document_id=document_id,
+        previous_document_status=previous_status,
+    )
+    document.status = DocumentStatus.EXPORTING
+    document.active_job_id = job.job_id
+    document.failure_stage = None
+    if not deps.repo.put_document_if_status(document, {previous_status}):
+        raise HttpError(409, "document state changed; refresh and try again")
+    try:
+        enqueue_export_job(
+            deps,
+            project_id,
+            document_id,
+            previous_status=previous_status,
+            job=job,
+        )
+    except Exception:
+        document.status = previous_status
+        document.active_job_id = None
+        deps.repo.put_document(document)
+        job.status = JobStatus.FAILED
+        job.error_type = "EnqueueFailed"
+        deps.repo.put_export_job(job)
+        raise
     return json_response(202, {"job": job.model_dump()})
 
 

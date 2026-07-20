@@ -13,6 +13,7 @@ from rmf_migrator.common.limits import (
     MAX_DOCX_BYTES,
     MAX_UNCOMPRESSED_BYTES,
     DocxTooLarge,
+    ObjectTooLarge,
     guard_docx_bytes,
 )
 from rmf_migrator.docx.export_docx import export_rev5_docx
@@ -125,3 +126,15 @@ def test_parser_rejects_a_zip_bomb():
 def test_export_rejects_a_zip_bomb():
     with pytest.raises(DocxTooLarge):
         export_rev5_docx(_zip_bomb(), {0: "replacement"})
+
+
+def test_storage_download_enforces_the_streaming_byte_limit(deps):
+    key = "projects/p/documents/d.docx"
+    deps.store._s3.put_object(  # noqa: SLF001
+        Bucket=deps.config.documents_bucket,
+        Key=key,
+        Body=b"1234",
+    )
+
+    with pytest.raises(ObjectTooLarge, match="exceeds"):
+        deps.store.get_bytes(key, max_bytes=3)

@@ -20,7 +20,7 @@ from docx import Document as DocxDocument
 
 from rmf_migrator.common.limits import guard_docx_bytes
 
-from .parser import heading_level
+from .parser import heading_level, iter_docx_blocks
 
 
 def _style_name(paragraph) -> str | None:  # noqa: ANN001 (python-docx type)
@@ -43,7 +43,7 @@ def _walk_sections(document) -> list[dict]:  # noqa: ANN001
     headings: list[tuple] = []  # (heading_paragraph, [body paragraphs])
     current_body: list | None = None
 
-    for paragraph in document.paragraphs:
+    for paragraph in iter_docx_blocks(document):
         if _is_heading(paragraph):
             body: list = []
             headings.append((paragraph, body))
@@ -62,11 +62,6 @@ def _walk_sections(document) -> list[dict]:  # noqa: ANN001
         sections.append({"order": order, "anchor": heading_paragraph, "body": body})
         order += 1
     return sections
-
-
-def _delete_paragraph(paragraph) -> None:  # noqa: ANN001
-    element = paragraph._p  # noqa: SLF001 — python-docx exposes the element this way
-    element.getparent().remove(element)
 
 
 def _detached_paragraph_element(document, text: str, style_name: str | None):  # noqa: ANN001
@@ -90,7 +85,7 @@ def _body_style(body: list) -> str | None:
 
 
 def _first_heading(document):  # noqa: ANN001
-    for paragraph in document.paragraphs:
+    for paragraph in iter_docx_blocks(document):
         if _is_heading(paragraph):
             return paragraph
     return None
@@ -100,6 +95,20 @@ def _replace_section_body(document, section: dict, text: str) -> None:  # noqa: 
     body = section["body"]
     style_name = _body_style(body)
     lines = [line for line in text.split("\n") if line.strip() != ""]
+
+    # Reuse existing paragraph locations first. This preserves table cells and
+    # other block structure instead of deleting their required paragraph nodes.
+    if body:
+        for index, paragraph in enumerate(body):
+            paragraph.text = lines[index] if index < len(lines) else ""
+        if len(lines) > len(body):
+            cursor = body[-1]._p  # noqa: SLF001
+            for line in lines[len(body) :]:
+                element = _detached_paragraph_element(document, line, style_name)
+                cursor.addnext(element)
+                cursor = element
+        return
+
     new_elements = [_detached_paragraph_element(document, line, style_name) for line in lines]
 
     anchor = section["anchor"]
@@ -122,9 +131,6 @@ def _replace_section_body(document, section: dict, text: str) -> None:  # noqa: 
             body_el = document.element.body
             for element in new_elements:
                 body_el.append(element)
-
-    for paragraph in body:
-        _delete_paragraph(paragraph)
 
 
 def export_rev5_docx(original_bytes: bytes, drafts_by_order: dict[int, str]) -> bytes:

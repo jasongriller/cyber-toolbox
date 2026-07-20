@@ -17,6 +17,7 @@ import type {
   ParseJob,
   PresignedGet,
   Project,
+  ProjectPurgeResult,
   Section,
   UploadTarget,
 } from "./types";
@@ -70,6 +71,12 @@ export class ApiClient {
 
   listProjects(): Promise<{ projects: Project[] }> {
     return this.request("GET", "/projects");
+  }
+
+  deleteProject(projectId: string): Promise<ProjectPurgeResult> {
+    return this.request("DELETE", `/projects/${projectId}`, {
+      confirm_project_id: projectId,
+    });
   }
 
   listDocuments(projectId: string): Promise<{ documents: DocumentRecord[] }> {

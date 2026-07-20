@@ -4,6 +4,7 @@
 // forward. Also downloads the conversion summary matrix (CSV).
 
 import { useCallback, useEffect, useState } from "react";
+import { ArrowsClockwise, FileCsv, BracketsCurly } from "@phosphor-icons/react";
 import { ApiClient } from "../api/client";
 import type { Coverage } from "../api/types";
 
@@ -68,52 +69,75 @@ export default function CoverageDashboard({ client, projectId }: Props) {
 
   return (
     <section>
-      <h2>Coverage dashboard</h2>
-
-      <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
-        <label>
-          Baseline:{" "}
-          <select value={baseline} onChange={(e) => setBaseline(e.target.value)}>
-            {BASELINES.map((b) => (
-              <option key={b} value={b}>
-                {b}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button onClick={() => void load()} disabled={loading}>
-          Refresh
-        </button>
-        <button onClick={() => void downloadMatrix()}>Download conversion matrix (CSV)</button>
-        <button onClick={() => void downloadOscal()}>Download OSCAL (JSON)</button>
+      <div className="section-head">
+        <h2>Coverage dashboard</h2>
       </div>
 
-      {error && <p style={{ color: "#b00" }}>Error: {error}</p>}
-      {loading && <p>Loading…</p>}
+      <div className="toolbar">
+        <label className="field-label" style={{ marginBottom: 0 }}>
+          Baseline
+        </label>
+        <select
+          className="field"
+          style={{ width: "auto" }}
+          value={baseline}
+          onChange={(e) => setBaseline(e.target.value)}
+        >
+          {BASELINES.map((b) => (
+            <option key={b} value={b}>
+              {b}
+            </option>
+          ))}
+        </select>
+        <button className="btn" onClick={() => void load()} disabled={loading}>
+          <ArrowsClockwise size={14} /> Refresh
+        </button>
+        <button className="btn" onClick={() => void downloadMatrix()}>
+          <FileCsv size={14} /> Conversion matrix (CSV)
+        </button>
+        <button className="btn" onClick={() => void downloadOscal()}>
+          <BracketsCurly size={14} /> OSCAL (JSON)
+        </button>
+      </div>
+
+      {error && (
+        <p className="banner banner--error" style={{ marginTop: "1rem" }}>
+          {error}
+        </p>
+      )}
+      {loading && (
+        <p className="loading" style={{ marginTop: "1rem" }}>
+          <span className="spinner" /> Loading…
+        </p>
+      )}
 
       {coverage && (
-        <div style={{ marginTop: "1rem" }}>
+        <div style={{ marginTop: "1.5rem" }}>
           {pct !== null ? (
             <>
-              <div style={{ marginBottom: "0.25rem" }}>
-                Baseline coverage: <strong>{pct}%</strong> ({coverage.baseline_covered}/
-                {coverage.baseline_total} controls, baseline: {coverage.baseline})
+              <div className="cov-metric">
+                <span className="big">{pct}%</span>
+                <span className="muted">
+                  {coverage.baseline_covered}/{coverage.baseline_total} controls · baseline{" "}
+                  <span className="mono">{coverage.baseline}</span>
+                </span>
               </div>
-              <div style={bar}>
-                <div style={{ ...barFill, width: `${pct}%` }} />
+              <div className="bar">
+                <div className="bar__fill" style={{ width: `${pct}%` }} />
               </div>
             </>
           ) : (
             <p>
-              Covered {coverage.covered_count} Rev 5 controls. Select a baseline for gap analysis.
+              Covered <strong className="mono">{coverage.covered_count}</strong> Rev 5 controls.
+              Select a baseline for gap analysis.
             </p>
           )}
 
-          <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap", marginTop: "1rem" }}>
+          <div className="gap-grid">
             <GapList
               title={`Baseline gaps (${coverage.baseline_gaps.length})`}
               ids={coverage.baseline_gaps}
-              empty="No baseline gaps — every required control is addressed."
+              empty="No baseline gaps. Every required control is addressed."
             />
             <GapList
               title={`New in Rev 5, not covered (${coverage.new_in_rev5_gaps.length})`}
@@ -140,21 +164,14 @@ function GapList({
   highlightPrefix?: string;
 }) {
   return (
-    <div style={{ flex: "1 1 260px" }}>
-      <h3 style={{ fontSize: "1rem" }}>{title}</h3>
+    <div>
+      <h3>{title}</h3>
       {ids.length === 0 ? (
-        <p style={{ color: "#690" }}>{empty}</p>
+        <p className="gap-empty">{empty}</p>
       ) : (
-        <ul style={{ maxHeight: 280, overflowY: "auto", columns: 2, paddingLeft: "1.2rem" }}>
+        <ul className="gap-list">
           {ids.map((id) => (
-            <li
-              key={id}
-              style={
-                highlightPrefix && id.startsWith(highlightPrefix)
-                  ? { fontWeight: 700, color: "#a15" }
-                  : undefined
-              }
-            >
+            <li key={id} className={highlightPrefix && id.startsWith(highlightPrefix) ? "hl" : ""}>
               {id}
             </li>
           ))}
@@ -163,12 +180,3 @@ function GapList({
     </div>
   );
 }
-
-const bar: React.CSSProperties = {
-  height: 16,
-  background: "#eee",
-  borderRadius: 8,
-  overflow: "hidden",
-  maxWidth: 480,
-};
-const barFill: React.CSSProperties = { height: "100%", background: "#4a8" };

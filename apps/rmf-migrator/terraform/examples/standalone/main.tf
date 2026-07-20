@@ -9,9 +9,8 @@
 #     these services without egress to the internet.
 # See docs/DEPLOYMENT.md for the full private-mode checklist.
 #
-# network_mode = "public" stands up an UNAUTHENTICATED API (there is no
-# app-level authorizer — see the module's apigateway.tf). It exists for dev and
-# demo only, and must be opted into deliberately. Never put CUI through it.
+# network_mode = "private" requires AWS SigV4 on every route. Public mode stands
+# up an unauthenticated API for dev/demo only and must never carry CUI.
 
 terraform {
   required_version = ">= 1.6"

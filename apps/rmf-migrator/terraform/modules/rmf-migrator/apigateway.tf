@@ -1,16 +1,17 @@
 # HTTP API (API Gateway v2) fronting the API Lambdas.
 #
 # This defines the REST surface the SPA and any toolbox integrator calls. In
-# "public" mode the default endpoint is reachable directly (dev/demo). In
-# "private" mode the adopter fronts this API from inside their network — via an
-# internal ALB or an execute-api VPC endpoint — so it is not used from the public
-# internet. That front-door wiring is completed alongside the frontend milestone;
-# the routes/integrations below are identical for both modes.
+# "private" mode the API requires AWS Signature Version 4 authentication and
+# the Lambdas run in the adopter's VPC. HTTP API v2 does not support a PRIVATE
+# endpoint type, so its AWS edge hostname still resolves publicly; unauthenticated
+# requests are rejected. Put an internal signing proxy in front when the browser
+# must not call the AWS hostname directly.
 
 locals {
   routes = {
     "POST /projects"                                            = "create-project"
     "GET /projects"                                             = "list-projects"
+    "DELETE /projects/{project_id}"                             = "delete-project"
     "GET /projects/{project_id}/documents"                      = "list-documents"
     "POST /projects/{project_id}/documents"                     = "request-upload"
     "POST /projects/{project_id}/documents/{document_id}/parse" = "enqueue-parse"
@@ -49,10 +50,19 @@ resource "aws_apigatewayv2_api" "this" {
   # CSP frame-ancestors is enforced at the SPA delivery layer; CORS here governs
   # XHR from the SPA origin(s).
   cors_configuration {
-    allow_methods = ["GET", "POST", "PUT", "OPTIONS"]
+    allow_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    # Private-mode validation requires an explicit allowlist. The wildcard is
+    # reachable only in the deliberately unauthenticated public demo posture.
     allow_origins = length(var.frame_ancestors) > 0 ? var.frame_ancestors : ["*"]
-    allow_headers = ["content-type", var.identity_header != null ? var.identity_header : "x-remote-user"]
-    max_age       = 3000
+    allow_headers = [
+      "content-type",
+      "authorization",
+      "x-amz-date",
+      "x-amz-security-token",
+      "x-amz-content-sha256",
+      var.identity_header != null ? var.identity_header : "x-remote-user",
+    ]
+    max_age = 3000
   }
 
   tags = local.common_tags
@@ -70,19 +80,15 @@ resource "aws_apigatewayv2_integration" "api" {
 resource "aws_apigatewayv2_route" "this" {
   for_each = local.routes
 
-  # checkov:skip=CKV_AWS_309: No API-level authorizer, by design. This tool has no
-  # application-level authentication: in the intended (private) posture it has no
-  # public endpoint at all and access is gated by the adopter's own network
-  # controls — VPN, internal load balancer, or a tool portal that injects
-  # var.identity_header for attribution. Adding a Cognito/JWT authorizer here
-  # would duplicate controls the adopter already owns.
-  #
-  # NOTE: network_mode = "public" therefore exposes an UNAUTHENTICATED API and is
-  # intended only for dev/demo. Do not put CUI through a public deployment.
-  # See docs/DEPLOYMENT.md.
-  api_id    = aws_apigatewayv2_api.this.id
-  route_key = each.key
-  target    = "integrations/${aws_apigatewayv2_integration.api[each.value].id}"
+  # checkov:skip=CKV_AWS_309: The production/default branch is AWS_IAM. NONE is
+  # retained only for the explicitly selected public dev/demo mode, which the
+  # module and deployment guide prohibit for CUI.
+  # Private mode requires SigV4 on every route. Public mode is an explicit
+  # unauthenticated dev/demo posture and must never carry CUI.
+  api_id             = aws_apigatewayv2_api.this.id
+  route_key          = each.key
+  target             = "integrations/${aws_apigatewayv2_integration.api[each.value].id}"
+  authorization_type = local.is_private ? "AWS_IAM" : "NONE"
 }
 
 resource "aws_cloudwatch_log_group" "apigw" {

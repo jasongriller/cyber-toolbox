@@ -11,6 +11,7 @@ from rmf_migrator.common.models import (
     Document,
     DocumentStatus,
     Draft,
+    DraftStatus,
     ExportJob,
     JobStatus,
     Project,
@@ -39,7 +40,7 @@ def _seed(deps) -> tuple[str, str]:
     deps.repo.put_project(project)
     pid = project.project_id
     document = Document(project_id=pid, filename="ac-policy.docx", s3_key="projects/x/doc.docx")
-    document.status = DocumentStatus.DRAFTED
+    document.status = DocumentStatus.EXPORTING
     deps.repo.put_document(document)
     did = document.document_id
 
@@ -60,6 +61,7 @@ def _seed(deps) -> tuple[str, str]:
             section_id=sections[0].section_id,
             order=1,
             draft_text="New Rev 5 AC policy text.",
+            status=DraftStatus.APPROVED,
         ),
         Draft(
             project_id=pid,
@@ -68,6 +70,7 @@ def _seed(deps) -> tuple[str, str]:
             order=2,
             draft_text="New AC-2 text.",
             edited_text="Edited AC-2 Rev 5 text.",
+            status=DraftStatus.APPROVED,
         ),
     ]
     deps.repo.put_drafts(drafts)
@@ -141,5 +144,5 @@ def test_run_export_job_restores_status_on_failure(deps):
         run_export_job(pid, did, job.job_id, deps)
 
     # Document not left stuck in EXPORTING.
-    assert deps.repo.get_document(pid, did).status == DocumentStatus.DRAFTED
+    assert deps.repo.get_document(pid, did).status == DocumentStatus.REVIEW_APPROVED
     assert deps.repo.get_export_job(pid, job.job_id).status == JobStatus.FAILED

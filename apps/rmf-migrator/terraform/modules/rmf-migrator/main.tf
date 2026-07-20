@@ -50,9 +50,11 @@ resource "terraform_data" "validate_private_network" {
   lifecycle {
     precondition {
       condition = var.network_mode != "private" || (
-        var.vpc_id != null && length(var.private_subnet_ids) > 0
+        var.vpc_id != null &&
+        length(var.private_subnet_ids) > 0 &&
+        length(var.frame_ancestors) > 0
       )
-      error_message = "network_mode = \"private\" requires vpc_id and at least one private_subnet_id."
+      error_message = "network_mode = \"private\" requires vpc_id, at least one private_subnet_id, and at least one trusted browser origin in frame_ancestors."
     }
   }
 }

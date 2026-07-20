@@ -25,6 +25,18 @@ MAX_UNCOMPRESSED_BYTES = 300 * 1024 * 1024  # 300 MB
 # past this ratio is a bomb, not a document.
 MAX_COMPRESSION_RATIO = 200
 
+# Bound extracted policy prose for synchronous Lambda/API responses.
+MAX_PARSED_TEXT_BYTES = 4 * 1024 * 1024
+MAX_SECTION_TEXT_BYTES = 300 * 1024
+MAX_SECTION_COUNT = 5000
+MAX_HEADING_CHARS = 1000
+
+# Human-authored API input ceilings. Drafts share a DynamoDB item with the
+# generated proposal, so the edit is byte-bounded below DynamoDB's 400 KiB cap.
+MAX_DRAFT_TEXT_BYTES = 256 * 1024
+MAX_CHAT_MESSAGE_CHARS = 12_000
+MAX_CHAT_TOTAL_CHARS = 80_000
+
 
 class ObjectTooLarge(ValueError):
     """Raised when a stored object exceeds the size we are willing to download."""
@@ -32,6 +44,10 @@ class ObjectTooLarge(ValueError):
 
 class DocxTooLarge(ValueError):
     """Raised when .docx bytes exceed a size or decompression-ratio limit."""
+
+
+class ParsedDocumentTooLarge(ValueError):
+    """Raised when extracted policy text cannot safely traverse the application."""
 
 
 # Members are decompressed in bounded chunks so the guard's own memory use stays
@@ -76,3 +92,21 @@ def guard_docx_bytes(data: bytes) -> None:
                             )
     except zipfile.BadZipFile as exc:
         raise DocxTooLarge("document is not a readable .docx archive") from exc
+
+
+def guard_parsed_sections(sections: list[object]) -> None:
+    """Bound extracted content after decompression and XML parsing."""
+    if len(sections) > MAX_SECTION_COUNT:
+        raise ParsedDocumentTooLarge(f"document contains more than {MAX_SECTION_COUNT} sections")
+
+    total = 0
+    for section in sections:
+        heading = str(getattr(section, "heading", ""))
+        text = str(getattr(section, "text", ""))
+        if len(heading) > MAX_HEADING_CHARS:
+            raise ParsedDocumentTooLarge(f"section heading exceeds {MAX_HEADING_CHARS} characters")
+        total += len(heading.encode("utf-8")) + len(text.encode("utf-8"))
+        if total > MAX_PARSED_TEXT_BYTES:
+            raise ParsedDocumentTooLarge(
+                f"parsed policy text exceeds {MAX_PARSED_TEXT_BYTES} UTF-8 bytes"
+            )

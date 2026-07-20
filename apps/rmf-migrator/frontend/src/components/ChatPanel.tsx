@@ -2,6 +2,7 @@
 // running conversation and sends it each turn.
 
 import { useState } from "react";
+import { PaperPlaneRight } from "@phosphor-icons/react";
 import { ApiClient } from "../api/client";
 import type { ChatMessage } from "../api/types";
 
@@ -37,23 +38,24 @@ export default function ChatPanel({ client, projectId, documentId, sectionId }: 
   };
 
   return (
-    <div style={{ marginTop: "0.75rem", borderTop: "1px dashed #ccc", paddingTop: "0.5rem" }}>
-      <div style={{ maxHeight: 220, overflowY: "auto", marginBottom: "0.5rem" }}>
+    <div className="chat">
+      <div className="chat__log">
         {messages.length === 0 && (
-          <p style={{ color: "#888", margin: 0 }}>
+          <p className="muted" style={{ margin: 0 }}>
             Ask the assistant to refine wording or explain a control.
           </p>
         )}
         {messages.map((m, i) => (
-          <p key={i} style={{ margin: "0.25rem 0" }}>
-            <strong>{m.role === "user" ? "You" : "Assistant"}:</strong> {m.content}
-          </p>
+          <div key={i} className={`chat__msg chat__msg--${m.role === "user" ? "user" : "bot"}`}>
+            <span className="chat__role">{m.role === "user" ? "You" : "Assistant"}</span>
+            {m.content}
+          </div>
         ))}
       </div>
-      {error && <p style={{ color: "#b00", margin: "0.25rem 0" }}>Error: {error}</p>}
-      <div style={{ display: "flex", gap: "0.5rem" }}>
+      {error && <p className="banner banner--error">{error}</p>}
+      <div className="chat__input">
         <input
-          style={{ flex: 1 }}
+          className="field"
           value={input}
           disabled={busy}
           placeholder="Ask about this control…"
@@ -63,8 +65,8 @@ export default function ChatPanel({ client, projectId, documentId, sectionId }: 
           }}
           aria-label="chat message"
         />
-        <button disabled={busy || !input.trim()} onClick={() => void send()}>
-          {busy ? "…" : "Send"}
+        <button className="btn btn--accent" disabled={busy || !input.trim()} onClick={() => void send()}>
+          {busy ? "…" : <PaperPlaneRight size={15} />}
         </button>
       </div>
     </div>

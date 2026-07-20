@@ -9,7 +9,7 @@ from rmf_migrator.common.catalog import (
     li_saas_tailoring,
     rev5_catalog,
 )
-from rmf_migrator.common.models import Baseline, Draft
+from rmf_migrator.common.models import Baseline, Draft, DraftStatus
 from rmf_migrator.services.coverage import (
     build_coverage,
     covered_controls,
@@ -24,6 +24,7 @@ def _draft(section_id, rev5_ids):
         section_id=section_id,
         order=0,
         rev5_control_ids=list(rev5_ids),
+        status=DraftStatus.APPROVED,
     )
 
 

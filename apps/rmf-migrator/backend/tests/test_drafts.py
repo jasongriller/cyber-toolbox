@@ -7,6 +7,7 @@ import json
 import pytest
 
 from rmf_migrator.common.http import HttpError
+from rmf_migrator.common.limits import MAX_DRAFT_TEXT_BYTES
 from rmf_migrator.common.models import (
     Document,
     DocumentStatus,
@@ -85,6 +86,19 @@ def test_update_draft_requires_text(deps):
     assert exc.value.status == 400
 
 
+def test_update_draft_rejects_text_that_cannot_fit_in_dynamodb(deps):
+    pid, did, sid = _seed_drafted_document(deps)
+    with pytest.raises(HttpError) as exc:
+        _update_draft(
+            _event(
+                body={"text": "é" * MAX_DRAFT_TEXT_BYTES},
+                path={"project_id": pid, "document_id": did, "section_id": sid},
+            ),
+            deps,
+        )
+    assert exc.value.status == 413
+
+
 def test_approve_draft_freezes_effective_text(deps):
     pid, did, sid = _seed_drafted_document(deps)
     # Edit first, then approve -> approved text is the edit.
@@ -111,6 +125,22 @@ def test_approve_draft_without_edit_freezes_proposal(deps):
     draft = json.loads(resp["body"])
     assert draft["status"] == DraftStatus.APPROVED.value
     assert draft["edited_text"] == "Proposed Rev 5 text."
+    assert deps.repo.get_document(pid, did).status == DocumentStatus.REVIEW_APPROVED
+
+
+def test_edit_after_approval_invalidates_document_level_approval(deps):
+    pid, did, sid = _seed_drafted_document(deps)
+    _approve_draft(_event(path={"project_id": pid, "document_id": did, "section_id": sid}), deps)
+
+    _update_draft(
+        _event(
+            body={"text": "Changed after approval."},
+            path={"project_id": pid, "document_id": did, "section_id": sid},
+        ),
+        deps,
+    )
+
+    assert deps.repo.get_document(pid, did).status == DocumentStatus.DRAFTED
 
 
 def test_update_draft_404_missing(deps):

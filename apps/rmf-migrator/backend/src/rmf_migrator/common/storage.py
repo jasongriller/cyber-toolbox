@@ -31,6 +31,11 @@ def build_export_key(project_id: str, document_id: str) -> str:
     return f"projects/{project_id}/exports/{document_id}-rev5.docx"
 
 
+def build_section_text_key(project_id: str, document_id: str, section_id: str) -> str:
+    """S3 key for a section body too large for a DynamoDB item."""
+    return f"projects/{project_id}/sections/{document_id}/{section_id}.txt"
+
+
 class DocumentStore:
     def __init__(self, bucket: str, kms_key_id: str, *, s3_client: Any = None) -> None:
         self._bucket = bucket
@@ -64,6 +69,10 @@ class DocumentStore:
             "expires_in": _UPLOAD_URL_TTL_SECONDS,
         }
 
+    def head(self, key: str) -> dict[str, Any]:
+        """Return object metadata without downloading policy content."""
+        return self._s3.head_object(Bucket=self._bucket, Key=key)
+
     def get_bytes(self, key: str, *, max_bytes: int | None = MAX_DOCX_BYTES) -> bytes:
         """Download an object, refusing anything over ``max_bytes``.
 
@@ -77,7 +86,14 @@ class DocumentStore:
             if length is not None and length > max_bytes:
                 raise ObjectTooLarge(f"object {key} exceeds {max_bytes} bytes")
         resp = self._s3.get_object(Bucket=self._bucket, Key=key)
-        return resp["Body"].read()
+        body = resp["Body"]
+        try:
+            data = body.read() if max_bytes is None else body.read(max_bytes + 1)
+        finally:
+            body.close()
+        if max_bytes is not None and len(data) > max_bytes:
+            raise ObjectTooLarge(f"object {key} exceeds {max_bytes} bytes")
+        return data
 
     def put_bytes(self, key: str, data: bytes, content_type: str = DOCX_CONTENT_TYPE) -> None:
         """Write bytes with CMK encryption (used for generated Rev 5 exports)."""
@@ -101,19 +117,32 @@ class DocumentStore:
         return {"url": url, "expires_in": _UPLOAD_URL_TTL_SECONDS}
 
     def delete_prefix(self, prefix: str) -> int:
-        """Hard-delete every object under a prefix (used by project purge).
+        """Permanently delete every object version and marker under a prefix.
 
         Returns the number of objects deleted.
         """
         deleted = 0
-        paginator = self._s3.get_paginator("list_objects_v2")
-        for page in paginator.paginate(Bucket=self._bucket, Prefix=prefix):
-            contents = page.get("Contents", [])
-            if not contents:
-                continue
-            self._s3.delete_objects(
+        # Re-list the first page after every deletion. This stays bounded and
+        # avoids advancing with continuation markers that point at versions we
+        # just removed.
+        while True:
+            page = self._s3.list_object_versions(
                 Bucket=self._bucket,
-                Delete={"Objects": [{"Key": o["Key"]} for o in contents]},
+                Prefix=prefix,
+                MaxKeys=1000,
             )
-            deleted += len(contents)
+            objects = [
+                {"Key": item["Key"], "VersionId": item["VersionId"]}
+                for item in [*page.get("Versions", []), *page.get("DeleteMarkers", [])]
+            ]
+            if not objects:
+                break
+            response = self._s3.delete_objects(
+                Bucket=self._bucket,
+                Delete={"Objects": objects, "Quiet": True},
+            )
+            errors = response.get("Errors", [])
+            if errors:
+                raise RuntimeError(f"failed to purge {len(errors)} stored object versions")
+            deleted += len(objects)
         return deleted

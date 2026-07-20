@@ -116,3 +116,21 @@ def test_export_output_is_valid_docx():
     # Should open without error and preserve the original preamble.
     doc = DocxDocument(io.BytesIO(new_bytes))
     assert any("Purpose:" in p.text for p in doc.paragraphs)
+
+
+def test_export_replaces_section_body_inside_a_table_cell():
+    doc = DocxDocument()
+    doc.add_heading("Access Control Policy", level=1)
+    table = doc.add_table(rows=1, cols=1)
+    table.cell(0, 0).paragraphs[0].add_run("Old table body.")
+    doc.add_heading("AU-2 Audit Events", level=1)
+    buf = io.BytesIO()
+    doc.save(buf)
+
+    new_bytes = export_rev5_docx(buf.getvalue(), {0: "New table-based Rev 5 language."})
+    out = _sections_by_order(new_bytes)
+
+    assert out[0].heading == "Access Control Policy"
+    assert out[0].text == "New table-based Rev 5 language."
+    reopened = DocxDocument(io.BytesIO(new_bytes))
+    assert reopened.tables[0].cell(0, 0).text == "New table-based Rev 5 language."

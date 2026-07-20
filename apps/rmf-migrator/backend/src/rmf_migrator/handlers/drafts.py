@@ -22,8 +22,9 @@ from rmf_migrator.common.http import (
     path_param,
     resolve_identity,
 )
+from rmf_migrator.common.limits import MAX_DRAFT_TEXT_BYTES
 from rmf_migrator.common.logging import length_of, log_event
-from rmf_migrator.common.models import DraftStatus
+from rmf_migrator.common.models import DocumentStatus, DraftStatus
 from rmf_migrator.handlers.deps import Deps
 
 
@@ -59,7 +60,14 @@ def get_drafts(event: dict[str, Any], _context: Any = None) -> dict[str, Any]:
 
 
 def _update_draft(event: dict[str, Any], deps: Deps) -> dict[str, Any]:
-    project_id, document_id, _ = _load(deps, event)
+    project_id, document_id, document = _load(deps, event)
+    editable_statuses = {
+        DocumentStatus.DRAFTED,
+        DocumentStatus.REVIEW_APPROVED,
+        DocumentStatus.EXPORTED,
+    }
+    if document.status not in editable_statuses:
+        raise HttpError(409, f"draft cannot be edited from status {document.status}")
     section_id = path_param(event, "section_id")
 
     draft = deps.repo.get_draft(document_id, section_id)
@@ -70,6 +78,17 @@ def _update_draft(event: dict[str, Any], deps: Deps) -> dict[str, Any]:
     text = body.get("text")
     if not isinstance(text, str):
         raise HttpError(400, "'text' (string) is required")
+    if len(text.encode("utf-8")) > MAX_DRAFT_TEXT_BYTES:
+        raise HttpError(413, f"draft text exceeds {MAX_DRAFT_TEXT_BYTES} UTF-8 bytes")
+
+    # Any edit invalidates prior document-level approval and export.
+    previous_status = document.status
+    document.status = DocumentStatus.DRAFTED
+    document.export_key = None
+    document.failure_stage = None
+    document.active_job_id = None
+    if not deps.repo.put_document_if_status(document, {previous_status}):
+        raise HttpError(409, "document state changed; refresh and try again")
 
     draft.edited_text = text
     draft.status = DraftStatus.EDITED
@@ -99,12 +118,16 @@ def update_draft(event: dict[str, Any], _context: Any = None) -> dict[str, Any]:
 
 
 def _approve_draft(event: dict[str, Any], deps: Deps) -> dict[str, Any]:
-    project_id, document_id, _ = _load(deps, event)
+    project_id, document_id, document = _load(deps, event)
     section_id = path_param(event, "section_id")
 
     draft = deps.repo.get_draft(document_id, section_id)
     if draft is None:
         raise HttpError(404, "draft not found for section")
+    if document.status == DocumentStatus.EXPORTED and draft.status == DraftStatus.APPROVED:
+        return json_response(200, draft.model_dump())
+    if document.status not in {DocumentStatus.DRAFTED, DocumentStatus.REVIEW_APPROVED}:
+        raise HttpError(409, f"draft cannot be approved from status {document.status}")
 
     # Freeze the effective text as authoritative.
     draft.edited_text = draft.effective_text()
@@ -112,6 +135,14 @@ def _approve_draft(event: dict[str, Any], deps: Deps) -> dict[str, Any]:
     draft.reviewed_by = resolve_identity(event, deps.config.identity_header)
     draft.reviewed_at = datetime.now(UTC)
     deps.repo.put_draft(draft)
+
+    drafts = deps.repo.list_drafts(document_id)
+    if drafts and all(item.status == DraftStatus.APPROVED for item in drafts):
+        previous_status = document.status
+        document.status = DocumentStatus.REVIEW_APPROVED
+        document.export_key = None
+        document.failure_stage = None
+        deps.repo.put_document_if_status(document, {previous_status})
 
     log_event(
         "draft.approved",

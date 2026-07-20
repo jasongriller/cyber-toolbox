@@ -3,6 +3,11 @@ output "api_endpoint" {
   value       = module.rmf_migrator.api_endpoint
 }
 
+output "api_execution_arn" {
+  description = "Execution ARN for trusted caller IAM policies."
+  value       = module.rmf_migrator.api_execution_arn
+}
+
 output "documents_bucket" {
   value = module.rmf_migrator.documents_bucket
 }

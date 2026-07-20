@@ -22,14 +22,17 @@ no crypto happens here.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import boto3
 from boto3.dynamodb.conditions import Key
+from botocore.exceptions import ClientError
 
 from .models import (
     ControlMapping,
     Document,
+    DocumentStatus,
     Draft,
     DraftJob,
     ExportJob,
@@ -60,18 +63,42 @@ class Repository:
         item |= {"PK": _project_pk(project.project_id), "SK": "META", "type": "project"}
         self._table.put_item(Item=item)
 
+    def _query_all(self, **kwargs: Any) -> list[dict[str, Any]]:
+        """Consume every DynamoDB query page."""
+        items: list[dict[str, Any]] = []
+        request = dict(kwargs)
+        while True:
+            response = self._table.query(**request)
+            items.extend(response.get("Items", []))
+            last_key = response.get("LastEvaluatedKey")
+            if not last_key:
+                return items
+            request["ExclusiveStartKey"] = last_key
+
+    def _scan_all(self, **kwargs: Any) -> list[dict[str, Any]]:
+        """Consume every DynamoDB scan page."""
+        items: list[dict[str, Any]] = []
+        request = dict(kwargs)
+        while True:
+            response = self._table.scan(**request)
+            items.extend(response.get("Items", []))
+            last_key = response.get("LastEvaluatedKey")
+            if not last_key:
+                return items
+            request["ExclusiveStartKey"] = last_key
+
     def get_project(self, project_id: str) -> Project | None:
-        resp = self._table.get_item(Key={"PK": _project_pk(project_id), "SK": "META"})
+        resp = self._table.get_item(
+            Key={"PK": _project_pk(project_id), "SK": "META"}, ConsistentRead=True
+        )
         item = resp.get("Item")
         return Project(**_strip_keys(item)) if item else None
 
     def list_projects(self) -> list[Project]:
         # Small-scale tool: a scan on the META rows is acceptable. A GSI can be
         # added if project counts grow large.
-        resp = self._table.scan(
-            FilterExpression=Key("SK").eq("META"),
-        )
-        return [Project(**_strip_keys(i)) for i in resp.get("Items", [])]
+        items = self._scan_all(FilterExpression=Key("SK").eq("META"), ConsistentRead=True)
+        return [Project(**_strip_keys(i)) for i in items]
 
     def increment_document_count(self, project_id: str, delta: int = 1) -> None:
         self._table.update_item(
@@ -91,17 +118,46 @@ class Repository:
         }
         self._table.put_item(Item=item)
 
+    def put_document_if_status(self, document: Document, expected: set[DocumentStatus]) -> bool:
+        """Atomically replace a document only when its persisted state is expected."""
+        if not expected:
+            raise ValueError("expected statuses cannot be empty")
+        item = _to_item(document)
+        item |= {
+            "PK": _project_pk(document.project_id),
+            "SK": f"DOC#{document.document_id}",
+            "type": "document",
+        }
+        values = {f":s{i}": status.value for i, status in enumerate(sorted(expected))}
+        condition = f"#status IN ({', '.join(values)})"
+        try:
+            self._table.put_item(
+                Item=item,
+                ConditionExpression=condition,
+                ExpressionAttributeNames={"#status": "status"},
+                ExpressionAttributeValues=values,
+            )
+        except ClientError as exc:
+            if exc.response.get("Error", {}).get("Code") == "ConditionalCheckFailedException":
+                return False
+            raise
+        return True
+
     def get_document(self, project_id: str, document_id: str) -> Document | None:
-        resp = self._table.get_item(Key={"PK": _project_pk(project_id), "SK": f"DOC#{document_id}"})
+        resp = self._table.get_item(
+            Key={"PK": _project_pk(project_id), "SK": f"DOC#{document_id}"},
+            ConsistentRead=True,
+        )
         item = resp.get("Item")
         return Document(**_strip_keys(item)) if item else None
 
     def list_documents(self, project_id: str) -> list[Document]:
-        resp = self._table.query(
+        items = self._query_all(
             KeyConditionExpression=Key("PK").eq(_project_pk(project_id))
-            & Key("SK").begins_with("DOC#")
+            & Key("SK").begins_with("DOC#"),
+            ConsistentRead=True,
         )
-        return [Document(**_strip_keys(i)) for i in resp.get("Items", [])]
+        return [Document(**_strip_keys(i)) for i in items]
 
     # ---- Section -----------------------------------------------------------
 
@@ -117,11 +173,12 @@ class Repository:
                 batch.put_item(Item=item)
 
     def list_sections(self, document_id: str) -> list[Section]:
-        resp = self._table.query(
+        items = self._query_all(
             KeyConditionExpression=Key("PK").eq(_doc_pk(document_id))
-            & Key("SK").begins_with("SEC#")
+            & Key("SK").begins_with("SEC#"),
+            ConsistentRead=True,
         )
-        return [Section(**_strip_keys(i)) for i in resp.get("Items", [])]
+        return [Section(**_strip_keys(i)) for i in items]
 
     # ---- ParseJob ----------------------------------------------------------
 
@@ -135,9 +192,15 @@ class Repository:
         self._table.put_item(Item=item)
 
     def get_job(self, project_id: str, job_id: str) -> ParseJob | None:
-        resp = self._table.get_item(Key={"PK": _project_pk(project_id), "SK": f"JOB#{job_id}"})
+        resp = self._table.get_item(
+            Key={"PK": _project_pk(project_id), "SK": f"JOB#{job_id}"},
+            ConsistentRead=True,
+        )
         item = resp.get("Item")
         return ParseJob(**_strip_keys(item)) if item else None
+
+    def claim_job(self, project_id: str, job_id: str) -> ParseJob | None:
+        return self._claim_job(project_id, f"JOB#{job_id}", ParseJob)
 
     # ---- MappingJob --------------------------------------------------------
 
@@ -151,9 +214,15 @@ class Repository:
         self._table.put_item(Item=item)
 
     def get_mapping_job(self, project_id: str, job_id: str) -> MappingJob | None:
-        resp = self._table.get_item(Key={"PK": _project_pk(project_id), "SK": f"MJOB#{job_id}"})
+        resp = self._table.get_item(
+            Key={"PK": _project_pk(project_id), "SK": f"MJOB#{job_id}"},
+            ConsistentRead=True,
+        )
         item = resp.get("Item")
         return MappingJob(**_strip_keys(item)) if item else None
+
+    def claim_mapping_job(self, project_id: str, job_id: str) -> MappingJob | None:
+        return self._claim_job(project_id, f"MJOB#{job_id}", MappingJob)
 
     # ---- ControlMapping ----------------------------------------------------
 
@@ -178,16 +247,20 @@ class Repository:
         self._table.put_item(Item=item)
 
     def get_mapping(self, document_id: str, section_id: str) -> ControlMapping | None:
-        resp = self._table.get_item(Key={"PK": _doc_pk(document_id), "SK": f"MAP#{section_id}"})
+        resp = self._table.get_item(
+            Key={"PK": _doc_pk(document_id), "SK": f"MAP#{section_id}"},
+            ConsistentRead=True,
+        )
         item = resp.get("Item")
         return ControlMapping(**_strip_keys(item)) if item else None
 
     def list_mappings(self, document_id: str) -> list[ControlMapping]:
-        resp = self._table.query(
+        items = self._query_all(
             KeyConditionExpression=Key("PK").eq(_doc_pk(document_id))
-            & Key("SK").begins_with("MAP#")
+            & Key("SK").begins_with("MAP#"),
+            ConsistentRead=True,
         )
-        mappings = [ControlMapping(**_strip_keys(i)) for i in resp.get("Items", [])]
+        mappings = [ControlMapping(**_strip_keys(i)) for i in items]
         mappings.sort(key=lambda m: m.order)
         return mappings
 
@@ -203,9 +276,15 @@ class Repository:
         self._table.put_item(Item=item)
 
     def get_draft_job(self, project_id: str, job_id: str) -> DraftJob | None:
-        resp = self._table.get_item(Key={"PK": _project_pk(project_id), "SK": f"DJOB#{job_id}"})
+        resp = self._table.get_item(
+            Key={"PK": _project_pk(project_id), "SK": f"DJOB#{job_id}"},
+            ConsistentRead=True,
+        )
         item = resp.get("Item")
         return DraftJob(**_strip_keys(item)) if item else None
+
+    def claim_draft_job(self, project_id: str, job_id: str) -> DraftJob | None:
+        return self._claim_job(project_id, f"DJOB#{job_id}", DraftJob)
 
     # ---- Draft -------------------------------------------------------------
 
@@ -230,7 +309,10 @@ class Repository:
         self._table.put_item(Item=item)
 
     def get_draft(self, document_id: str, section_id: str) -> Draft | None:
-        resp = self._table.get_item(Key={"PK": _doc_pk(document_id), "SK": f"DRAFT#{section_id}"})
+        resp = self._table.get_item(
+            Key={"PK": _doc_pk(document_id), "SK": f"DRAFT#{section_id}"},
+            ConsistentRead=True,
+        )
         item = resp.get("Item")
         return Draft(**_strip_keys(item)) if item else None
 
@@ -246,18 +328,89 @@ class Repository:
         self._table.put_item(Item=item)
 
     def get_export_job(self, project_id: str, job_id: str) -> ExportJob | None:
-        resp = self._table.get_item(Key={"PK": _project_pk(project_id), "SK": f"XJOB#{job_id}"})
+        resp = self._table.get_item(
+            Key={"PK": _project_pk(project_id), "SK": f"XJOB#{job_id}"},
+            ConsistentRead=True,
+        )
         item = resp.get("Item")
         return ExportJob(**_strip_keys(item)) if item else None
 
+    def claim_export_job(self, project_id: str, job_id: str) -> ExportJob | None:
+        return self._claim_job(project_id, f"XJOB#{job_id}", ExportJob)
+
     def list_drafts(self, document_id: str) -> list[Draft]:
-        resp = self._table.query(
+        items = self._query_all(
             KeyConditionExpression=Key("PK").eq(_doc_pk(document_id))
-            & Key("SK").begins_with("DRAFT#")
+            & Key("SK").begins_with("DRAFT#"),
+            ConsistentRead=True,
         )
-        drafts = [Draft(**_strip_keys(i)) for i in resp.get("Items", [])]
+        drafts = [Draft(**_strip_keys(i)) for i in items]
         drafts.sort(key=lambda d: d.order)
         return drafts
+
+    def _claim_job(self, project_id: str, sort_key: str, model_type: Any) -> Any | None:
+        """Claim a new/retry job, including a worker lease that has timed out."""
+        now = datetime.now(UTC)
+        stale_before = now - timedelta(minutes=15)
+        try:
+            response = self._table.update_item(
+                Key={"PK": _project_pk(project_id), "SK": sort_key},
+                UpdateExpression="SET #status = :running, #updated = :now REMOVE error_type",
+                ConditionExpression=(
+                    "attribute_exists(PK) AND ("
+                    "#status = :pending OR #status = :failed OR "
+                    "(#status = :running AND "
+                    "(attribute_not_exists(#updated) OR #updated < :stale)))"
+                ),
+                ExpressionAttributeNames={"#status": "status", "#updated": "updated_at"},
+                ExpressionAttributeValues={
+                    ":running": "running",
+                    ":pending": "pending",
+                    ":failed": "failed",
+                    ":now": now.isoformat(),
+                    ":stale": stale_before.isoformat(),
+                },
+                ReturnValues="ALL_NEW",
+            )
+        except ClientError as exc:
+            if exc.response.get("Error", {}).get("Code") == "ConditionalCheckFailedException":
+                return None
+            raise
+        return model_type(**_strip_keys(response["Attributes"]))
+
+    def delete_project(self, project_id: str) -> int:
+        """Delete a project's metadata and every document-scoped partition."""
+        documents = self.list_documents(project_id)
+        deleted = sum(self._delete_partition(_doc_pk(d.document_id)) for d in documents)
+        project_key = _project_pk(project_id)
+        project_items = self._query_all(
+            KeyConditionExpression=Key("PK").eq(project_key),
+            ProjectionExpression="PK, SK",
+            ConsistentRead=True,
+        )
+        non_meta = [item for item in project_items if item["SK"] != "META"]
+        with self._table.batch_writer() as batch:
+            for item in non_meta:
+                batch.delete_item(Key={"PK": item["PK"], "SK": item["SK"]})
+        deleted += len(non_meta)
+
+        # Keep META until every child record has gone. If the process is
+        # interrupted, the project remains discoverable and a retry can finish.
+        if any(item["SK"] == "META" for item in project_items):
+            self._table.delete_item(Key={"PK": project_key, "SK": "META"})
+            deleted += 1
+        return deleted
+
+    def _delete_partition(self, partition_key: str) -> int:
+        items = self._query_all(
+            KeyConditionExpression=Key("PK").eq(partition_key),
+            ProjectionExpression="PK, SK",
+            ConsistentRead=True,
+        )
+        with self._table.batch_writer() as batch:
+            for item in items:
+                batch.delete_item(Key={"PK": item["PK"], "SK": item["SK"]})
+        return len(items)
 
 
 _KEY_ATTRS = {"PK", "SK", "type"}

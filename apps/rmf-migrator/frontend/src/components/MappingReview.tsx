@@ -96,80 +96,90 @@ export default function MappingReview({ client, projectId, documentId }: Props) 
   };
 
   if (status !== null && IN_PROGRESS.includes(status)) {
-    return <p>Mapping in progress ({status})… this refreshes automatically.</p>;
+    return (
+      <div className="panel">
+        <span className="loading">
+          <span className="spinner" /> Mapping in progress ({status}). This refreshes automatically.
+        </span>
+      </div>
+    );
   }
 
   const approved = status === "mapping_approved";
 
   return (
     <section>
-      <h2>Control mapping review</h2>
-      <p>
-        Status: <strong>{status ?? "loading…"}</strong>
-        {approved && " — mapping approved; ready for Rev 5 drafting."}
+      <div className="section-head">
+        <h2>Control mapping review</h2>
+        <span className={approved ? "pill pill--ok" : "pill"}>{status ?? "loading…"}</span>
+      </div>
+      <p className="muted" style={{ marginTop: 0 }}>
+        {approved
+          ? "Mapping approved. Ready for Rev 5 drafting."
+          : "Correct the proposed Rev 4 controls per section, then approve to start drafting."}
       </p>
-      {error && <p style={{ color: "#b00" }}>Error: {error}</p>}
+      {error && <p className="banner banner--error">{error}</p>}
 
-      <table style={{ borderCollapse: "collapse", width: "100%" }}>
-        <thead>
-          <tr>
-            <th style={cell}>#</th>
-            <th style={cell}>Section</th>
-            <th style={cell}>Rev 4 controls</th>
-            <th style={cell}>Confidence</th>
-            <th style={cell}>State</th>
-            <th style={cell}></th>
-          </tr>
-        </thead>
-        <tbody>
-          {mappings.map((m) => {
-            const section = headingBySection[m.section_id];
-            return (
-              <tr key={m.section_id}>
-                <td style={cell}>{m.order}</td>
-                <td style={cell}>{section?.heading || <em>(preamble)</em>}</td>
-                <td style={cell}>
-                  <input
-                    style={{ width: "100%" }}
-                    value={drafts[m.section_id] ?? ""}
-                    disabled={approved || busy}
-                    onChange={(e) =>
-                      setDrafts((d) => ({ ...d, [m.section_id]: e.target.value }))
-                    }
-                    aria-label={`controls for section ${m.order}`}
-                  />
-                </td>
-                <td style={cell}>{(m.confidence * 100).toFixed(0)}%</td>
-                <td style={cell}>{m.status}</td>
-                <td style={cell}>
-                  {!approved && (
-                    <button disabled={busy} onClick={() => void saveRow(m.section_id)}>
-                      Save
-                    </button>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+      <div className="table-wrap">
+        <table className="data">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Section</th>
+              <th>Rev 4 controls</th>
+              <th>Confidence</th>
+              <th>State</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {mappings.map((m) => {
+              const section = headingBySection[m.section_id];
+              return (
+                <tr key={m.section_id}>
+                  <td className="idx">{m.order}</td>
+                  <td>{section?.heading || <em className="muted">(preamble)</em>}</td>
+                  <td>
+                    <input
+                      className="field mono"
+                      value={drafts[m.section_id] ?? ""}
+                      disabled={approved || busy}
+                      onChange={(e) => setDrafts((d) => ({ ...d, [m.section_id]: e.target.value }))}
+                      aria-label={`controls for section ${m.order}`}
+                    />
+                  </td>
+                  <td className="num">{(m.confidence * 100).toFixed(0)}%</td>
+                  <td>
+                    <span className="mono muted">{m.status}</span>
+                  </td>
+                  <td>
+                    {!approved && (
+                      <button
+                        className="btn btn--sm"
+                        disabled={busy}
+                        onClick={() => void saveRow(m.section_id)}
+                      >
+                        Save
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
 
       {!approved && (
         <button
-          style={{ marginTop: "1rem", fontWeight: 600 }}
+          className="btn btn--accent"
+          style={{ marginTop: "1rem" }}
           disabled={busy || status !== "mapped"}
           onClick={() => void approve()}
         >
-          Approve mapping & continue
+          Approve mapping &amp; continue
         </button>
       )}
     </section>
   );
 }
-
-const cell: React.CSSProperties = {
-  border: "1px solid #ccc",
-  padding: "0.4rem 0.6rem",
-  textAlign: "left",
-  verticalAlign: "top",
-};

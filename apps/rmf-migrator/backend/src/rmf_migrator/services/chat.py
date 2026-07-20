@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from rmf_migrator.common.bedrock import BedrockClient
 from rmf_migrator.common.catalog import Catalog, rev5_catalog
+from rmf_migrator.common.limits import MAX_CHAT_MESSAGE_CHARS, MAX_CHAT_TOTAL_CHARS
 from rmf_migrator.common.models import Draft, Section
 
 # Bound history and context to keep token cost and injection surface in check.
@@ -32,6 +33,7 @@ def validate_messages(raw: object) -> list[dict[str, str]]:
     if not isinstance(raw, list) or not raw:
         raise ChatError("'messages' must be a non-empty list")
     messages: list[dict[str, str]] = []
+    total_chars = 0
     for item in raw[-MAX_HISTORY_MESSAGES:]:
         if not isinstance(item, dict):
             raise ChatError("each message must be an object")
@@ -39,6 +41,11 @@ def validate_messages(raw: object) -> list[dict[str, str]]:
         content = item.get("content")
         if role not in _VALID_ROLES or not isinstance(content, str) or not content.strip():
             raise ChatError("each message needs role in {user, assistant} and non-empty content")
+        if len(content) > MAX_CHAT_MESSAGE_CHARS:
+            raise ChatError(f"each message is limited to {MAX_CHAT_MESSAGE_CHARS} characters")
+        total_chars += len(content)
+        if total_chars > MAX_CHAT_TOTAL_CHARS:
+            raise ChatError(f"chat history is limited to {MAX_CHAT_TOTAL_CHARS} characters")
         messages.append({"role": role, "content": content})
     if messages[-1]["role"] != "user":
         raise ChatError("the last message must be from the user")

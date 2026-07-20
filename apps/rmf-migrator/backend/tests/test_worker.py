@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import json
+from datetime import UTC, datetime, timedelta
 
 from docx import Document as DocxDocument
 
@@ -80,6 +81,40 @@ def test_enqueue_mapping_creates_job_and_message(deps):
     assert body["document_id"] == did
 
 
+def test_enqueue_mapping_does_not_overwrite_a_running_job(deps):
+    pid, did = _seed_parsed_document(deps)
+    running = MappingJob(
+        job_id=f"mjob_{did}",
+        project_id=pid,
+        document_id=did,
+        status=JobStatus.RUNNING,
+    )
+    deps.repo.put_mapping_job(running)
+
+    returned = enqueue_mapping(deps, pid, did)
+
+    assert returned.status == JobStatus.RUNNING
+    assert deps.sqs.receive_message(QueueUrl=deps.config.parse_queue_url).get("Messages", []) == []
+
+
+def test_stale_running_job_can_be_reclaimed(deps):
+    pid, did = _seed_parsed_document(deps)
+    stale = MappingJob(
+        job_id=f"mjob_{did}",
+        project_id=pid,
+        document_id=did,
+        status=JobStatus.RUNNING,
+        updated_at=datetime.now(UTC) - timedelta(minutes=16),
+    )
+    deps.repo.put_mapping_job(stale)
+
+    claimed = deps.repo.claim_mapping_job(pid, stale.job_id)
+
+    assert claimed is not None
+    assert claimed.status == JobStatus.RUNNING
+    assert claimed.updated_at > stale.updated_at
+
+
 def test_parse_message_auto_chains_to_mapping(deps):
     """A parse SQS message parses the doc, then auto-enqueues a mapping job."""
     deps.bedrock = FakeBedrock()
@@ -90,6 +125,7 @@ def test_parse_message_auto_chains_to_mapping(deps):
     pid = project.project_id
 
     document = Document(project_id=pid, filename="a.docx", s3_key="projects/x/a.docx")
+    document.status = DocumentStatus.PARSING
     deps.repo.put_document(document)
     did = document.document_id
     deps.store._s3.put_object(  # noqa: SLF001

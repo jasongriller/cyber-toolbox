@@ -145,6 +145,22 @@ describe("ApiClient", () => {
     expect(res.projects[0].name).toBe("Alpha");
   });
 
+  it("deleteProject requires the exact project id in the request body", async () => {
+    const spy = mockFetch(200, {
+      project_id: "p1",
+      deleted_object_versions: 2,
+      deleted_records: 4,
+    });
+    const client = new ApiClient("/api");
+
+    await client.deleteProject("p1");
+
+    const [url, init] = spy.mock.calls[0];
+    expect(url).toBe("/api/projects/p1");
+    expect(init?.method).toBe("DELETE");
+    expect(JSON.parse(init?.body as string)).toEqual({ confirm_project_id: "p1" });
+  });
+
   it("listDocuments GETs the project's documents", async () => {
     const spy = mockFetch(200, { documents: [] });
     const client = new ApiClient("/api");

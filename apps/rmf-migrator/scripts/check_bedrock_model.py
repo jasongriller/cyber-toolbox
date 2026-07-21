@@ -62,12 +62,12 @@ SAMPLE = Section(
     ),
 )
 
-PASS = "PASS"
-FAIL = "FAIL"
+STATUS_PASS = "PASS"
+STATUS_FAIL = "FAIL"
 
 
 def _line(status: str, name: str, detail: str = "") -> None:
-    mark = "+" if status == PASS else "!"
+    mark = "+" if status == STATUS_PASS else "!"
     print(f"  [{mark}] {status:4}  {name}" + (f" — {detail}" if detail else ""))
 
 
@@ -80,14 +80,14 @@ def check_converse(client: BedrockClient) -> bool:
             max_tokens=64,
         )
     except BedrockError as exc:
-        _line(FAIL, "Converse API + system block", str(exc))
+        _line(STATUS_FAIL, "Converse API + system block", str(exc))
         print(
             "\n      The client is Converse-only and puts prompt-injection hardening in\n"
             "      the system block. If this model does not serve Converse, or rejects a\n"
             "      system block, it needs a code change — not just a config change."
         )
         return False
-    _line(PASS, "Converse API + system block", f"replied {text.strip()[:40]!r}")
+    _line(STATUS_PASS, "Converse API + system block", f"replied {text.strip()[:40]!r}")
     return True
 
 
@@ -98,7 +98,7 @@ def check_mapping(client: BedrockClient) -> bool:
 
     if mapping.confidence == 0.0 and not mapping.proposed_control_ids:
         _line(
-            FAIL,
+            STATUS_FAIL,
             "Mapping prompt -> JSON",
             "no controls proposed (model errored, or returned unparseable output)",
         )
@@ -107,11 +107,11 @@ def check_mapping(client: BedrockClient) -> bool:
     unknown = [c for c in mapping.proposed_control_ids if c not in catalog]
     if unknown:
         # Shouldn't happen — the engine validates against the catalog — but be explicit.
-        _line(FAIL, "Mapping prompt -> JSON", f"invented control ids: {unknown}")
+        _line(STATUS_FAIL, "Mapping prompt -> JSON", f"invented control ids: {unknown}")
         return False
 
     _line(
-        PASS,
+        STATUS_PASS,
         "Mapping prompt -> JSON",
         f"proposed {mapping.proposed_control_ids or '[]'} @ confidence {mapping.confidence}",
     )
@@ -136,11 +136,11 @@ def check_drafting(client: BedrockClient) -> bool:
     draft = build_draft(SAMPLE, mapping, client)
 
     if not draft.draft_text:
-        _line(FAIL, "Drafting prompt -> JSON", "returned no draft_text")
+        _line(STATUS_FAIL, "Drafting prompt -> JSON", "returned no draft_text")
         return False
 
     _line(
-        PASS,
+        STATUS_PASS,
         "Drafting prompt -> JSON",
         f"{len(draft.draft_text)} chars, {len(draft.suggestions)} suggestion(s)",
     )
@@ -176,7 +176,7 @@ def main() -> int:
         results.append(check_mapping(client))
         results.append(check_drafting(client))
     except ModelOutputError as exc:
-        _line(FAIL, "structured output", str(exc))
+        _line(STATUS_FAIL, "structured output", str(exc))
         results.append(False)
 
     ok = all(results)

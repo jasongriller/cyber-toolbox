@@ -4,6 +4,21 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>RMF Rev 5 Migrator</title>
+    <!-- Anti-clickjacking frame-buster for legacy browsers that ignore
+         X-Frame-Options / CSP frame-ancestors (OWASP recommended pattern). -->
+    <style id="antiClickjack">
+      body {
+        display: none !important;
+      }
+    </style>
+    <script>
+      if (self === top) {
+        var antiClickjack = document.getElementById("antiClickjack");
+        antiClickjack.parentNode.removeChild(antiClickjack);
+      } else {
+        top.location = self.location;
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

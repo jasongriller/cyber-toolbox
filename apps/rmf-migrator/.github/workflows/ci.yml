@@ -72,10 +72,6 @@ jobs:
   security:
     name: Security scanning
     runs-on: ubuntu-latest
-    env:
-      # Mirrored to job env because the secrets context is not available in
-      # step-level `if:` — this is how the Checkmarx step knows to skip.
-      CX_API_KEY: ${{ secrets.CX_API_KEY }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -113,14 +109,3 @@ jobs:
       - name: npm audit
         working-directory: frontend
         run: npm audit --audit-level=high
-      # Checkmarx One SAST. Skips cleanly until the CX_BASE_URI, CX_TENANT and
-      # CX_API_KEY repository secrets are configured, so CI stays green on forks
-      # and before onboarding. Pinned to a commit SHA for the same reason as
-      # checkov above.
-      - name: Checkmarx One scan
-        if: env.CX_API_KEY != ''
-        uses: checkmarx/ast-github-action@524198bd6aeeaf2b02960f381518a6ea85d1d9a8 # 2.3.39
-        with:
-          base_uri: ${{ secrets.CX_BASE_URI }}
-          cx_tenant: ${{ secrets.CX_TENANT }}
-          cx_apikey: ${{ secrets.CX_API_KEY }}

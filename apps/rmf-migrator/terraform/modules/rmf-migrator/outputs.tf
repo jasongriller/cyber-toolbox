@@ -42,3 +42,11 @@ output "lambda_security_group_id" {
   description = "Security group ID for in-VPC Lambdas (private mode only; null otherwise)."
   value       = local.is_private ? aws_security_group.lambda[0].id : null
 }
+
+output "spa_csp_frame_ancestors" {
+  description = "Content-Security-Policy header value to set on whatever serves the SPA (this module does not serve it). Built from var.frame_ancestors: the configured portal origins, or 'none' when the SPA is not meant to be framed."
+  value = format(
+    "frame-ancestors %s",
+    length(var.frame_ancestors) > 0 ? join(" ", var.frame_ancestors) : "'none'"
+  )
+}

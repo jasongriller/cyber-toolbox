@@ -23,3 +23,8 @@ output "worker_function_name" {
 output "kms_key_arn" {
   value = module.rmf_migrator.kms_key_arn
 }
+
+output "spa_csp_frame_ancestors" {
+  description = "Set this as the Content-Security-Policy header value on the server that hosts the SPA."
+  value       = module.rmf_migrator.spa_csp_frame_ancestors
+}

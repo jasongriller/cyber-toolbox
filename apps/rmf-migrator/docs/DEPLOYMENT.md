@@ -72,6 +72,12 @@ The HTTP API is reachable directly. Quickest to stand up. Do not put CUI through
   the trusted SPA/portal origin(s) in `frame_ancestors`. Those origins become
   the API and presigned-upload CORS allowlist; private mode never defaults CORS
   to `*`.
+- Set a `Content-Security-Policy` response header on the server that hosts the
+  SPA (this module does not serve it). The `spa_csp_frame_ancestors` output
+  renders the exact value from your `frame_ancestors` setting — the configured
+  portal origins, or `frame-ancestors 'none'` when the SPA is not framed. The
+  bundled `index.html` frame-buster covers legacy browsers; this header is the
+  primary defense.
 - Lambdas run inside your VPC with an egress-only security group.
 - Every API route requires AWS Signature Version 4 (`AWS_IAM`). Grant trusted
   callers `execute-api:Invoke` on this API. A browser cannot sign these requests

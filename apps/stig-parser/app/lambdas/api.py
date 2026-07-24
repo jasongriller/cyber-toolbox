@@ -1,4 +1,6 @@
-"""API Lambda: the only synchronous handler, behind the Private API Gateway.
+"""API Lambda: the only synchronous handler, behind the public REGIONAL API
+Gateway. A Cognito (``COGNITO_USER_POOLS``) authorizer enforces auth on every
+route below except ``/config``.
 
 Routes (REST API proxy integration):
 
@@ -14,10 +16,11 @@ Uploads never pass through this function: the browser PUTs straight to S3 with
 a presigned url, which keeps the 29-second API Gateway timeout and the Lambda
 payload cap off the critical path for a 200 MB scan file.
 
-Auth is upstream (VPN + whatever the org fronts this with). The identity header
-named by ``IDENTITY_HEADER`` is recorded on the job for audit and used for
-defense-in-depth job ownership checks. It is *not* the primary trust boundary;
-the header must be injected by the trusted upstream identity layer.
+Identity is the Cognito authorizer's claims: the caller's verified email from
+``requestContext.authorizer.claims`` is recorded on the job for audit and used
+for defense-in-depth job ownership checks. ``IDENTITY_HEADER`` is a legacy
+fallback for callers the authorizer does not cover; it is *not* a trust
+boundary on its own and must be injected by a trusted upstream identity layer.
 """
 
 from __future__ import annotations
@@ -89,6 +92,12 @@ def _killswitch_thrown() -> bool:
 
 
 def _identity(event: dict) -> str | None:
+    claims = ((event.get("requestContext") or {}).get("authorizer") or {}).get(
+        "claims"
+    ) or {}
+    email = claims.get("email")
+    if email:
+        return email
     header = os.environ.get("IDENTITY_HEADER")
     if not header:
         return None
@@ -99,11 +108,11 @@ def _identity(event: dict) -> str | None:
 def _owns(record: dict, event: dict) -> bool:
     """Defense-in-depth ownership check for job-scoped reads/actions.
 
-    When identity capture is configured (``IDENTITY_HEADER`` set) and the job
-    recorded a submitter, only that identity may access the job. This is a
-    second layer, not the trust boundary — the header is network-injected and
-    the VPC endpoint remains the primary gate — but it stops one operator, or
-    anyone who obtains a job id, from reading another's compliance data.
+    Compares the job's recorded submitter against the caller's identity
+    (Cognito claims, or the legacy ``IDENTITY_HEADER`` fallback). This is a
+    second layer, not the trust boundary — the Cognito authorizer is the
+    gate — but it stops one authenticated user, or anyone who obtains a job
+    id, from reading another's compliance data.
 
     Allows access when the record has no ``submitted_by`` (identity capture was
     off when it was created) so existing jobs and single-user deployments are

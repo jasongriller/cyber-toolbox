@@ -167,6 +167,36 @@ class TestApiUploads:
         assert jobs.get(body["jobId"])["submitted_by"] == "operator@example.mil"
 
 
+class TestIdentity:
+    def test_identity_prefers_cognito_claims_over_header(self, monkeypatch):
+        monkeypatch.setenv("IDENTITY_HEADER", "X-Remote-User")
+        event = {
+            "requestContext": {"authorizer": {"claims": {"email": "claims@army.mil"}}},
+            "headers": {"X-Remote-User": "header@army.mil"},
+        }
+        assert api._identity(event) == "claims@army.mil"
+
+    def test_identity_falls_back_to_header_without_claims(self, monkeypatch):
+        monkeypatch.setenv("IDENTITY_HEADER", "X-Remote-User")
+        event = {
+            "requestContext": {"authorizer": {}},
+            "headers": {"x-remote-user": "header@army.mil"},
+        }
+        assert api._identity(event) == "header@army.mil"
+
+    def test_identity_none_without_claims_or_header(self, monkeypatch):
+        monkeypatch.delenv("IDENTITY_HEADER", raising=False)
+        assert api._identity({"headers": {}}) is None
+
+    def test_ownership_enforced_between_cognito_users(self):
+        record = {"submitted_by": "owner@army.mil"}
+        other = {
+            "requestContext": {"authorizer": {"claims": {"email": "other@army.mil"}}},
+            "headers": {},
+        }
+        assert api._owns(record, other) is False
+
+
 class TestApiJobs:
     def _start(self, monkeypatch, calls):
         """Capture the Step Functions StartExecution call without a real client."""

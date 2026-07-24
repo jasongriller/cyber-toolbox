@@ -1,10 +1,11 @@
-# Private REST API Gateway. Spec §4.6.
+# REST API Gateway. Spec §4.6.
 #
-# There is no public endpoint, no API key and no authorizer here: auth is
-# enforced upstream (VPN + the org's identity layer), and the deployment is
-# reachable only from inside the VPC. The single control that enforces that is
-# the resource policy below — a PRIVATE endpoint type alone does NOT restrict
-# which VPC endpoint may reach it.
+# This is a public REGIONAL endpoint. get_config and the SPA proxy route are
+# the only open (authorization = "NONE") routes — the SPA shell and its config
+# must be able to load before a user has signed in. Every other route sits
+# behind the COGNITO_USER_POOLS authorizer below and requires a valid Cognito
+# ID token. There is no gateway-wide resource policy; auth decisions live on
+# the individual method resources.
 
 data "aws_partition" "current" {}
 data "aws_region" "current" {}
@@ -31,13 +32,12 @@ locals {
 # ---------------------------------------------------------------------------
 
 resource "aws_api_gateway_rest_api" "this" {
-  #checkov:skip=CKV_AWS_237:create_before_destroy belongs on the deployment, which is the resource that is actually replaced on every routing change. Recreating the REST API itself would change its id and break the VPC endpoint association.
+  #checkov:skip=CKV_AWS_237:create_before_destroy belongs on the deployment, which is the resource that is actually replaced on every routing change. Recreating the REST API itself would change its id and invoke URL out from under every client.
   name        = var.name_prefix
-  description = "STIG Condenser private API."
+  description = "STIG Condenser API."
 
   endpoint_configuration {
-    types            = ["PRIVATE"]
-    vpc_endpoint_ids = [var.execute_api_endpoint_id]
+    types = ["REGIONAL"]
   }
 
   # S3-proxied SPA assets (fonts, the woff2 files, favicon) and the generated
@@ -45,52 +45,6 @@ resource "aws_api_gateway_rest_api" "this" {
   binary_media_types = local.serve_spa_from_s3 ? ["*/*"] : []
 
   tags = merge(var.tags, { Name = var.name_prefix })
-}
-
-# Deny anything that did not arrive through our execute-api VPC endpoint. The
-# explicit Deny matters: an Allow-only policy still leaves the API reachable
-# from other VPC endpoints that resolve the same private DNS name.
-data "aws_iam_policy_document" "resource_policy" {
-  statement {
-    sid     = "AllowInvokeFromOurVpceOnly"
-    effect  = "Allow"
-    actions = ["execute-api:Invoke"]
-    # Full ARN, not the "execute-api:/*" shorthand: API Gateway stores the
-    # expanded ARN, so the shorthand re-diffs on every plan forever.
-    resources = ["${aws_api_gateway_rest_api.this.execution_arn}/*"]
-    principals {
-      type        = "AWS"
-      identifiers = ["*"]
-    }
-    condition {
-      test     = "StringEquals"
-      variable = "aws:SourceVpce"
-      values   = [var.execute_api_endpoint_id]
-    }
-  }
-
-  statement {
-    sid     = "DenyInvokeFromAnywhereElse"
-    effect  = "Deny"
-    actions = ["execute-api:Invoke"]
-    # Full ARN, not the "execute-api:/*" shorthand: API Gateway stores the
-    # expanded ARN, so the shorthand re-diffs on every plan forever.
-    resources = ["${aws_api_gateway_rest_api.this.execution_arn}/*"]
-    principals {
-      type        = "AWS"
-      identifiers = ["*"]
-    }
-    condition {
-      test     = "StringNotEquals"
-      variable = "aws:SourceVpce"
-      values   = [var.execute_api_endpoint_id]
-    }
-  }
-}
-
-resource "aws_api_gateway_rest_api_policy" "this" {
-  rest_api_id = aws_api_gateway_rest_api.this.id
-  policy      = data.aws_iam_policy_document.resource_policy.json
 }
 
 # ---------------------------------------------------------------------------
@@ -137,17 +91,25 @@ locals {
   # The api handler dispatches on (httpMethod, resource), so these keys must stay
   # in step with app/lambdas/api.py.
   routes = {
-    get_config   = { resource_id = aws_api_gateway_resource.config.id, method = "GET" }
-    post_uploads = { resource_id = aws_api_gateway_resource.uploads.id, method = "POST" }
-    post_jobs    = { resource_id = aws_api_gateway_resource.jobs.id, method = "POST" }
-    get_job      = { resource_id = aws_api_gateway_resource.job.id, method = "GET" }
-    get_result   = { resource_id = aws_api_gateway_resource.job_result.id, method = "GET" }
-    post_cancel  = { resource_id = aws_api_gateway_resource.job_cancel.id, method = "POST" }
+    get_config   = { resource_id = aws_api_gateway_resource.config.id, method = "GET", open = true }
+    post_uploads = { resource_id = aws_api_gateway_resource.uploads.id, method = "POST", open = false }
+    post_jobs    = { resource_id = aws_api_gateway_resource.jobs.id, method = "POST", open = false }
+    get_job      = { resource_id = aws_api_gateway_resource.job.id, method = "GET", open = false }
+    get_result   = { resource_id = aws_api_gateway_resource.job_result.id, method = "GET", open = false }
+    post_cancel  = { resource_id = aws_api_gateway_resource.job_cancel.id, method = "POST", open = false }
   }
 }
 
+resource "aws_api_gateway_authorizer" "cognito" {
+  name            = "${var.name_prefix}-cognito"
+  type            = "COGNITO_USER_POOLS"
+  rest_api_id     = aws_api_gateway_rest_api.this.id
+  provider_arns   = [var.cognito_user_pool_arn]
+  identity_source = "method.request.header.Authorization"
+}
+
 resource "aws_api_gateway_method" "this" {
-  #checkov:skip=CKV_AWS_59:There is no "open access" here. The endpoint is PRIVATE and the resource policy above DENIES every request that did not arrive through our execute-api VPC endpoint. Authentication happens upstream of the private endpoint (VPN + the org's identity layer, D3); an API Gateway authorizer would be a second, weaker copy of a decision already made.
+  #checkov:skip=CKV_AWS_59:Only get_config is open (open = true): the SPA reads upload limits + AI availability before login, and it exposes no user or job data. Every other route requires a valid Cognito ID token via the authorizer below.
   #checkov:skip=CKV2_AWS_53:Request bodies are validated in the handler (app/lambdas/api.py enforces the shared upload allow-list). A JSON-schema validator at the gateway would duplicate that and drift from it.
   for_each = local.routes
 
@@ -155,7 +117,8 @@ resource "aws_api_gateway_method" "this" {
   resource_id = each.value.resource_id
   http_method = each.value.method
 
-  authorization = "NONE"
+  authorization = each.value.open ? "NONE" : "COGNITO_USER_POOLS"
+  authorizer_id = each.value.open ? null : aws_api_gateway_authorizer.cognito.id
 }
 
 resource "aws_api_gateway_integration" "this" {
@@ -321,7 +284,7 @@ resource "aws_api_gateway_resource" "spa_proxy" {
 }
 
 resource "aws_api_gateway_method" "spa_proxy" {
-  #checkov:skip=CKV_AWS_59:Serves the static SPA bundle (JS/CSS/fonts) from a private bucket. The API is PRIVATE and its resource policy denies any request not arriving through our VPC endpoint; auth is upstream (D3).
+  #checkov:skip=CKV_AWS_59:Serves the static SPA bundle (JS/CSS/fonts) — the login shell itself. It must load before a user can authenticate; all job/data routes sit behind the Cognito authorizer.
   #checkov:skip=CKV2_AWS_53:A GET for a static asset by path has no request body to validate.
   count = local.serve_spa_from_s3 ? 1 : 0
 
@@ -400,11 +363,9 @@ resource "aws_api_gateway_deployment" "this" {
   triggers = {
     redeployment = sha1(jsonencode([
       aws_api_gateway_rest_api.this.body,
-      # Hash the plan-time document, not the live policy attribute — the
-      # attribute's post-apply value is AWS-normalized and breaks the plan's
-      # trigger promise ("provider produced inconsistent final plan").
-      data.aws_iam_policy_document.resource_policy.json,
       [for k, m in aws_api_gateway_method.this : m.id],
+      [for k, m in aws_api_gateway_method.this : [m.authorization, m.authorizer_id]],
+      aws_api_gateway_authorizer.cognito.id,
       [for k, i in aws_api_gateway_integration.this : i.id],
       local.serve_spa_from_s3 ? aws_api_gateway_integration.spa_proxy[0].id : "",
     ]))

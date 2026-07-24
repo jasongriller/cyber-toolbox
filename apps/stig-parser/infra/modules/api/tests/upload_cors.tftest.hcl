@@ -37,12 +37,15 @@ mock_provider "aws" {
 }
 
 variables {
-  name_prefix             = "stig-condenser-test"
-  execute_api_endpoint_id = "vpce-api-test"
-  api_function_arn        = "arn:aws-us-gov:lambda:us-gov-west-1:test:function:api-test"
-  api_function_name       = "api-test"
-  uploads_bucket_name     = "test-uploads"
-  kms_key_arn             = "arn:aws-us-gov:kms:us-gov-west-1:test:key/test"
+  name_prefix = "stig-condenser-test"
+  # Mock pool ARN: the aws provider validates the account slot client-side (12
+  # digits or a recognized token; "cw" + 10 chars is the only digit-free
+  # form), and a digit-free value keeps the CI leak grep quiet.
+  cognito_user_pool_arn = "arn:aws-us-gov:cognito-idp:us-gov-west-1:cwmockacctid:userpool/us-gov-west-1_MOCK"
+  api_function_arn      = "arn:aws-us-gov:lambda:us-gov-west-1:test:function:api-test"
+  api_function_name     = "api-test"
+  uploads_bucket_name   = "test-uploads"
+  kms_key_arn           = "arn:aws-us-gov:kms:us-gov-west-1:test:key/test"
 }
 
 run "managed_spa_gets_narrow_upload_cors" {

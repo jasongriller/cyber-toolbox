@@ -3,13 +3,8 @@ variable "name_prefix" {
   type        = string
 }
 
-variable "execute_api_endpoint_id" {
-  description = <<-EOT
-    The execute-api interface endpoint id. The API's resource policy allows
-    invocation ONLY through this VPCE — it is the control that makes a "private"
-    API actually private. A Private API without this condition is reachable from
-    any VPC endpoint in any account that can guess its id.
-  EOT
+variable "cognito_user_pool_arn" {
+  description = "User pool ARN backing the COGNITO_USER_POOLS authorizer on every non-open route."
   type        = string
 }
 
@@ -31,7 +26,7 @@ variable "stage_name" {
 
 variable "spa_serving_mode" {
   description = <<-EOT
-    How the React SPA (#3) is served inside the private VPC (D6):
+    How the React SPA (#3) is served (D6):
 
       apigw_s3_proxy - API Gateway proxies GETs to a private S3 bucket. Default.
                        No CDN, per-request cost, needs binary_media_types.

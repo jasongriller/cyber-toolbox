@@ -144,9 +144,9 @@ data "aws_iam_policy_document" "api" {
     actions   = ["s3:PutObject"]
     resources = ["${var.uploads_bucket_arn}/jobs/*"]
 
-    # This identity-policy condition is evaluated when the presigned request is
-    # used, not when Lambda signs it. A copied URL therefore cannot fall back to
-    # the public S3 endpoint.
+    # The presigned URL is the credential — this role's SigV4 signature plus
+    # a short expiry — usable from the public internet now the API is a
+    # public REGIONAL endpoint. The bucket policy still enforces TLS-only.
   }
 
   statement {
@@ -155,8 +155,9 @@ data "aws_iam_policy_document" "api" {
     actions   = ["s3:GetObject"]
     resources = ["${var.artifacts_bucket_arn}/jobs/*"]
 
-    # Browser GET uses the interface endpoint; the API's HeadObject existence
-    # check uses the free S3 gateway endpoint. Both are private paths.
+    # Covers both the browser's presigned GET and the API Lambda's own
+    # existence check on the report, now that neither goes through a VPC
+    # endpoint. The bucket policy still enforces TLS-only.
   }
 
   statement {

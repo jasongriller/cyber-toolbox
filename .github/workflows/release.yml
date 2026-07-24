@@ -1,9 +1,9 @@
-name: Release artifacts
+name: rmf release artifacts
 
 on:
   push:
     tags:
-      - "v*"
+      - "rmf-v*"
 
 permissions:
   contents: write
@@ -20,7 +20,7 @@ jobs:
           python-version: "3.12"
       - name: Build Lambda package
         run: |
-          cd backend
+          cd apps/rmf-migrator/backend
           make build   # produces build/rmf-migrator-lambda.zip
 
       - uses: actions/setup-node@v7
@@ -28,19 +28,19 @@ jobs:
           node-version: "20"
       - name: Build frontend bundle
         run: |
-          cd frontend
+          cd apps/rmf-migrator/frontend
           npm ci
           npm run build
           cd dist && zip -r ../../frontend-bundle.zip . && cd ../..
 
       - name: Extract changelog notes for this tag
         run: |
-          version="${GITHUB_REF_NAME#v}"
+          version="${GITHUB_REF_NAME#rmf-v}"
           awk -v start="## [$version]" '
             index($0, start) == 1 { grab = 1 }
             grab && $0 ~ /^## \[/ && index($0, start) != 1 { exit }
             grab { print }
-          ' CHANGELOG.md | tail -n +2 | sed '/./,$!d' > RELEASE_NOTES.md
+          ' apps/rmf-migrator/CHANGELOG.md | tail -n +2 | sed '/./,$!d' > RELEASE_NOTES.md
           printf '\n**Full Changelog:** https://github.com/%s/commits/%s\n' \
             "$GITHUB_REPOSITORY" "$GITHUB_REF_NAME" >> RELEASE_NOTES.md
           [ -s RELEASE_NOTES.md ] || echo "Release $GITHUB_REF_NAME" > RELEASE_NOTES.md
@@ -49,8 +49,8 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           files: |
-            backend/build/rmf-migrator-lambda.zip
-            frontend-bundle.zip
+            apps/rmf-migrator/backend/build/rmf-migrator-lambda.zip
+            apps/rmf-migrator/frontend-bundle.zip
           # Notes come from CHANGELOG.md (see previous step), not GitHub's
           # auto-generated PR summary, which re-appends a "What's Changed"
           # section on every workflow run.

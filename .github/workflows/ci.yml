@@ -1,0 +1,299 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    name: Detect changed apps
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      stig: ${{ steps.filter.outputs.stig }}
+      rmf: ${{ steps.filter.outputs.rmf }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            stig:
+              - 'apps/stig-parser/**'
+              - '.github/workflows/ci.yml'
+            rmf:
+              - 'apps/rmf-migrator/**'
+              - '.github/workflows/ci.yml'
+
+  secret-scan:
+    # Full-history scan — covers both grafted histories on every run.
+    # Binary, not gitleaks-action: the action diffs the push range and errors
+    # on initial pushes; the docker image hits "dubious ownership" as root.
+    name: Secret scan (full history)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: gitleaks
+        env:
+          GITLEAKS_VERSION: 8.24.3
+        run: |
+          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | tar -xz -C /tmp gitleaks
+          /tmp/gitleaks detect --source=. --redact --no-banner
+
+  stig-python:
+    name: stig backend (audit + tests)
+    needs: changes
+    if: needs.changes.outputs.stig == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/stig-parser
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          # The runner ships a setuptools older than the PYSEC-2026-3447 fix.
+          # build-system.requires only governs the isolated build env, so the
+          # ambient runtime copy must be upgraded here or the audit gate trips.
+          pip install --upgrade "setuptools>=83.0.0"
+          pip install -e ".[dev]"
+      - name: Security audit (dependencies)
+        run: pip-audit
+      - name: Run tests
+        run: pytest tests/ -v --tb=short
+
+  stig-frontend:
+    name: stig frontend
+    needs: changes
+    if: needs.changes.outputs.stig == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/stig-parser/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: apps/stig-parser/frontend/package-lock.json
+      - run: npm ci
+      # Type errors must fail the build, not get discovered at runtime.
+      - name: Typecheck
+        run: npx tsc --noEmit
+      - name: Unit tests (incl. axe)
+        run: npm test
+      - name: Build
+        run: npx vite build
+      - name: Install Playwright
+        run: npx playwright install --with-deps chromium
+      - name: E2E (mocked API)
+        run: npx playwright test
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: apps/stig-parser/frontend/playwright-report/
+          retention-days: 7
+
+  stig-leak-scan:
+    name: stig leak scan
+    needs: changes
+    if: needs.changes.outputs.stig == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/stig-parser
+    steps:
+      - uses: actions/checkout@v4
+      # This repo is public-destined. An account id, VPC/subnet/endpoint id or a
+      # real ARN committed to a tracked .tf file is a disclosure, and rewriting
+      # git history after the fact does not un-publish it.
+      - name: No environment-specific values in tracked files
+        run: |
+          set -euo pipefail
+          # Fail CLOSED: prove the pathspec still matches tracked files before
+          # trusting a clean grep (a silent empty match would pass anything).
+          tracked=$(git ls-files -- 'infra/**' | wc -l)
+          if [ "$tracked" -eq 0 ]; then
+            echo "::error::Leak-scan pathspec matches no tracked files - layout changed?"
+            exit 1
+          fi
+          pattern='[0-9]{12}|vpc-[0-9a-f]{8,}|subnet-[0-9a-f]{8,}|vpce-[0-9a-f]{8,}|arn:aws-us-gov:[^$"]*[0-9]{12}'
+          if git grep -nEI "$pattern" -- 'infra/**' ':!infra/**/*.example'; then
+            echo "::error::Environment-specific value found in a tracked infra file."
+            exit 1
+          fi
+          echo "Leak scan clean over ${tracked} tracked files."
+
+  stig-terraform:
+    name: stig terraform validate
+    needs: changes
+    if: needs.changes.outputs.stig == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/stig-parser
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+          terraform_wrapper: false
+      - name: Format check
+        run: terraform fmt -check -recursive infra/
+      # -backend=false: validation must not need the org's real state bucket.
+      - name: Validate every module and the example env
+        run: |
+          set -euo pipefail
+          for dir in infra/modules/*/ infra/envs/example/; do
+            echo "==> $dir"
+            terraform -chdir="$dir" init -backend=false -input=false
+            terraform -chdir="$dir" validate
+          done
+      - name: Test private client-path contracts
+        run: |
+          terraform -chdir=infra/modules/network test
+          terraform -chdir=infra/modules/iam test
+          terraform -chdir=infra/modules/compute test
+          terraform -chdir=infra/modules/api test
+
+  stig-tflint:
+    name: stig tflint
+    needs: changes
+    if: needs.changes.outputs.stig == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: latest
+      - name: Lint
+        run: |
+          set -euo pipefail
+          tflint --init --chdir=apps/stig-parser/infra
+          tflint --chdir=apps/stig-parser/infra --recursive --minimum-failure-severity=error
+
+  stig-checkov:
+    name: stig checkov
+    needs: changes
+    if: needs.changes.outputs.stig == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: apps/stig-parser/infra/
+          framework: terraform
+          # HIGH and above fails the build. Documented exceptions live in
+          # apps/stig-parser/infra/README.md — a skipped check needs a written reason.
+          soft_fail: false
+          quiet: true
+
+  rmf-backend:
+    name: rmf backend (lint + test)
+    needs: changes
+    if: needs.changes.outputs.rmf == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/rmf-migrator/backend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -e ".[dev]"
+      - name: Ruff lint
+        run: ruff check .
+      - name: Ruff format
+        run: ruff format --check .
+      - name: Pytest
+        run: pytest --cov=rmf_migrator --cov-report=term-missing
+
+  rmf-frontend:
+    name: rmf frontend (lint + test)
+    needs: changes
+    if: needs.changes.outputs.rmf == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/rmf-migrator/frontend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "20"
+      - name: Install
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Test
+        run: npm test --if-present
+      - name: Production build
+        run: npm run build
+
+  rmf-terraform:
+    name: rmf terraform (fmt + validate + lint)
+    needs: changes
+    if: needs.changes.outputs.rmf == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: hashicorp/setup-terraform@v4
+      - name: Format
+        run: terraform fmt -check -recursive
+        working-directory: apps/rmf-migrator/terraform
+      - name: Validate module
+        working-directory: apps/rmf-migrator/terraform/examples/standalone
+        run: |
+          terraform init -backend=false
+          terraform validate
+      - name: tflint
+        uses: terraform-linters/setup-tflint@v6
+      - run: tflint --recursive
+        working-directory: apps/rmf-migrator/terraform
+
+  rmf-security:
+    name: rmf security scanning
+    needs: changes
+    if: needs.changes.outputs.rmf == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      # Pinned to a commit SHA: @master would run whatever was last pushed
+      # upstream against a checkout of this repo.
+      - name: checkov (Terraform IaC scan)
+        uses: bridgecrewio/checkov-action@7b972723c44fb3d256283fac96fae5d7c1894bb7 # v12.3114.0
+        with:
+          directory: apps/rmf-migrator/terraform
+          framework: terraform
+          quiet: true
+          soft_fail: false
+      # These gate the build. A known CVE fails CI rather than scrolling past.
+      # To accept a specific advisory, add it to the ignore list here with a
+      # reason, so the exception is a deliberate, reviewable act.
+      - name: pip-audit
+        run: |
+          pip install 'pip-audit==2.10.1'
+          pip-audit -r apps/rmf-migrator/backend/requirements-lock.txt
+      - name: npm audit
+        working-directory: apps/rmf-migrator/frontend
+        run: npm audit --audit-level=high

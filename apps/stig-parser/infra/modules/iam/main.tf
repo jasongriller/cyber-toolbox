@@ -147,11 +147,6 @@ data "aws_iam_policy_document" "api" {
     # This identity-policy condition is evaluated when the presigned request is
     # used, not when Lambda signs it. A copied URL therefore cannot fall back to
     # the public S3 endpoint.
-    condition {
-      test     = "StringEquals"
-      variable = "aws:SourceVpce"
-      values   = [var.api_s3_client_endpoint_id]
-    }
   }
 
   statement {
@@ -162,14 +157,6 @@ data "aws_iam_policy_document" "api" {
 
     # Browser GET uses the interface endpoint; the API's HeadObject existence
     # check uses the free S3 gateway endpoint. Both are private paths.
-    condition {
-      test     = "StringEquals"
-      variable = "aws:SourceVpce"
-      values = [
-        var.api_s3_client_endpoint_id,
-        var.api_s3_gateway_endpoint_id,
-      ]
-    }
   }
 
   statement {

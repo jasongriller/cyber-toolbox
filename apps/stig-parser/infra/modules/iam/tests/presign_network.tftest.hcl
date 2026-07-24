@@ -30,39 +30,25 @@ override_data {
 }
 
 variables {
-  name_prefix                = "stig-condenser-test"
-  uploads_bucket_arn         = "arn:aws-us-gov:s3:::test-uploads"
-  artifacts_bucket_arn       = "arn:aws-us-gov:s3:::test-artifacts"
-  api_s3_client_endpoint_id  = "vpce-client-test"
-  api_s3_gateway_endpoint_id = "vpce-gateway-test"
-  job_table_arn              = "arn:aws-us-gov:dynamodb:us-gov-west-1:aws:table/test-jobs"
-  kms_key_arn                = "arn:aws-us-gov:kms:us-gov-west-1:aws:key/test"
-  state_machine_arn          = "arn:aws-us-gov:states:us-gov-west-1:aws:stateMachine:test"
-  bedrock_region             = "us-gov-west-1"
-  ai_killswitch_param_arn    = ""
+  name_prefix              = "stig-condenser-test"
+  uploads_bucket_arn       = "arn:aws-us-gov:s3:::test-uploads"
+  artifacts_bucket_arn     = "arn:aws-us-gov:s3:::test-artifacts"
+  job_table_arn            = "arn:aws-us-gov:dynamodb:us-gov-west-1:aws:table/test-jobs"
+  kms_key_arn              = "arn:aws-us-gov:kms:us-gov-west-1:aws:key/test"
+  state_machine_arn        = "arn:aws-us-gov:states:us-gov-west-1:aws:stateMachine:test"
+  bedrock_region           = "us-gov-west-1"
+  ai_killswitch_param_arn  = ""
 }
 
-run "presigned_object_permissions_require_private_endpoints" {
+run "presign_policies_scope_to_expected_actions_and_resources" {
   command = plan
 
   assert {
-    condition = toset(flatten([
-      one([
-        for statement in jsondecode(data.aws_iam_policy_document.api.json).Statement : statement
-        if statement.Sid == "PresignUploads"
-      ]).Condition.StringEquals["aws:SourceVpce"]
-    ])) == toset(["vpce-client-test"])
-    error_message = "Presigned uploads must be usable only through the browser S3 interface endpoint."
-  }
-
-  assert {
-    condition = toset(flatten([
-      one([
-        for statement in jsondecode(data.aws_iam_policy_document.api.json).Statement : statement
-        if statement.Sid == "PresignReports"
-      ]).Condition.StringEquals["aws:SourceVpce"]
-    ])) == toset(["vpce-client-test", "vpce-gateway-test"])
-    error_message = "Report GET must allow the browser interface endpoint plus the API Lambda's gateway-endpoint HeadObject check."
+    condition = toset([
+      for statement in jsondecode(data.aws_iam_policy_document.api.json).Statement : statement.Sid
+      if statement.Sid == "PresignUploads" || statement.Sid == "PresignReports"
+    ]) == toset(["PresignUploads", "PresignReports"])
+    error_message = "Both presign policy statements (PresignUploads, PresignReports) must exist on the api role."
   }
 
   assert {
@@ -70,13 +56,35 @@ run "presigned_object_permissions_require_private_endpoints" {
       one([
         for statement in jsondecode(data.aws_iam_policy_document.api.json).Statement : statement
         if statement.Sid == "PresignUploads"
+      ]).Action == "s3:PutObject" &&
+      one([
+        for statement in jsondecode(data.aws_iam_policy_document.api.json).Statement : statement
+        if statement.Sid == "PresignUploads"
       ]).Resource == "arn:aws-us-gov:s3:::test-uploads/jobs/*" &&
+      try(one([
+        for statement in jsondecode(data.aws_iam_policy_document.api.json).Statement : statement
+        if statement.Sid == "PresignUploads"
+      ]).Condition, null) == null
+    )
+    error_message = "Presigned uploads must grant only s3:PutObject on the uploads bucket's jobs/ prefix, with no network condition."
+  }
+
+  assert {
+    condition = (
       one([
         for statement in jsondecode(data.aws_iam_policy_document.api.json).Statement : statement
         if statement.Sid == "PresignReports"
-      ]).Resource == "arn:aws-us-gov:s3:::test-artifacts/jobs/*"
+      ]).Action == "s3:GetObject" &&
+      one([
+        for statement in jsondecode(data.aws_iam_policy_document.api.json).Statement : statement
+        if statement.Sid == "PresignReports"
+      ]).Resource == "arn:aws-us-gov:s3:::test-artifacts/jobs/*" &&
+      try(one([
+        for statement in jsondecode(data.aws_iam_policy_document.api.json).Statement : statement
+        if statement.Sid == "PresignReports"
+      ]).Condition, null) == null
     )
-    error_message = "Presigning permissions must remain limited to each bucket's jobs/ prefix."
+    error_message = "Presigned report GET must grant only s3:GetObject on the artifacts bucket's jobs/ prefix, with no network condition."
   }
 }
 

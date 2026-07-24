@@ -25,7 +25,7 @@
 #   --yes           skip the interactive apply prompt (also: AUTO_APPROVE=1)
 #   -h, --help      show this help
 #
-# You always run this from the repo root: ./deploy.sh. With no env name it uses
+# You always run this from the app root (apps/stig-parser): ./deploy.sh. With no env name it uses
 # the single configured environment (the one with a real terraform.tfvars); pass
 # a name only to pick among several. You never cd into the env folder — the
 # script reaches into it for you.

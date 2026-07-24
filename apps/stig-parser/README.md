@@ -48,8 +48,8 @@ The tool generates an Excel workbook (`stig_findings_YYYYMMDD_HHMMSS.xlsx`) with
 Requires Python 3.11+.
 
 ```bash
-git clone https://github.com/your-username/stig-parser.git
-cd stig-parser
+git clone <this-repository>
+cd apps/stig-parser
 pip install -e .
 ```
 

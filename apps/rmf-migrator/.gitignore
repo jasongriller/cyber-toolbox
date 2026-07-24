@@ -52,3 +52,6 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+
+# TypeScript incremental build state
+*.tsbuildinfo

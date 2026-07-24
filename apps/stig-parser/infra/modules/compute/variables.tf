@@ -39,17 +39,6 @@ variable "artifacts_bucket" {
   type        = string
 }
 
-variable "s3_presign_endpoint_url" {
-  description = "Regional S3 PrivateLink bucket endpoint used only by the API Lambda when generating browser presigned URLs."
-  type        = string
-  nullable    = false
-
-  validation {
-    condition     = can(regex("^https://bucket\\.[A-Za-z0-9.-]+$", var.s3_presign_endpoint_url))
-    error_message = "s3_presign_endpoint_url must be an exact https://bucket.<S3-interface-endpoint> URL without a path or wildcard."
-  }
-}
-
 variable "job_table_name" {
   description = "DynamoDB job table name (env: JOB_TABLE)."
   type        = string
@@ -73,16 +62,6 @@ variable "state_machine_arn" {
 variable "role_arns" {
   description = "Map of function short name -> execution role ARN, from the iam module."
   type        = map(string)
-}
-
-variable "subnet_ids" {
-  description = "Private subnets for Lambda ENIs."
-  type        = list(string)
-}
-
-variable "security_group_id" {
-  description = "Lambda security group id."
-  type        = string
 }
 
 variable "kms_key_arn" {

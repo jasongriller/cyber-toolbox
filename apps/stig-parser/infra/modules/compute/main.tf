@@ -56,19 +56,8 @@ locals {
   function_env = {
     for name, _ in local.functions :
     name => name == "api" ? merge(local.base_env, {
-      STATE_MACHINE_ARN       = var.state_machine_arn
-      S3_PRESIGN_ENDPOINT_URL = var.s3_presign_endpoint_url
+      STATE_MACHINE_ARN = var.state_machine_arn
     }) : local.base_env
-  }
-}
-
-check "presign_endpoint_is_api_only" {
-  assert {
-    condition = alltrue([
-      for name, environment in local.function_env :
-      contains(keys(environment), "S3_PRESIGN_ENDPOINT_URL") == (name == "api")
-    ])
-    error_message = "S3_PRESIGN_ENDPOINT_URL must be present on the API Lambda and absent from every pipeline-stage Lambda."
   }
 }
 
@@ -171,13 +160,6 @@ resource "aws_lambda_function" "this" {
 
   ephemeral_storage {
     size = var.ephemeral_storage_mb
-  }
-
-  # No public egress exists in this VPC — every AWS call leaves through a VPC
-  # endpoint (see the network module).
-  vpc_config {
-    subnet_ids         = var.subnet_ids
-    security_group_ids = [var.security_group_id]
   }
 
   kms_key_arn = var.kms_key_arn

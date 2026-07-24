@@ -1,0 +1,19 @@
+# Normalize line endings to LF in the repo for all text, so contributors on
+# Windows/macOS/Linux and CI all see identical blobs. Prevents CRLF churn.
+* text=auto eol=lf
+
+# Scripts and Makefiles must be LF regardless of platform.
+*.sh    text eol=lf
+Makefile text eol=lf
+*.mk    text eol=lf
+
+# Binary assets — never touch.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.pdf   binary
+*.docx  binary
+*.xlsx  binary
+*.zip   binary

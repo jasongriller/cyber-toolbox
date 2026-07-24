@@ -1,0 +1,111 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend (lint + test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -e ".[dev]"
+      - name: Ruff lint
+        run: ruff check .
+      - name: Ruff format
+        run: ruff format --check .
+      - name: Pytest
+        run: pytest --cov=rmf_migrator --cov-report=term-missing
+
+  frontend:
+    name: Frontend (lint + test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "20"
+      - name: Install
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Test
+        run: npm test --if-present
+      - name: Production build
+        run: npm run build
+
+  terraform:
+    name: Terraform (fmt + validate + lint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: hashicorp/setup-terraform@v4
+      - name: Format
+        run: terraform fmt -check -recursive
+        working-directory: terraform
+      - name: Validate module
+        working-directory: terraform/examples/standalone
+        run: |
+          terraform init -backend=false
+          terraform validate
+      - name: tflint
+        uses: terraform-linters/setup-tflint@v6
+      - run: tflint --recursive
+        working-directory: terraform
+
+  security:
+    name: Security scanning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      # Scan the full repository history with the gitleaks binary.
+      # Not gitleaks-action: it diffs the push range, which on an initial push
+      # starts at the root commit's nonexistent parent — it errors after scanning
+      # nothing. Not the docker image either: it runs as root against a
+      # runner-owned workspace, which git rejects as "dubious ownership".
+      # Running the binary as the runner user scans the whole history cleanly.
+      - name: gitleaks (secret scan)
+        env:
+          GITLEAKS_VERSION: 8.24.3
+        run: |
+          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | tar -xz -C /tmp gitleaks
+          /tmp/gitleaks detect --source=. --redact --no-banner --verbose
+      - name: checkov (Terraform IaC scan)
+        # Pinned to a commit SHA: @master would run whatever was last pushed
+        # upstream against a checkout of this repo.
+        uses: bridgecrewio/checkov-action@7b972723c44fb3d256283fac96fae5d7c1894bb7 # v12.3114.0
+        with:
+          directory: terraform
+          framework: terraform
+          quiet: true
+          soft_fail: false
+      # These gate the build. A known CVE fails CI rather than scrolling past in
+      # the log — if one lands, fix or upgrade the dependency. To accept a
+      # specific advisory, add it to the ignore list here with a reason, so the
+      # exception is a deliberate, reviewable act instead of a blanket `|| true`.
+      - name: pip-audit
+        run: |
+          pip install 'pip-audit==2.10.1'
+          pip-audit -r backend/requirements-lock.txt
+      - name: npm audit
+        working-directory: frontend
+        run: npm audit --audit-level=high

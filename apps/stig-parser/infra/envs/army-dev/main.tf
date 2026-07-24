@@ -30,6 +30,22 @@ provider "aws" {
 data "aws_partition" "current" {}
 data "aws_caller_identity" "current" {}
 
+# The shared pool lives in the platform root (platform/infra) and is consumed
+# through its published SSM parameters — never by reading platform state.
+# These fail plan-time if the platform root has not been applied yet; that
+# ordering (platform first) is deliberate.
+data "aws_ssm_parameter" "cognito_user_pool_id" {
+  name = "${var.cognito_ssm_prefix}/cognito_user_pool_id"
+}
+
+data "aws_ssm_parameter" "cognito_user_pool_arn" {
+  name = "${var.cognito_ssm_prefix}/cognito_user_pool_arn"
+}
+
+data "aws_ssm_parameter" "cognito_client_id" {
+  name = "${var.cognito_ssm_prefix}/cognito_client_id/${var.cognito_app_client_name}"
+}
+
 locals {
   # Dependency cycle break: the iam module must grant states:StartExecution on
   # the state machine, but the orchestration module that creates it needs the
@@ -82,18 +98,16 @@ module "data" {
 module "iam" {
   source = "../../modules/iam"
 
-  name_prefix                = var.name_prefix
-  uploads_bucket_arn         = module.storage.uploads_bucket_arn
-  artifacts_bucket_arn       = module.storage.artifacts_bucket_arn
-  api_s3_client_endpoint_id  = module.network.s3_client_endpoint_id
-  api_s3_gateway_endpoint_id = module.network.s3_gateway_endpoint_id
-  job_table_arn              = module.data.job_table_arn
-  kms_key_arn                = module.storage.kms_key_arn
-  state_machine_arn          = local.state_machine_arn
-  bedrock_model_id           = var.bedrock_model_id
-  bedrock_region             = var.bedrock_region
-  ai_killswitch_param_arn    = local.ai_killswitch_param_arn
-  tags                       = var.tags
+  name_prefix             = var.name_prefix
+  uploads_bucket_arn      = module.storage.uploads_bucket_arn
+  artifacts_bucket_arn    = module.storage.artifacts_bucket_arn
+  job_table_arn           = module.data.job_table_arn
+  kms_key_arn             = module.storage.kms_key_arn
+  state_machine_arn       = local.state_machine_arn
+  bedrock_model_id        = var.bedrock_model_id
+  bedrock_region          = var.bedrock_region
+  ai_killswitch_param_arn = local.ai_killswitch_param_arn
+  tags                    = var.tags
 }
 
 module "compute" {
@@ -104,17 +118,14 @@ module "compute" {
   dependency_layer_zip = var.dependency_layer_zip
   python_runtime       = var.python_runtime
 
-  uploads_bucket          = module.storage.uploads_bucket
-  artifacts_bucket        = module.storage.artifacts_bucket
-  s3_presign_endpoint_url = module.network.s3_client_endpoint_url
-  job_table_name          = module.data.job_table_name
-  job_ttl_days            = var.job_ttl_days
-  state_machine_arn       = local.state_machine_arn
-  role_arns               = module.iam.role_arns
+  uploads_bucket    = module.storage.uploads_bucket
+  artifacts_bucket  = module.storage.artifacts_bucket
+  job_table_name    = module.data.job_table_name
+  job_ttl_days      = var.job_ttl_days
+  state_machine_arn = local.state_machine_arn
+  role_arns         = module.iam.role_arns
 
-  subnet_ids        = module.network.private_subnet_ids
-  security_group_id = module.network.lambda_security_group_id
-  kms_key_arn       = module.storage.kms_key_arn
+  kms_key_arn = module.storage.kms_key_arn
 
   bedrock_model_id     = var.bedrock_model_id
   bedrock_region       = var.bedrock_region
@@ -140,7 +151,7 @@ module "api" {
   source = "../../modules/api"
 
   name_prefix                    = var.name_prefix
-  execute_api_endpoint_id        = module.network.execute_api_endpoint_id
+  cognito_user_pool_arn          = nonsensitive(data.aws_ssm_parameter.cognito_user_pool_arn.value)
   api_function_arn               = module.compute.api_function_arn
   api_function_name              = module.compute.api_function_name
   spa_serving_mode               = var.spa_serving_mode

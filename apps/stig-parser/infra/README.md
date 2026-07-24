@@ -79,6 +79,21 @@ placeholders); a real `apply` does. See spec §2.
 | D6 | Private-SPA serving mode and exact upload origin(s) | `spa_serving_mode`, `additional_upload_cors_origins` | `apigw_s3_proxy`, managed API origin only |
 | D7 | Private API client CIDRs and return-route owner/targets | `api_client_cidr_blocks`, `api_client_route_management`, `api_client_routes` | **no client or route-owner default** |
 
+**D3 reversed by manager direction (2026-07-24).** The original D3 decision
+made the private VPC boundary itself the authentication control — every
+request had to arrive through the `execute-api` VPC endpoint, and there was no
+gateway-level authorizer. That is reversed: the API Gateway is now a public
+`REGIONAL` endpoint, and a Cognito `COGNITO_USER_POOLS` authorizer is the
+authentication boundary instead (see the `CKV_AWS_59` entry below for the
+per-route split). The shared user pool is owned and published by the
+top-level `platform/` root; this stack only consumes it, read-only, through
+SSM (`cognito_ssm_prefix` / `cognito_app_client_name`). `identity_header` is
+unchanged and remains available as an optional defense-in-depth per-job
+ownership signal. The private-VPC topology this reversal leaves in place —
+the `network` module, the `execute-api` / S3-client interface endpoints, the
+D7 client-CIDR path — is not retired by this change; its teardown is
+deferred to Phase B.
+
 **CUI note:** scan results and derived findings are treated as CUI. Retention and
 TTL values are a **records-policy decision**, not a convenience default — confirm
 with the ISSO. Apply CUI marking to generated reports where org policy requires.
@@ -194,11 +209,13 @@ MSYS_NO_PATHCONV=1 docker run --rm -v "/g/path/to/stig-parser/infra:/w" -w /w \
 Every `checkov` skip is inline at its resource with a written reason. The
 substantive ones:
 
-- **`CKV_AWS_59` (API Gateway authorization `NONE`)** — the endpoint is
-  `PRIVATE`, and its resource policy **denies** every request that did not arrive
-  through our `execute-api` VPC endpoint. Authentication is upstream of the
-  private boundary (D3). A gateway authorizer would be a second, weaker copy of a
-  decision already made.
+- **`CKV_AWS_59` (API Gateway authorization `NONE`)** — two routes are
+  intentionally open: `get_config` (the SPA reads upload limits and AI
+  availability before sign-in; it exposes no user or job data) and the SPA
+  proxy route (the login shell itself, which must load before a user can
+  authenticate). Every other route — uploads, jobs, results, cancel — sits
+  behind the `COGNITO_USER_POOLS` authorizer and requires a valid Cognito ID
+  token (D3, reversed — see above).
 - **`CKV_AWS_116` (no Lambda DLQ)** — a DLQ only applies to *async* invocation.
   Every function here is invoked synchronously (API Gateway, Step Functions), and
   stage failures are caught by the state machine and recorded on the job.

@@ -54,6 +54,13 @@ ai_killswitch_param = "" # e.g. "/stig-condenser/ai-enabled"
 # authentication remains upstream. Empty disables per-job ownership checks.
 identity_header = "" # e.g. "x-forwarded-user"
 
+# Cognito (D3, reversed): the shared user pool is owned and published by the
+# platform/ root over SSM. These defaults match the platform's
+# toolbox-dev-users pool and its stig-parser-web app client — override only
+# for a non-default SSM prefix or app-client name.
+# cognito_ssm_prefix      = "/toolbox/dev"
+# cognito_app_client_name = "stig-parser-web"
+
 # (D6) Private SPA serving: apigw_s3_proxy | lambda_served | none
 spa_serving_mode = "apigw_s3_proxy"
 

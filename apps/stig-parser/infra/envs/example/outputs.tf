@@ -1,5 +1,5 @@
 output "api_invoke_url" {
-  description = "Private API URL. Reachability requires an approved client CIDR, an attached network path with reciprocal routing, and private DNS forwarding."
+  description = "Public API URL, served directly to browsers over the internet. Baked into the SPA build (VITE_API_BASE); every route except get_config and the SPA shell requires a valid Cognito ID token."
   value       = module.api.invoke_url
 }
 
@@ -51,4 +51,14 @@ output "state_machine_arn" {
 output "vpc_id" {
   description = "VPC hosting the runtime."
   value       = module.network.vpc_id
+}
+
+output "cognito_user_pool_id" {
+  description = "Baked into the SPA at build time (VITE_COGNITO_USER_POOL_ID)."
+  value       = nonsensitive(data.aws_ssm_parameter.cognito_user_pool_id.value)
+}
+
+output "cognito_client_id" {
+  description = "Baked into the SPA at build time (VITE_COGNITO_CLIENT_ID)."
+  value       = nonsensitive(data.aws_ssm_parameter.cognito_client_id.value)
 }

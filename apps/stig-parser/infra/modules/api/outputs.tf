@@ -4,10 +4,7 @@ output "api_id" {
 }
 
 output "invoke_url" {
-  description = <<-EOT
-    VPC-internal invoke url. Resolvable only from inside the VPC, through the
-    execute-api interface endpoint — it is not reachable from the internet.
-  EOT
+  description = "Public invoke URL for the REGIONAL API Gateway stage, served directly to browsers. Every route except get_config and the SPA proxy requires a valid Cognito ID token via the COGNITO_USER_POOLS authorizer."
   value       = aws_api_gateway_stage.this.invoke_url
 }
 

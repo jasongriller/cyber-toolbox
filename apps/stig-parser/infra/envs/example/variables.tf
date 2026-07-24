@@ -137,6 +137,18 @@ variable "identity_header" {
   default     = ""
 }
 
+variable "cognito_ssm_prefix" {
+  description = "SSM path prefix the platform root publishes the shared pool under."
+  type        = string
+  default     = "/toolbox/dev"
+}
+
+variable "cognito_app_client_name" {
+  description = "This app's client in the shared pool."
+  type        = string
+  default     = "stig-parser-web"
+}
+
 # --- SPA (D6) ----------------------------------------------------------------
 
 variable "spa_serving_mode" {

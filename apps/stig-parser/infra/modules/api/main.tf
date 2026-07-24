@@ -16,7 +16,7 @@ locals {
   serve_spa_from_s3 = var.spa_serving_mode == "apigw_s3_proxy"
 
   # Browser Origin excludes the API stage path. Managed SPA modes are served
-  # from the private API host itself; an externally served SPA must name its
+  # from the API host itself; an externally served SPA must name its
   # exact same-origin facade explicitly.
   managed_upload_cors_origins = var.spa_serving_mode == "none" ? toset([]) : toset([
     regex("^https://[^/]+", aws_api_gateway_stage.this.invoke_url),

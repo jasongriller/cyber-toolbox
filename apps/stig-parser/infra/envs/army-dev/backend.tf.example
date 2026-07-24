@@ -1,17 +1,18 @@
 # Copy to backend.tf (gitignored — it names real org infrastructure) and fill in.
 #
-# (D2) The state bucket, lock table and KMS key are org-owned and must already
-# exist. Terraform state for this stack contains bucket names, ARNs and account
-# ids: encrypt it, lock it, and keep it in GovCloud with the rest of the system.
+# (D2) The state bucket is org-owned and must already exist. Terraform state
+# for this stack contains bucket names, ARNs and account ids: encrypt it and
+# keep it in GovCloud with the rest of the system. Locking is S3-native
+# (use_lockfile, Terraform >= 1.10) — no DynamoDB lock table needed.
 
 terraform {
   backend "s3" {
-    bucket = "REPLACE-org-terraform-state"
-    key    = "stig-parser/army-dev/terraform.tfstate"
-    region = "us-gov-west-1"
+    bucket  = "REPLACE-org-terraform-state"
+    key     = "stig-parser/army-dev/terraform.tfstate"
+    region  = "us-gov-west-1"
+    profile = "REPLACE-aws-profile"
 
-    encrypt        = true
-    kms_key_id     = "REPLACE-arn-of-org-state-cmk"
-    dynamodb_table = "REPLACE-org-terraform-locks"
+    encrypt      = true
+    use_lockfile = true
   }
 }

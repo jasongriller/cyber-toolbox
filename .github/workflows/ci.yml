@@ -19,6 +19,7 @@ jobs:
     outputs:
       stig: ${{ steps.filter.outputs.stig }}
       rmf: ${{ steps.filter.outputs.rmf }}
+      platform: ${{ steps.filter.outputs.platform }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -30,6 +31,9 @@ jobs:
               - '.github/workflows/ci.yml'
             rmf:
               - 'apps/rmf-migrator/**'
+              - '.github/workflows/ci.yml'
+            platform:
+              - 'platform/**'
               - '.github/workflows/ci.yml'
 
   secret-scan:
@@ -167,7 +171,7 @@ jobs:
             terraform -chdir="$dir" init -backend=false -input=false
             terraform -chdir="$dir" validate
           done
-      - name: Test private client-path contracts
+      - name: Test module contracts
         run: |
           terraform -chdir=infra/modules/network test
           terraform -chdir=infra/modules/iam test
@@ -205,6 +209,88 @@ jobs:
           # apps/stig-parser/infra/README.md — a skipped check needs a written reason.
           soft_fail: false
           quiet: true
+
+  platform-terraform:
+    name: platform terraform validate
+    needs: changes
+    if: needs.changes.outputs.platform == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: platform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+          terraform_wrapper: false
+      - name: Format check
+        run: terraform fmt -check -recursive infra/
+      - name: Validate module and the example env
+        run: |
+          set -euo pipefail
+          for dir in infra/modules/cognito/ infra/envs/example/; do
+            echo "==> $dir"
+            terraform -chdir="$dir" init -backend=false -input=false
+            terraform -chdir="$dir" validate
+          done
+      - name: Pool contract tests
+        run: terraform -chdir=infra/modules/cognito test
+
+  platform-tflint:
+    name: platform tflint
+    needs: changes
+    if: needs.changes.outputs.platform == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: latest
+      - name: Lint
+        run: |
+          set -euo pipefail
+          tflint --init --chdir=platform/infra
+          tflint --chdir=platform/infra --recursive --minimum-failure-severity=error
+
+  platform-checkov:
+    name: platform checkov
+    needs: changes
+    if: needs.changes.outputs.platform == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: platform/infra/
+          framework: terraform
+          soft_fail: false
+          quiet: true
+
+  platform-leak-scan:
+    name: platform leak scan
+    needs: changes
+    if: needs.changes.outputs.platform == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: platform
+    steps:
+      - uses: actions/checkout@v4
+      - name: No environment-specific values in tracked files
+        run: |
+          set -euo pipefail
+          tracked=$(git ls-files -- 'infra/**' | wc -l)
+          if [ "$tracked" -eq 0 ]; then
+            echo "::error::Leak-scan pathspec matches no tracked files - layout changed?"
+            exit 1
+          fi
+          pattern='[0-9]{12}|vpc-[0-9a-f]{8,}|subnet-[0-9a-f]{8,}|vpce-[0-9a-f]{8,}|arn:aws-us-gov:[^$"]*[0-9]{12}'
+          if git grep -nEI "$pattern" -- 'infra/**' ':!infra/**/*.example'; then
+            echo "::error::Environment-specific value found in a tracked infra file."
+            exit 1
+          fi
+          echo "Leak scan clean over ${tracked} tracked files."
 
   rmf-backend:
     name: rmf backend (lint + test)

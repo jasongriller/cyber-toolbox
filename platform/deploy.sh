@@ -37,9 +37,12 @@ export AWS_PROFILE="${AWS_PROFILE:-army-govcloud}"
 export AWS_REGION="${AWS_REGION:-us-gov-west-1}"
 export AWS_DEFAULT_REGION="$AWS_REGION"
 
-tf_ver="$(terraform version -json | sed -n 's/.*"terraform_version":"\([^"]*\)".*/\1/p')"
+# Space-tolerant JSON parse (the CLI emits `"terraform_version": "x.y.z"`),
+# plain-text fallback, and FAIL CLOSED when neither parse yields a version.
+tf_ver="$(terraform version -json 2>/dev/null | sed -n 's/.*"terraform_version": *"\([^"]*\)".*/\1/p')"
+[ -n "$tf_ver" ] || tf_ver="$(terraform version | sed -n '1s/Terraform v//p')"
 case "$tf_ver" in
-  0.*|1.[0-9].*) echo "terraform >= 1.10 required for use_lockfile (found $tf_ver)" >&2; exit 1 ;;
+  ""|0.*|1.[0-9].*) echo "terraform >= 1.10 required for use_lockfile (found ${tf_ver:-unknown})" >&2; exit 1 ;;
 esac
 
 actual="$(aws sts get-caller-identity --query Account --output text)"

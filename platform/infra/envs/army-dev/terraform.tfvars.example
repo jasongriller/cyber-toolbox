@@ -1,0 +1,8 @@
+aws_region = "<REGION>" # e.g. us-gov-west-1
+
+# name_prefix, ssm_prefix, app_client_names, mfa_configuration have safe
+# defaults (see variables.tf) — override only with a reason.
+
+tags = {
+  # project / environment / owner tags, mirroring the app roots
+}

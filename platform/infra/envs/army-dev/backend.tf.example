@@ -1,0 +1,13 @@
+# Copy to backend.tf (gitignored) and fill in. The platform root shares the
+# apps' state bucket but owns its own key — per-root keys are what keep an app
+# apply from ever touching the pool.
+terraform {
+  backend "s3" {
+    bucket       = "<STATE_BUCKET>"
+    key          = "platform/<ENV>/terraform.tfstate"
+    region       = "<REGION>"
+    profile      = "<AWS_PROFILE>"
+    encrypt      = true
+    use_lockfile = true # S3-native locking (Terraform >= 1.10) — no DynamoDB table
+  }
+}

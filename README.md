@@ -7,7 +7,7 @@ One repo, multiple cyber tools, separate deploys.
 | STIG Condenser | `apps/stig-parser/` | Live (dev) — deploys via `apps/stig-parser/deploy.sh` |
 | RMF Rev5 Migrator | `apps/rmf-migrator/` | Built, not yet deployed |
 
-- `platform/` — shared toolbox infrastructure (identity, domain) as it lands; nothing deployed from here yet.
+- `platform/` — shared toolbox infrastructure (its own Terraform root/state): the shared Cognito user pool + per-app clients, published to SSM; custom domain later.
 - `modules/` — shared Terraform modules, extracted only once two consumers exist.
 - `docs/` — cross-cutting records, including the monorepo merge design.
 

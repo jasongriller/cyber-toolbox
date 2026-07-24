@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <title>STIG Compliance Parser</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body data-job-id="{{ existing_job_id or '' }}">
+  <div class="container">
+    <header>
+      <h1>STIG Compliance Parser</h1>
+      <p class="subtitle">Upload scan results to generate a consolidated findings report. SCC, Evaluate-STIG, and Nessus files are self-contained &mdash; no separate benchmark upload needed.</p>
+    </header>
+
+    <main id="app">
+
+      <noscript>
+        <p class="noscript-note">This tool requires JavaScript to upload files and track processing. Enable JavaScript, or use the CLI: <code>stig-parser --help</code>.</p>
+      </noscript>
+
+      <!-- Upload form -->
+      <section id="upload-section">
+        <form id="upload-form" enctype="multipart/form-data">
+
+          <div class="upload-grid">
+
+            <!-- Results drop zone -->
+            <div class="upload-zone" id="results-zone">
+              <div class="zone-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <path d="M14 2v6h6"/>
+                  <path d="M9 13h6M9 17h6"/>
+                </svg>
+              </div>
+              <h2>Scan Results</h2>
+              <p>XCCDF results from SCC or OpenSCAP (.xml), Evaluate-STIG / STIG Viewer checklists (.cklb), or Nessus compliance scans (.nessus)</p>
+              <button type="button" class="btn btn-secondary" id="results-browse">Choose Files</button>
+              <input type="file" id="results-input" name="results" multiple accept=".xml,.cklb,.nessus" hidden>
+              <p class="zone-notice" id="results-zone-notice" role="status" hidden></p>
+              <ul class="file-list" id="results-file-list"></ul>
+            </div>
+
+            <!-- Benchmark drop zone -->
+            <div class="upload-zone" id="benchmarks-zone">
+              <div class="zone-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                </svg>
+              </div>
+              <h2>STIG Benchmarks <span class="badge-optional">Optional for SCC</span></h2>
+              <p>STIG benchmark XML or ZIP files from DISA (public.cyber.mil). Not needed when uploading SCC result files.</p>
+              <button type="button" class="btn btn-secondary" id="benchmarks-browse">Choose Files</button>
+              <input type="file" id="benchmarks-input" name="benchmarks" multiple accept=".xml,.zip" hidden>
+              <p class="zone-notice" id="benchmarks-zone-notice" role="status" hidden></p>
+              <ul class="file-list" id="benchmarks-file-list"></ul>
+            </div>
+
+          </div><!-- /.upload-grid -->
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" id="process-btn" disabled>
+              Process
+            </button>
+          </div>
+
+        </form>
+      </section><!-- /#upload-section -->
+
+      <!-- Progress / status section (hidden until job starts) -->
+      <section id="progress-section" hidden>
+        <h2>Processing</h2>
+        <div class="activity-log" id="activity-log" role="log" aria-live="polite"></div>
+        <p id="stall-note" class="progress-text stall-note" aria-live="polite" hidden>Still working &mdash; large files can take a few minutes.</p>
+        <div class="progress-actions">
+          <button type="button" class="btn btn-secondary" id="cancel-btn">Cancel</button>
+        </div>
+
+        <div id="warnings-box" class="warnings-box" aria-live="polite" hidden>
+          <h3>Warnings</h3>
+          <p class="warnings-lead">The report will still be generated. Items below were skipped or incomplete &mdash; verify them before including the report in an accreditation package.</p>
+          <ul id="warnings-list"></ul>
+        </div>
+      </section>
+
+      <!-- Result section (hidden until complete) -->
+      <section id="result-section" hidden>
+        <div class="result-card success" id="result-success" role="status" hidden>
+          <div class="result-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 6 9 17l-5-5" pathLength="1"/>
+            </svg>
+          </div>
+          <h2>Report Ready</h2>
+          <dl class="report-summary" id="report-summary" hidden>
+            <div class="summary-row"><dt>Result files</dt><dd id="sum-files"></dd></div>
+            <div class="summary-row"><dt>Hosts</dt><dd id="sum-hosts"></dd></div>
+            <div class="summary-row summary-total"><dt>Findings</dt><dd id="sum-findings"></dd></div>
+            <div class="summary-row summary-cat"><dt>CAT I &mdash; high</dt><dd id="sum-cat1"></dd></div>
+            <div class="summary-row summary-cat"><dt>CAT II &mdash; medium</dt><dd id="sum-cat2"></dd></div>
+            <div class="summary-row summary-cat"><dt>CAT III &mdash; low</dt><dd id="sum-cat3"></dd></div>
+          </dl>
+          <p class="summary-note" id="summary-note" hidden>Severity counts are zero because the results were not matched to a STIG benchmark &mdash; see the warnings below.</p>
+          <a id="download-link" href="#" class="btn btn-primary">Download Excel Report</a>
+          <button class="btn btn-secondary" id="reset-btn">Process Another Set</button>
+          <div id="success-warnings-box" class="warnings-box" hidden>
+            <h3>Warnings from this run</h3>
+            <p class="warnings-lead">The report was generated, but the items below were skipped or incomplete &mdash; verify them before including the report in an accreditation package.</p>
+            <ul id="success-warnings-list"></ul>
+          </div>
+        </div>
+        <div class="result-card error" id="result-error" role="alert" hidden>
+          <div class="result-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 6 6 18M6 6l12 12"/>
+            </svg>
+          </div>
+          <h2>Processing Failed</h2>
+          <p id="error-message"></p>
+          <div id="error-warnings-box" class="warnings-box" hidden>
+            <h3>Warnings recorded before the failure</h3>
+            <ul id="error-warnings-list"></ul>
+          </div>
+          <button class="btn btn-secondary" id="reset-btn-error">Try Again</button>
+        </div>
+      </section>
+
+    </main>
+
+    <footer>
+      <p>Supports SCC &bull; OpenSCAP &bull; Evaluate-STIG (CKLB) &bull; Nessus (.nessus)</p>
+      <p class="small">All formats validated against real scanner output. See the <a href="/readme">README</a>.</p>
+    </footer>
+  </div><!-- /.container -->
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

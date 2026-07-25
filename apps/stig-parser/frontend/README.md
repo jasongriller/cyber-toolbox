@@ -9,14 +9,20 @@ serverless and async, and that API needs a client.
 
 ## Develop
 
-```sh
-npm install
-VITE_API_BASE=https://<private-api>/v1 npm run dev
-```
+Two dev modes:
 
-`VITE_API_BASE` is the only environment-specific value in the bundle. It is a
-VPC-internal URL — not a secret, but it is injected at build time and never
-committed.
+- **UI-only** — `npm install && npm run dev` here in `frontend/`. Plain http,
+  no backend; fine for component/style work, but API calls fail.
+- **`devfull`** — `npm run dev` from the **repo root**. Serves the SPA over
+  https (`@vitejs/plugin-basic-ssl`, self-signed) on a pinned `:5173` and
+  proxies `/config`, `/uploads`, and `/jobs` to the live army-dev API, so real
+  Cognito login and S3 uploads work end-to-end (uploads-bucket CORS only
+  admits https origins). Copy `.env.devfull.local.example` to
+  `.env.devfull.local` (gitignored; Vite loads it automatically for this
+  mode) and fill it in from `terraform output` — `VITE_DEV_PROXY_TARGET` is
+  `api_invoke_url`, the `VITE_COGNITO_*` values are the pool/client outputs.
+  The browser will warn about the self-signed certificate on first load —
+  accept it once per browser profile.
 
 ## Test
 

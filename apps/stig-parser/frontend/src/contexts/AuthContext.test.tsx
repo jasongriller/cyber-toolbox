@@ -15,7 +15,24 @@ interface FakeCognitoUser {
   signOut: ReturnType<typeof vi.fn>;
 }
 
-type Behavior = 'success' | 'failure' | 'newPasswordRequired' | 'mfaSetup' | 'totpRequired';
+type Behavior =
+  | 'success'
+  | 'failure'
+  | 'newPasswordRequired'
+  | 'mfaSetup'
+  | 'totpRequired'
+  | 'mfaRequired'
+  | 'selectMFAType'
+  | 'customChallenge';
+
+/** What getCurrentUser() returns for session-restore-on-mount and getIdToken tests —
+ *  a user "already signed in" (e.g. from a persisted session), independent of
+ *  anything constructed via login(). */
+interface FakeCurrentUser {
+  getUsername: () => string;
+  getSession: ReturnType<typeof vi.fn>;
+  signOut: ReturnType<typeof vi.fn>;
+}
 
 // vi.hoisted: vi.mock factories below run before this file's own top-level code,
 // so any state they need to read/write has to be created here to survive the hoist.
@@ -28,9 +45,14 @@ const mocks = vi.hoisted(() => ({
   },
   authBehavior: 'success' as Behavior,
   completeBehavior: 'success' as Behavior,
+  /** Only sendMFACode/verifySoftwareToken honor this — everything else in the
+   *  challenge chain is covered by authBehavior/completeBehavior. */
+  totpBehavior: 'success' as 'success' | 'failure',
   secret: 'JBSWY3DPEHPK3PXP',
   createdUsers: [] as FakeCognitoUser[],
   poolCtorArgs: [] as unknown[],
+  /** What CognitoUserPool#getCurrentUser() returns; null unless a test opts in. */
+  currentUser: null as FakeCurrentUser | null,
 }));
 
 vi.mock('../config/cognito', () => ({
@@ -48,6 +70,12 @@ vi.mock('amazon-cognito-identity-js', () => {
     if (behavior === 'newPasswordRequired') return callbacks.newPasswordRequired?.();
     if (behavior === 'mfaSetup') return callbacks.mfaSetup?.();
     if (behavior === 'totpRequired') return callbacks.totpRequired?.();
+    // Challenge types this app doesn't implement — dispatched with the same
+    // (challengeName, challengeParameters) shape the real SDK uses, to prove
+    // AuthContext's handlers don't depend on ignoring those args.
+    if (behavior === 'mfaRequired') return callbacks.mfaRequired?.('SMS_MFA', {});
+    if (behavior === 'selectMFAType') return callbacks.selectMFAType?.('SELECT_MFA_TYPE', {});
+    if (behavior === 'customChallenge') return callbacks.customChallenge?.({});
     return undefined;
   }
 
@@ -81,12 +109,18 @@ vi.mock('amazon-cognito-identity-js', () => {
 
     verifySoftwareToken = vi.fn(
       (_code: string, _name: string, callbacks: { onSuccess: () => void; onFailure: (e: Error) => void }) => {
+        if (mocks.totpBehavior === 'failure') {
+          return callbacks.onFailure(new Error('Invalid code.'));
+        }
         callbacks.onSuccess();
       },
     );
 
     sendMFACode = vi.fn(
       (_code: string, callbacks: { onSuccess: () => void; onFailure: (e: Error) => void }, _mfaType?: string) => {
+        if (mocks.totpBehavior === 'failure') {
+          return callbacks.onFailure(new Error('Invalid code.'));
+        }
         callbacks.onSuccess();
       },
     );
@@ -107,7 +141,7 @@ vi.mock('amazon-cognito-identity-js', () => {
     }
 
     getCurrentUser() {
-      return null;
+      return mocks.currentUser;
     }
   }
 
@@ -121,6 +155,26 @@ vi.mock('amazon-cognito-identity-js', () => {
     AuthenticationDetails: MockAuthenticationDetails,
   };
 });
+
+/** Builds a `getCurrentUser()` result simulating an already-signed-in session
+ *  (e.g. restored from persisted storage) — independent of anything the test
+ *  constructs via login(). `session` selects what getSession() reports back. */
+function fakeCurrentUser(
+  username: string,
+  session: { valid: boolean } | { error: Error },
+): FakeCurrentUser {
+  return {
+    getUsername: () => username,
+    getSession: vi.fn((callback: (err: Error | null, session: unknown) => void) => {
+      if ('error' in session) return callback(session.error, null);
+      callback(null, {
+        isValid: () => session.valid,
+        getIdToken: () => ({ getJwtToken: () => 'fake-id-token' }),
+      });
+    }),
+    signOut: vi.fn(),
+  };
+}
 
 function setPoolConfigured(configured: boolean) {
   mocks.cognitoConfig.userPoolId = configured ? 'us-gov-west-1_testpool' : '';
@@ -142,12 +196,15 @@ describe('AuthContext', () => {
     mocks.poolCtorArgs.length = 0;
     mocks.authBehavior = 'success';
     mocks.completeBehavior = 'success';
+    mocks.totpBehavior = 'success';
+    mocks.currentUser = null;
   });
 
   describe('with a configured pool', () => {
     it('(a) authenticateUser onSuccess sets email', async () => {
       setPoolConfigured(true);
-      const { AuthProvider, useAuth } = await freshAuthContext();
+      const { AuthProvider, useAuth, isNoAuthMode } = await freshAuthContext();
+      expect(isNoAuthMode).toBe(false);
       const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
       await waitFor(() => expect(result.current.loading).toBe(false));
 
@@ -213,7 +270,7 @@ describe('AuthContext', () => {
       const user = mocks.createdUsers[0];
       expect(user.verifySoftwareToken).toHaveBeenCalledWith(
         '654321',
-        expect.any(String),
+        'toolbox',
         expect.anything(),
       );
       expect(result.current.email).toBe('user@example.mil');
@@ -273,12 +330,122 @@ describe('AuthContext', () => {
       // The chain moved past the password step; it must not still claim to need one.
       expect(result.current.requiresNewPassword).toBe(false);
     });
+
+    it('(negative) a wrong password rejects login() with the SDK error message', async () => {
+      mocks.authBehavior = 'failure';
+      setPoolConfigured(true);
+      const { AuthProvider, useAuth } = await freshAuthContext();
+      const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await expect(
+        result.current.login('user@example.mil', 'wrong-password'),
+      ).rejects.toThrow('Incorrect username or password.');
+
+      expect(result.current.email).toBeNull();
+    });
+
+    it('(negative) a failed TOTP code rejects and keeps mfaStage at code so a retry is possible', async () => {
+      mocks.authBehavior = 'totpRequired';
+      setPoolConfigured(true);
+      const { AuthProvider, useAuth } = await freshAuthContext();
+      const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await act(async () => {
+        await result.current.login('user@example.mil', 'Password123!').catch(() => {});
+      });
+      expect(result.current.mfaStage).toBe('code');
+
+      mocks.totpBehavior = 'failure';
+      await expect(result.current.submitTotpCode('000000')).rejects.toThrow('Invalid code.');
+
+      // Still mid-challenge, not signed in — the caller can retry.
+      expect(result.current.mfaStage).toBe('code');
+      expect(result.current.email).toBeNull();
+      expect(mocks.createdUsers).toHaveLength(1);
+
+      // Proof the pending user survived the failure: a retry on the same
+      // instance (no second CognitoUser, no "No pending challenge" rejection)
+      // succeeds outright.
+      mocks.totpBehavior = 'success';
+      await act(async () => {
+        await result.current.submitTotpCode('123456');
+      });
+      expect(mocks.createdUsers).toHaveLength(1);
+      expect(mocks.createdUsers[0].sendMFACode).toHaveBeenCalledTimes(2);
+      expect(result.current.email).toBe('user@example.mil');
+    });
+
+    it('(negative) an unsupported challenge (e.g. SMS MFA) rejects login() instead of hanging', async () => {
+      mocks.authBehavior = 'mfaRequired';
+      setPoolConfigured(true);
+      const { AuthProvider, useAuth } = await freshAuthContext();
+      const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await expect(
+        result.current.login('user@example.mil', 'Password123!'),
+      ).rejects.toThrow('unsupported challenge: SMS_MFA');
+
+      expect(result.current.email).toBeNull();
+      expect(result.current.loading).toBe(false);
+    });
+  });
+
+  describe('getIdToken with a configured pool', () => {
+    it('resolves the raw JWT string on a valid session — no "Bearer " prefix', async () => {
+      setPoolConfigured(true);
+      mocks.currentUser = fakeCurrentUser('user@example.mil', { valid: true });
+      const { getIdToken } = await freshAuthContext();
+
+      await expect(getIdToken()).resolves.toBe('fake-id-token');
+    });
+
+    it('resolves null when getSession reports an error', async () => {
+      setPoolConfigured(true);
+      mocks.currentUser = fakeCurrentUser('user@example.mil', { error: new Error('network') });
+      const { getIdToken } = await freshAuthContext();
+
+      await expect(getIdToken()).resolves.toBeNull();
+    });
+
+    it('resolves null when the session is invalid', async () => {
+      setPoolConfigured(true);
+      mocks.currentUser = fakeCurrentUser('user@example.mil', { valid: false });
+      const { getIdToken } = await freshAuthContext();
+
+      await expect(getIdToken()).resolves.toBeNull();
+    });
+  });
+
+  describe('session restore on mount', () => {
+    it('a current user with a valid session sets email from getUsername()', async () => {
+      setPoolConfigured(true);
+      mocks.currentUser = fakeCurrentUser('restored@example.mil', { valid: true });
+      const { AuthProvider, useAuth } = await freshAuthContext();
+      const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+
+      await waitFor(() => expect(result.current.loading).toBe(false));
+      expect(result.current.email).toBe('restored@example.mil');
+    });
+
+    it('a current user with an invalid session stays signed out', async () => {
+      setPoolConfigured(true);
+      mocks.currentUser = fakeCurrentUser('restored@example.mil', { valid: false });
+      const { AuthProvider, useAuth } = await freshAuthContext();
+      const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+
+      await waitFor(() => expect(result.current.loading).toBe(false));
+      expect(result.current.email).toBeNull();
+    });
   });
 
   describe('with no pool configured (NO_AUTH)', () => {
     it('(e) auto-signs-in, login() resolves immediately, and getIdToken() resolves null', async () => {
       setPoolConfigured(false);
-      const { AuthProvider, useAuth, getIdToken } = await freshAuthContext();
+      const { AuthProvider, useAuth, getIdToken, isNoAuthMode } = await freshAuthContext();
+      expect(isNoAuthMode).toBe(true);
       const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
       await waitFor(() => expect(result.current.loading).toBe(false));
 

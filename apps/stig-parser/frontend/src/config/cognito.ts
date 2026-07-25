@@ -1,5 +1,7 @@
 /** Cognito wiring, baked at build time by deploy.sh. All empty in dev/tests,
- *  which switches AuthContext into NO_AUTH mode (no login gate, no header). */
+ *  which switches AuthContext into NO_AUTH mode (AuthContext.isNoAuthMode) —
+ *  AuthGate then renders children directly, with no login form and no
+ *  signed-in header. */
 export const cognitoConfig = {
   userPoolId: import.meta.env.VITE_COGNITO_USER_POOL_ID ?? '',
   clientId: import.meta.env.VITE_COGNITO_CLIENT_ID ?? '',

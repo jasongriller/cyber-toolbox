@@ -175,7 +175,9 @@ export default function Login() {
             <button type="submit" className="btn btn-primary" disabled={busy}>
               {busy ? 'Signing in…' : 'Sign in'}
             </button>
-            {error ? <p style={{ color: 'var(--color-danger)', fontSize: 12.5 }}>{error}</p> : null}
+            {error ? (
+              <p role="alert" style={{ color: 'var(--color-danger)', fontSize: 12.5 }}>{error}</p>
+            ) : null}
           </form>
         )}
 
@@ -232,7 +234,9 @@ export default function Login() {
             >
               {busy ? 'Saving…' : 'Set password & sign in'}
             </button>
-            {error ? <p style={{ color: 'var(--color-danger)', fontSize: 12.5 }}>{error}</p> : null}
+            {error ? (
+              <p role="alert" style={{ color: 'var(--color-danger)', fontSize: 12.5 }}>{error}</p>
+            ) : null}
           </form>
         )}
 
@@ -266,7 +270,9 @@ export default function Login() {
             <button type="submit" className="btn btn-primary" disabled={busy || totpCode.length !== 6}>
               {busy ? 'Verifying…' : 'Verify & finish setup'}
             </button>
-            {error ? <p style={{ color: 'var(--color-danger)', fontSize: 12.5 }}>{error}</p> : null}
+            {error ? (
+              <p role="alert" style={{ color: 'var(--color-danger)', fontSize: 12.5 }}>{error}</p>
+            ) : null}
           </form>
         )}
 
@@ -289,7 +295,9 @@ export default function Login() {
             <button type="submit" className="btn btn-primary" disabled={busy || totpCode.length !== 6}>
               {busy ? 'Verifying…' : 'Verify code'}
             </button>
-            {error ? <p style={{ color: 'var(--color-danger)', fontSize: 12.5 }}>{error}</p> : null}
+            {error ? (
+              <p role="alert" style={{ color: 'var(--color-danger)', fontSize: 12.5 }}>{error}</p>
+            ) : null}
           </form>
         )}
       </div>

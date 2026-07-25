@@ -66,6 +66,23 @@ describe('Login', () => {
     expect(auth.login).toHaveBeenCalledWith('user@example.mil', 'Password123!');
   });
 
+  it('(negative) surfaces a failed login as an announced error, not a silent no-op', async () => {
+    mockAuth({
+      login: vi.fn().mockRejectedValue(new Error('Incorrect username or password.')),
+    });
+    render(<Login />);
+
+    await userEvent.type(screen.getByLabelText(/email/i), 'user@example.mil');
+    await userEvent.type(screen.getByLabelText(/^password$/i), 'wrong-password');
+    await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
+
+    // role="alert" is what makes assistive tech announce this — a plain <p>
+    // update on a failed submit is otherwise easy to miss.
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /incorrect username or password/i,
+    );
+  });
+
   it('switches to the set-password view and states the pool password policy', () => {
     mockAuth({ requiresNewPassword: true });
     render(<Login />);
@@ -148,6 +165,20 @@ describe('Login', () => {
     it('the sign-in view has no axe violations', async () => {
       mockAuth();
       const { container } = render(<Login />);
+      expect(await axe(container)).toHaveNoViolations();
+    });
+
+    it('the sign-in view with an alert error shown has no axe violations', async () => {
+      mockAuth({
+        login: vi.fn().mockRejectedValue(new Error('Incorrect username or password.')),
+      });
+      const { container } = render(<Login />);
+
+      await userEvent.type(screen.getByLabelText(/email/i), 'user@example.mil');
+      await userEvent.type(screen.getByLabelText(/^password$/i), 'wrong-password');
+      await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
+      await screen.findByRole('alert');
+
       expect(await axe(container)).toHaveNoViolations();
     });
 

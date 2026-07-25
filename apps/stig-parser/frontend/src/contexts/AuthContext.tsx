@@ -75,8 +75,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // completeNewPasswordChallenge — an admin-created account chains
   // NEW_PASSWORD_REQUIRED straight into MFA_SETUP on its first login. Both
   // challenges hand the callback object the same CognitoUser and the same
-  // reject, so one factory covers both call sites.
-  function mfaCallbacks(user: CognitoUser, reject: (err: Error) => void) {
+  // reject, so one factory covers both call sites. It also carries the
+  // challenge types this app does not implement (SMS/select-MFA/custom): the
+  // pool only issues TOTP challenges today, but if that ever changed, leaving
+  // these three off the callback object would mean the SDK calls a callback
+  // that was never supplied — login() would never resolve or reject, and the
+  // caller would hang forever instead of failing loudly.
+  function challengeCallbacks(user: CognitoUser, reject: (err: Error) => void) {
     return {
       mfaSetup: () => {
         setPendingUser(user);
@@ -94,6 +99,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setMfaStage('code');
         reject(new Error('totp-required'));
       },
+      mfaRequired: () => reject(new Error('unsupported challenge: SMS_MFA')),
+      selectMFAType: () => reject(new Error('unsupported challenge: SELECT_MFA_TYPE')),
+      customChallenge: () => reject(new Error('unsupported challenge: CUSTOM_CHALLENGE')),
     };
   }
 
@@ -116,7 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setPendingUser(user);
           reject(new Error('new-password-required'));
         },
-        ...mfaCallbacks(user, reject),
+        ...challengeCallbacks(user, reject),
       });
     });
 
@@ -139,7 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         onFailure: (err) => {
           reject(err);
         },
-        ...mfaCallbacks(pendingUser, reject),
+        ...challengeCallbacks(pendingUser, reject),
       });
     });
 
@@ -200,6 +208,13 @@ export function useAuth() {
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');
   return ctx;
 }
+
+/** True when no Cognito pool is configured (every local/test run today).
+ *  Module-scope, not context: AuthGate needs it to decide whether to render a
+ *  signed-in header at all — a dev clicking "Sign out" in NO_AUTH mode would
+ *  land on a login form with no backend to authenticate against, so NO_AUTH
+ *  renders bare children instead of offering a control with nothing behind it. */
+export const isNoAuthMode = NO_AUTH;
 
 /** Current user's Cognito ID token (JWT) for the Authorization header, or null if
  *  not signed in. Module-scope, not context: api.ts needs it without rendering

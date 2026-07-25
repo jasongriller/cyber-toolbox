@@ -6,6 +6,7 @@ import {
   type JobStatus,
   type UploadsResponse,
 } from './types';
+import { getIdToken } from './contexts/AuthContext';
 
 /**
  * Base url of the private API, injected at build time. Empty in dev and in
@@ -19,11 +20,17 @@ const BASE: string = import.meta.env.VITE_API_BASE ?? '';
  * actually stops the request rather than merely ignoring its answer.
  */
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = await getIdToken();
   // Content-Type ONLY when there is a body to describe. On a bodyless GET it is a
   // lie about the request and, worse, it makes the request non-simple: against a
   // cross-origin API Gateway the 1s status poll would drag a CORS preflight behind
   // every tick (2 req/sec), and fail outright with 403 if OPTIONS is not wired.
+  // The Authorization header is the same kind of risk, but in production the SPA
+  // is same-origin with the API (both served off the same invoke URL), so it
+  // never triggers a preflight there; a cross-origin dev setup should proxy the
+  // API instead of leaning on CORS.
   const headers: Record<string, string> = {
+    ...(token ? { Authorization: token } : {}),
     ...(init?.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
     ...((init?.headers as Record<string, string> | undefined) ?? {}),
   };

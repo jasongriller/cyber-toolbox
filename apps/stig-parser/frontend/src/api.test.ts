@@ -8,6 +8,17 @@ import {
   startJob,
   uploadFile,
 } from './api';
+import { getIdToken } from './contexts/AuthContext';
+
+// api.ts attaches the Cognito id token to every request. Mocking the whole
+// module keeps this file's tests (and the real amazon-cognito-identity-js /
+// cognitoConfig it would otherwise pull in) out of scope — the default NO_AUTH
+// behavior (no token) is exercised by every existing case below unless a test
+// explicitly points getIdToken at a token.
+vi.mock('./contexts/AuthContext', () => ({
+  getIdToken: vi.fn(),
+  isNoAuthMode: true,
+}));
 
 function mockFetch(status: number, body: unknown) {
   return vi.fn().mockResolvedValue({
@@ -147,5 +158,29 @@ describe('api', () => {
     xhr.onload?.();
 
     await expect(promise).rejects.toThrow(/upload failed/i);
+  });
+
+  it('attaches the raw id token as Authorization when signed in', async () => {
+    // Raw token, no "Bearer " prefix — the REST COGNITO_USER_POOLS authorizer
+    // rejects a Bearer-prefixed value.
+    vi.mocked(getIdToken).mockResolvedValueOnce('header.payload.signature');
+    const fetchMock = mockFetch(200, { jobId: 'j1', status: 'running' });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await getJob('j1');
+
+    const [, init] = fetchMock.mock.calls[0];
+    expect(init.headers).toMatchObject({ Authorization: 'header.payload.signature' });
+  });
+
+  it('sends no Authorization header when there is no token', async () => {
+    vi.mocked(getIdToken).mockResolvedValueOnce(null);
+    const fetchMock = mockFetch(200, { jobId: 'j1', status: 'running' });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await getJob('j1');
+
+    const [, init] = fetchMock.mock.calls[0];
+    expect(init.headers ?? {}).not.toHaveProperty('Authorization');
   });
 });

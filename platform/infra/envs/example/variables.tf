@@ -22,9 +22,9 @@ variable "app_client_names" {
 }
 
 variable "mfa_configuration" {
-  description = "Pool MFA mode — ON per the standing decision; see platform/README.md."
+  description = "Pool MFA mode. OFF by owner decision 2026-07-27 (password-only). ON adds an authenticator-app factor; the SPA already carries the enrollment and challenge screens, so flipping this back needs no code change."
   type        = string
-  default     = "ON"
+  default     = "OFF"
 }
 
 variable "tags" {

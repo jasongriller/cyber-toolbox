@@ -26,7 +26,7 @@ variable "app_client_names" {
 }
 
 variable "mfa_configuration" {
-  description = "Pool MFA mode. ON per the 2026 decision (DoD bars single-factor for CUI); OFF only if the manager explicitly directs ssg-star parity."
+  description = "Pool MFA mode. OFF disables the second factor entirely; ON requires an authenticator app (software token) on every sign-in. Callers set this per environment — see the env roots."
   type        = string
   default     = "ON"
   validation {

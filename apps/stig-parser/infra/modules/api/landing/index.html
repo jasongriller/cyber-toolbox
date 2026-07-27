@@ -55,17 +55,6 @@
   .card h2 { margin: 0 0 0.4rem; font-size: 1.1rem; color: var(--accent); }
   .card p { margin: 0; color: var(--muted); font-size: 0.92rem; line-height: 1.4; }
   .card .open { display: inline-block; margin-top: 0.75rem; font-size: 0.85rem; font-weight: 600; color: var(--accent); }
-  .card--soon h2 { color: var(--text); }
-  .badge {
-    display: inline-block;
-    margin-top: 0.75rem;
-    padding: 0.15rem 0.55rem;
-    border-radius: 1rem;
-    background: var(--accent-bg);
-    color: var(--accent);
-    font-size: 0.75rem;
-    font-weight: 600;
-  }
 </style>
 </head>
 <body>
@@ -73,10 +62,10 @@
   <h1>Cyber Toolbox</h1>
   <p class="lede">Security compliance tools, in one place.</p>
   <div class="grid">
-    <!-- href is an absolute path with a __STAGE__ placeholder, not a real
-         value: a relative href breaks whenever this page is reached without
-         a trailing slash (the bare invoke URL has none), because relative
-         resolution then drops the stage segment entirely. deploy.sh
+    <!-- Both hrefs below are absolute paths with a __STAGE__ placeholder, not
+         real values: a relative href breaks whenever this page is reached
+         without a trailing slash (the bare invoke URL has none), because
+         relative resolution then drops the stage segment entirely. deploy.sh
          substitutes the real API Gateway stage path (e.g. /v1) into a
          throwaway copy at publish time — this tracked file itself never
          changes. -->
@@ -85,11 +74,11 @@
       <p>Parse XCCDF, CKLB, and Nessus scan results into one consolidated compliance workbook.</p>
       <span class="open">Open &rarr;</span>
     </a>
-    <div class="card card--soon">
+    <a class="card" href="__STAGE__/rmf/index.html">
       <h2>RMF Rev 4 &rarr; 5 Migrator</h2>
       <p>Convert Rev 4 security policy documents to Rev 5 with AI-assisted control mapping.</p>
-      <span class="badge">Coming soon</span>
-    </div>
+      <span class="open">Open &rarr;</span>
+    </a>
   </div>
 </main>
 </body>

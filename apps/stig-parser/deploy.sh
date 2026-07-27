@@ -12,8 +12,11 @@
 #               the landing page (S3 only, no node build — runs even with
 #               --skip-spa / --infra-only, since infra already points root at
 #               this key the moment it applies)  [--plan-only]
-#   4 spa       build the React bundle and sync it to the SPA bucket  [--skip-spa]
-#   5 smoke     check landing (/), the stig shell (/stig/), /config (200), and an authorized-only route (401)
+#   4 spa       build the stig + rmf React bundles and sync them to the SPA
+#               bucket (stig at its root, rmf under rmf/)  [--skip-spa]
+#   5 smoke     check landing (/), the stig shell (/stig/), the rmf shell
+#               (/rmf/), /config (200), and an authorized-only route on each
+#               app's API (401)
 #
 # The dependency layer is REUSED by default (no Docker needed). It builds only
 # when infra/build/deps-layer.zip is missing, or when you pass --rebuild-layer
@@ -353,6 +356,36 @@ else
   info "syncing dist/ -> s3://${spa_bucket}/ ..."
   aws s3 sync frontend/dist/ "s3://${spa_bucket}/" --delete --exclude "landing/*" >/dev/null
   ok "SPA published to ${spa_bucket}"
+
+  # --- rmf SPA (Phase R) -----------------------------------------------------
+  # One shared Cognito client (D2) means one login covers both tools: reuse
+  # the exact pool/client/region/endpoint values just baked into the stig
+  # bundle above, unchanged. rmf's own vite.config.ts already supports
+  # VITE_BASE_PATH for subpath serving — no frontend code change needed.
+  step "rmf SPA bundle"
+  RMF_DIR="../rmf-migrator"
+  [[ -d "$RMF_DIR/frontend" ]] || die "rmf-migrator frontend not found at ${RMF_DIR}/frontend (expected apps/stig-parser and apps/rmf-migrator as siblings)."
+  rmf_api_base="${api_url}/rmf/api"
+  info "building rmf frontend (VITE_API_BASE_URL=${rmf_api_base}, pool ${pool_id})..."
+  ( cd "$RMF_DIR/frontend" && npm ci --no-audit --no-fund >/dev/null 2>&1 \
+    && VITE_BASE_PATH="/rmf/" \
+       VITE_API_BASE_URL="$rmf_api_base" \
+       VITE_COGNITO_USER_POOL_ID="$pool_id" \
+       VITE_COGNITO_CLIENT_ID="$client_id" \
+       VITE_AWS_REGION="$AWS_REGION" \
+       VITE_COGNITO_ENDPOINT="$cognito_endpoint" \
+       npm run build >/dev/null )
+  [[ -d "$RMF_DIR/frontend/dist" && -f "$RMF_DIR/frontend/dist/index.html" ]] || die "rmf frontend build produced no dist/index.html."
+  ok "rmf bundle built"
+  if ! grep -rqs "$pool_id" "$RMF_DIR/frontend/dist/assets/"; then
+    die "built rmf bundle does not contain the Cognito pool id — VITE bake failed; refusing to ship an ungated SPA"
+  fi
+  # No --exclude needed here (unlike the stig sync above): rmf/ is its own
+  # disjoint prefix in the same bucket, so --delete cannot touch the stig
+  # bundle at the bucket root or the landing page under landing/.
+  info "syncing rmf dist/ -> s3://${spa_bucket}/rmf/ ..."
+  aws s3 sync "$RMF_DIR/frontend/dist/" "s3://${spa_bucket}/rmf/" --delete >/dev/null
+  ok "rmf SPA published to ${spa_bucket}/rmf/"
 fi
 
 # ===========================================================================
@@ -375,14 +408,21 @@ content_type="$(curl -s -o /dev/null -w '%{content_type}' --max-time 30 "${api_u
 # when a user clicks the (broken) link, exactly the failure mode this closes.
 landing_body="$(curl -s --max-time 30 "${api_url}/" || echo '')"
 [[ "$landing_body" == *"/stig/index.html"* ]] || die "smoke: landing page body does not contain /stig/index.html — check the __STAGE__ substitution in deploy.sh's landing-publish step"
+[[ "$landing_body" == *"/rmf/index.html"* ]] || die "smoke: landing page body does not contain /rmf/index.html — check the __STAGE__ substitution in deploy.sh's landing-publish step"
 [[ "$landing_body" != *"__STAGE__"* ]] || die "smoke: landing page body still contains the __STAGE__ placeholder — publish-time substitution failed silently"
 code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${api_url}/stig/" || echo 000)"
 [ "$code" = "200" ] || die "smoke: stig SPA shell returned ${code}, expected 200 (000 = could not reach the API at all)"
+code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${api_url}/rmf/" || echo 000)"
+[ "$code" = "200" ] || die "smoke: rmf SPA shell returned ${code}, expected 200 (000 = could not reach the API at all)"
+rmf_content_type="$(curl -s -o /dev/null -w '%{content_type}' --max-time 30 "${api_url}/rmf/" || echo 000)"
+[[ "$rmf_content_type" == *"text/html"* ]] || die "smoke: rmf SPA shell Content-Type is '${rmf_content_type}', expected text/html (000 = could not reach the API at all)"
 code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${api_url}/config" || echo 000)"
 [ "$code" = "200" ] || die "smoke: /config returned ${code}, expected 200 (open route) (000 = could not reach the API at all)"
 code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${api_url}/jobs/00000000-0000-0000-0000-00000000dead" || echo 000)"
 [ "$code" = "401" ] || die "smoke: bare /jobs/{id} returned ${code}, expected 401 (authorizer) (000 = could not reach the API at all)"
-info "smoke: landing 200 (text/html, link substituted), stig shell 200, config 200, bare data route 401"
+code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${api_url}/rmf/api/projects" || echo 000)"
+[ "$code" = "401" ] || die "smoke: bare /rmf/api/projects returned ${code}, expected 401 (rmf's own Cognito authorizer, reached through the proxy) (000 = could not reach the API at all)"
+info "smoke: landing 200 (text/html, links substituted), stig shell 200, rmf shell 200 (text/html), config 200, bare data route 401, bare rmf api route 401"
 
 step "${GRN}Deploy complete — ${ENV}${RST}"
 # Trailing slash: this is the link people copy-paste. Without it, a relative

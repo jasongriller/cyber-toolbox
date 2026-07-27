@@ -412,6 +412,229 @@ resource "aws_api_gateway_integration_response" "spa_proxy" {
   depends_on = [aws_api_gateway_integration.spa_proxy]
 }
 
+# ---------------------------------------------------------------------------
+# /rmf — the rmf SPA (Phase R) + its own API, HTTP_PROXY'd straight through
+# ---------------------------------------------------------------------------
+
+# /rmf — the rmf SPA's own shell route, the second tool behind the toolbox
+# front door. {proxy+} resolves concrete paths only, so /rmf needs this
+# dedicated GET the same way /stig does above.
+resource "aws_api_gateway_resource" "rmf" {
+  count = local.serve_spa_from_s3 ? 1 : 0
+
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  parent_id   = aws_api_gateway_rest_api.this.root_resource_id
+  path_part   = "rmf"
+}
+
+resource "aws_api_gateway_method" "rmf" {
+  #checkov:skip=CKV_AWS_59:Serves the rmf SPA shell at /rmf — must load before a user can authenticate; the rmf API proxy below (and every route behind it) requires a valid Cognito JWT.
+  #checkov:skip=CKV2_AWS_53:A parameterless GET for the SPA shell has no request body to validate.
+  count = local.serve_spa_from_s3 ? 1 : 0
+
+  rest_api_id   = aws_api_gateway_rest_api.this.id
+  resource_id   = aws_api_gateway_resource.rmf[0].id
+  http_method   = "GET"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "rmf" {
+  count = local.serve_spa_from_s3 ? 1 : 0
+
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.rmf[0].id
+  http_method = aws_api_gateway_method.rmf[0].http_method
+
+  type                    = "AWS"
+  integration_http_method = "GET"
+  uri                     = "arn:${local.partition}:apigateway:${local.region}:s3:path/${aws_s3_bucket.spa[0].bucket}/rmf/index.html"
+  credentials             = aws_iam_role.spa[0].arn
+}
+
+resource "aws_api_gateway_method_response" "rmf" {
+  count = local.serve_spa_from_s3 ? 1 : 0
+
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.rmf[0].id
+  http_method = aws_api_gateway_method.rmf[0].http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Content-Type" = true
+  }
+}
+
+resource "aws_api_gateway_integration_response" "rmf" {
+  count = local.serve_spa_from_s3 ? 1 : 0
+
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.rmf[0].id
+  http_method = aws_api_gateway_method.rmf[0].http_method
+  status_code = aws_api_gateway_method_response.rmf[0].status_code
+
+  response_parameters = {
+    "method.response.header.Content-Type" = "integration.response.header.Content-Type"
+  }
+
+  depends_on = [aws_api_gateway_integration.rmf]
+}
+
+# Nested under /rmf (not the API root) — same reasoning as spa_proxy above:
+# the rmf bundle is built with VITE_BASE_PATH=/rmf/, so its assets are
+# requested relative to /rmf/, not the API root.
+resource "aws_api_gateway_resource" "rmf_proxy" {
+  count = local.serve_spa_from_s3 ? 1 : 0
+
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  parent_id   = aws_api_gateway_resource.rmf[0].id
+  path_part   = "{proxy+}"
+}
+
+resource "aws_api_gateway_method" "rmf_proxy" {
+  #checkov:skip=CKV_AWS_59:Serves the static rmf SPA bundle (JS/CSS/fonts) — the login shell itself. It must load before a user can authenticate; every rmf API route sits behind rmf's own Cognito JWT authorizer.
+  #checkov:skip=CKV2_AWS_53:A GET for a static asset by path has no request body to validate.
+  count = local.serve_spa_from_s3 ? 1 : 0
+
+  rest_api_id   = aws_api_gateway_rest_api.this.id
+  resource_id   = aws_api_gateway_resource.rmf_proxy[0].id
+  http_method   = "GET"
+  authorization = "NONE"
+
+  request_parameters = {
+    "method.request.path.proxy" = true
+  }
+}
+
+resource "aws_api_gateway_integration" "rmf_proxy" {
+  count = local.serve_spa_from_s3 ? 1 : 0
+
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.rmf_proxy[0].id
+  http_method = aws_api_gateway_method.rmf_proxy[0].http_method
+
+  type                    = "AWS"
+  integration_http_method = "GET"
+  uri                     = "arn:${local.partition}:apigateway:${local.region}:s3:path/${aws_s3_bucket.spa[0].bucket}/rmf/{proxy}"
+  credentials             = aws_iam_role.spa[0].arn
+
+  request_parameters = {
+    "integration.request.path.proxy" = "method.request.path.proxy"
+  }
+}
+
+resource "aws_api_gateway_method_response" "rmf_proxy" {
+  count = local.serve_spa_from_s3 ? 1 : 0
+
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.rmf_proxy[0].id
+  http_method = aws_api_gateway_method.rmf_proxy[0].http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Content-Type" = true
+  }
+}
+
+resource "aws_api_gateway_integration_response" "rmf_proxy" {
+  count = local.serve_spa_from_s3 ? 1 : 0
+
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.rmf_proxy[0].id
+  http_method = aws_api_gateway_method.rmf_proxy[0].http_method
+  status_code = aws_api_gateway_method_response.rmf_proxy[0].status_code
+
+  response_parameters = {
+    "method.response.header.Content-Type" = "integration.response.header.Content-Type"
+  }
+
+  depends_on = [aws_api_gateway_integration.rmf_proxy]
+}
+
+# /rmf/api — HTTP_PROXY straight through to rmf's own HTTP API (url from SSM;
+# see the data "aws_ssm_parameter" "rmf_api_url" block in envs/*/main.tf). A
+# literal sibling of rmf_proxy's {proxy+} under the same /rmf parent: API
+# Gateway always prefers a literal path part over a greedy path-parameter
+# sibling at the same tree level, so a request to /rmf/api/... resolves here
+# (and from here into rmf_api_proxy below), never into rmf_proxy's S3 read —
+# even though /rmf/{proxy+} would otherwise greedily match "api" too.
+#
+# authorization = "NONE" is deliberate, not an oversight: rmf's own HTTP API
+# (apps/rmf-migrator/terraform/modules/rmf-migrator/apigateway.tf) already
+# carries its own JWT authorizer against the same shared Cognito pool and
+# enforces it on every route it defines. Adding a second Cognito authorizer at
+# this hop would be a redundant, drift-prone copy of a decision already made
+# downstream — two auth checks that could silently disagree. This proxy's job
+# is transport only; rmf's own gateway is the actual enforcement point.
+resource "aws_api_gateway_resource" "rmf_api" {
+  count = local.serve_spa_from_s3 ? 1 : 0
+
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  parent_id   = aws_api_gateway_resource.rmf[0].id
+  path_part   = "api"
+}
+
+resource "aws_api_gateway_method" "rmf_api" {
+  #checkov:skip=CKV_AWS_59:Deliberately open at this hop — rmf's own HTTP API carries its own Cognito JWT authorizer and enforces it on every route (see the resource comment above). A second authorizer here would duplicate, not strengthen, a decision already made downstream.
+  #checkov:skip=CKV2_AWS_53:This is a byte-for-byte proxy fronting rmf's entire API surface, not one fixed request shape — there is no single schema to validate against here. rmf's own Lambda handlers validate their own request bodies on the far side of the proxy.
+  count = local.serve_spa_from_s3 ? 1 : 0
+
+  rest_api_id   = aws_api_gateway_rest_api.this.id
+  resource_id   = aws_api_gateway_resource.rmf_api[0].id
+  http_method   = "ANY"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "rmf_api" {
+  count = local.serve_spa_from_s3 ? 1 : 0
+
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.rmf_api[0].id
+  http_method = aws_api_gateway_method.rmf_api[0].http_method
+
+  type                    = "HTTP_PROXY"
+  integration_http_method = "ANY"
+  uri                     = var.rmf_api_url
+}
+
+resource "aws_api_gateway_resource" "rmf_api_proxy" {
+  count = local.serve_spa_from_s3 ? 1 : 0
+
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  parent_id   = aws_api_gateway_resource.rmf_api[0].id
+  path_part   = "{proxy+}"
+}
+
+resource "aws_api_gateway_method" "rmf_api_proxy" {
+  #checkov:skip=CKV_AWS_59:Same rationale as rmf_api above — rmf's own HTTP API enforces Cognito JWT auth on every route it defines; this hop is transport only.
+  #checkov:skip=CKV2_AWS_53:Same rationale as rmf_api above — a generic proxy for rmf's entire API surface has no single request shape to validate against here.
+  count = local.serve_spa_from_s3 ? 1 : 0
+
+  rest_api_id   = aws_api_gateway_rest_api.this.id
+  resource_id   = aws_api_gateway_resource.rmf_api_proxy[0].id
+  http_method   = "ANY"
+  authorization = "NONE"
+
+  request_parameters = {
+    "method.request.path.proxy" = true
+  }
+}
+
+resource "aws_api_gateway_integration" "rmf_api_proxy" {
+  count = local.serve_spa_from_s3 ? 1 : 0
+
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.rmf_api_proxy[0].id
+  http_method = aws_api_gateway_method.rmf_api_proxy[0].http_method
+
+  type                    = "HTTP_PROXY"
+  integration_http_method = "ANY"
+  uri                     = "${var.rmf_api_url}/{proxy}"
+
+  request_parameters = {
+    "integration.request.path.proxy" = "method.request.path.proxy"
+  }
+}
+
 # The bare stage URL is the toolbox front door — the link users get is just
 # the invoke URL. {proxy+} matches concrete paths only, so the root needs
 # its own method; same private-bucket read role, pinned to the landing
@@ -500,6 +723,15 @@ resource "aws_api_gateway_deployment" "this" {
   # resource id nor any integration id/uri above, and would silently apply
   # with no redeploy without `.path` (computed from the live parent chain)
   # captured here.
+  #
+  # The rmf/rmf_proxy/rmf_api/rmf_api_proxy entries below follow the same
+  # full-coverage shape as stig's (id + path + authorization + integration id
+  # + integration uri) rather than spa_proxy/spa_root's sparser one: the
+  # rmf_api/rmf_api_proxy integrations are HTTP_PROXY with a `.uri` that
+  # repoints whenever var.rmf_api_url changes (e.g. rmf's HTTP API is
+  # recreated) without necessarily changing any resource/method/integration
+  # id — exactly the URI-only-repoint gap called out above, caught for real
+  # once already this phase.
   triggers = {
     redeployment = sha1(jsonencode([
       aws_api_gateway_rest_api.this.body,
@@ -517,6 +749,26 @@ resource "aws_api_gateway_deployment" "this" {
       local.serve_spa_from_s3 ? aws_api_gateway_method.stig[0].authorization : "",
       local.serve_spa_from_s3 ? aws_api_gateway_integration.stig[0].id : "",
       local.serve_spa_from_s3 ? aws_api_gateway_integration.stig[0].uri : "",
+      local.serve_spa_from_s3 ? aws_api_gateway_resource.rmf[0].id : "",
+      local.serve_spa_from_s3 ? aws_api_gateway_resource.rmf[0].path : "",
+      local.serve_spa_from_s3 ? aws_api_gateway_method.rmf[0].authorization : "",
+      local.serve_spa_from_s3 ? aws_api_gateway_integration.rmf[0].id : "",
+      local.serve_spa_from_s3 ? aws_api_gateway_integration.rmf[0].uri : "",
+      local.serve_spa_from_s3 ? aws_api_gateway_resource.rmf_proxy[0].id : "",
+      local.serve_spa_from_s3 ? aws_api_gateway_resource.rmf_proxy[0].path : "",
+      local.serve_spa_from_s3 ? aws_api_gateway_method.rmf_proxy[0].authorization : "",
+      local.serve_spa_from_s3 ? aws_api_gateway_integration.rmf_proxy[0].id : "",
+      local.serve_spa_from_s3 ? aws_api_gateway_integration.rmf_proxy[0].uri : "",
+      local.serve_spa_from_s3 ? aws_api_gateway_resource.rmf_api[0].id : "",
+      local.serve_spa_from_s3 ? aws_api_gateway_resource.rmf_api[0].path : "",
+      local.serve_spa_from_s3 ? aws_api_gateway_method.rmf_api[0].authorization : "",
+      local.serve_spa_from_s3 ? aws_api_gateway_integration.rmf_api[0].id : "",
+      local.serve_spa_from_s3 ? aws_api_gateway_integration.rmf_api[0].uri : "",
+      local.serve_spa_from_s3 ? aws_api_gateway_resource.rmf_api_proxy[0].id : "",
+      local.serve_spa_from_s3 ? aws_api_gateway_resource.rmf_api_proxy[0].path : "",
+      local.serve_spa_from_s3 ? aws_api_gateway_method.rmf_api_proxy[0].authorization : "",
+      local.serve_spa_from_s3 ? aws_api_gateway_integration.rmf_api_proxy[0].id : "",
+      local.serve_spa_from_s3 ? aws_api_gateway_integration.rmf_api_proxy[0].uri : "",
     ]))
   }
 
@@ -529,6 +781,10 @@ resource "aws_api_gateway_deployment" "this" {
     aws_api_gateway_integration.spa_proxy,
     aws_api_gateway_integration.spa_root,
     aws_api_gateway_integration.stig,
+    aws_api_gateway_integration.rmf,
+    aws_api_gateway_integration.rmf_proxy,
+    aws_api_gateway_integration.rmf_api,
+    aws_api_gateway_integration.rmf_api_proxy,
   ]
 }
 

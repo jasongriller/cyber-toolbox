@@ -8,6 +8,11 @@ variable "cognito_user_pool_arn" {
   type        = string
 }
 
+variable "rmf_api_url" {
+  description = "Base URL of the rmf-migrator HTTP API (its aws_apigatewayv2_api.this.api_endpoint), published to SSM by the rmf env root and read from there by the caller. The /rmf/api/{proxy+} route HTTP_PROXYs every request here unmodified; rmf's own Cognito JWT authorizer enforces auth on the far side, not this gateway (see the checkov skip on that method)."
+  type        = string
+}
+
 variable "api_function_arn" {
   description = "ARN of the API Lambda (proxy integration target)."
   type        = string

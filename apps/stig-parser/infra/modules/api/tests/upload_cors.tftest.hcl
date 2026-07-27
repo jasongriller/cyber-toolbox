@@ -46,6 +46,8 @@ variables {
   api_function_name     = "api-test"
   uploads_bucket_name   = "test-uploads"
   kms_key_arn           = "arn:aws-us-gov:kms:us-gov-west-1:test:key/test"
+  # rmf's own $default-stage HTTP API endpoint has no stage path segment.
+  rmf_api_url = "https://rmf-api-test.execute-api.us-gov-west-1.amazonaws.com"
 }
 
 run "managed_spa_gets_narrow_upload_cors" {

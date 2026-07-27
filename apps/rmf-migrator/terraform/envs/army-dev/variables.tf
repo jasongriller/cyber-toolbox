@@ -20,7 +20,7 @@ variable "bedrock_model_id" {
 }
 
 variable "lambda_zip_path" {
-  description = "Path to the Lambda deployment zip built by `py -3.13 scripts/build_lambda.py` (apps/rmf-migrator/scripts/build_lambda.py). No default: filebase64sha256 fails at plan time without a real file."
+  description = "Path to the Lambda deployment zip built by scripts/build_lambda.py (apps/rmf-migrator/scripts/build_lambda.py), run under whichever interpreter satisfies backend/pyproject.toml's requires-python — deploy.sh tries six candidates (py -3.13, py -3.12, python3.13, python3.12, python3, python) rather than hard-requiring py -3.13. No default: filebase64sha256 fails at plan time without a real file."
   type        = string
 }
 

@@ -17,12 +17,13 @@ terraform {
 
   required_providers {
     aws = {
-      # The module's own versions.tf floors this at >= 5.40 without an upper
-      # bound, but main.tf there reads data.aws_region.current.region — an
-      # attribute the AWS provider only gained in 6.0 (5.x only has the
-      # now-deprecated .name/.id). Floor at 6.0 here rather than trusting the
-      # module's stale-looking constraint; do not downgrade this to match
-      # stig's < 6.0.0 cap, which is a different app on a different module.
+      # The module's own versions.tf floors this at >= 6.0.0 too (fixed —
+      # main.tf there reads data.aws_region.current.region, an attribute the
+      # AWS provider only gained in 6.0; 5.x has just the now-deprecated
+      # .name/.id, and every 5.x install fails terraform validate there).
+      # Mirrored here rather than relying solely on the module's own
+      # constraint; do not downgrade this to match stig's < 6.0.0 cap, which
+      # is a different app on a different module.
       source  = "hashicorp/aws"
       version = ">= 6.0.0, < 7.0.0"
     }

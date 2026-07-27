@@ -46,6 +46,17 @@ data "aws_ssm_parameter" "cognito_client_id" {
   name = "${var.cognito_ssm_prefix}/cognito_client_id/${var.cognito_app_client_name}"
 }
 
+# Published by the rmf-migrator env root (apps/rmf-migrator/terraform/envs/*)
+# — never read from its state. This creates a hard ordering dependency: rmf
+# must be applied (at least once, ever) before this root, the same way the
+# platform root must be applied before the two SSM reads above. deploy.sh at
+# the repo root already runs rmf before stig-parser; a from-scratch bootstrap
+# in the other order fails here, at plan time, with a clear missing-parameter
+# error rather than a confusing apply-time one.
+data "aws_ssm_parameter" "rmf_api_url" {
+  name = "${var.cognito_ssm_prefix}/rmf_api_url"
+}
+
 locals {
   # Dependency cycle break: the iam module must grant states:StartExecution on
   # the state machine, but the orchestration module that creates it needs the
@@ -152,6 +163,7 @@ module "api" {
 
   name_prefix                    = var.name_prefix
   cognito_user_pool_arn          = nonsensitive(data.aws_ssm_parameter.cognito_user_pool_arn.value)
+  rmf_api_url                    = nonsensitive(data.aws_ssm_parameter.rmf_api_url.value)
   api_function_arn               = module.compute.api_function_arn
   api_function_name              = module.compute.api_function_name
   spa_serving_mode               = var.spa_serving_mode

@@ -46,6 +46,8 @@ variables {
   api_function_name     = "api-test"
   uploads_bucket_name   = "test-uploads"
   kms_key_arn           = "arn:aws-us-gov:kms:us-gov-west-1:test:key/test"
+  # rmf's own $default-stage HTTP API endpoint has no stage path segment.
+  rmf_api_url = "https://rmf-api-test.execute-api.us-gov-west-1.amazonaws.com"
 }
 
 # The route auth split is the flip's security boundary: get_config, the
@@ -193,5 +195,94 @@ run "route_auth_matches_the_security_boundary" {
   assert {
     condition     = endswith(aws_api_gateway_integration.spa_root[0].uri, "/landing/index.html")
     error_message = "The root integration must proxy to the landing page: the bare stage URL is now the toolbox front door, not the stig SPA shell, and it must resolve to the landing object, not some other path in the bucket."
+  }
+
+  # --- /rmf (Phase R): the second tool's SPA shell + asset proxy -------------
+
+  assert {
+    condition     = aws_api_gateway_method.rmf[0].authorization == "NONE"
+    error_message = "The /rmf shell route must stay open (NONE): the rmf SPA shell has to load before a user can authenticate at all, the same as /stig."
+  }
+
+  assert {
+    condition     = aws_api_gateway_resource.rmf[0].path_part == "rmf"
+    error_message = "The /rmf resource's path_part must stay exactly \"rmf\": the landing page links to ./rmf/index.html and deploy.sh's smoke test hits /rmf/ literally."
+  }
+
+  assert {
+    condition     = endswith(aws_api_gateway_integration.rmf[0].uri, "/${aws_s3_bucket.spa[0].bucket}/rmf/index.html")
+    error_message = "The /rmf integration must proxy to <bucket>/rmf/index.html specifically — the key deploy.sh's rmf SPA sync publishes to, distinct from the stig bundle at the bucket root and the landing page under landing/."
+  }
+
+  assert {
+    condition     = aws_api_gateway_method.rmf_proxy[0].authorization == "NONE"
+    error_message = "The rmf SPA's asset route must stay open (NONE): the login shell itself has to load before a user can authenticate at all."
+  }
+
+  assert {
+    condition     = aws_api_gateway_resource.rmf_proxy[0].parent_id == aws_api_gateway_resource.rmf[0].id
+    error_message = "The rmf asset proxy must be nested under /rmf: the bundle is built with VITE_BASE_PATH=/rmf/, so assets are requested relative to /rmf/, not the API root."
+  }
+
+  assert {
+    condition     = endswith(aws_api_gateway_integration.rmf_proxy[0].uri, "/${aws_s3_bucket.spa[0].bucket}/rmf/{proxy}")
+    error_message = "The rmf asset proxy must template the S3 key as <bucket>/rmf/{proxy}, mirroring spa_proxy's <bucket>/{proxy} one level down."
+  }
+
+  # --- /rmf/api (Phase R): HTTP_PROXY straight through to rmf's own API -----
+  # /rmf/api (literal) and /rmf/{proxy+} (greedy, asserted above as rmf_proxy)
+  # are siblings under /rmf. API Gateway prefers a literal path part over a
+  # greedy path-parameter sibling, so /rmf/api/x must resolve into the proxy
+  # below, never into the S3 read above — the parent_id asserts here pin the
+  # sibling shape that reasoning depends on.
+
+  assert {
+    condition     = aws_api_gateway_resource.rmf_api[0].parent_id == aws_api_gateway_resource.rmf[0].id
+    error_message = "/rmf/api must be a direct child of /rmf, a literal sibling of the {proxy+} asset route (rmf_proxy) — this sibling relationship is exactly what makes API Gateway's literal-over-greedy precedence apply."
+  }
+
+  assert {
+    condition     = aws_api_gateway_method.rmf_api[0].authorization == "NONE"
+    error_message = "The /rmf/api route must carry NONE at this gateway: rmf's own HTTP API enforces its own Cognito JWT authorizer on every route it defines, so a second authorizer here would be a redundant, drift-prone copy of that decision."
+  }
+
+  assert {
+    condition     = aws_api_gateway_method.rmf_api[0].http_method == "ANY"
+    error_message = "/rmf/api must accept ANY method: rmf's API surface includes GET/POST/PUT/DELETE, and this hop is a transparent proxy, not a route-specific integration."
+  }
+
+  assert {
+    condition     = aws_api_gateway_integration.rmf_api[0].type == "HTTP_PROXY"
+    error_message = "/rmf/api must use an HTTP_PROXY integration: it forwards to rmf's independently-hosted HTTP API, not to this API's own Lambda (AWS_PROXY) or the SPA bucket (AWS/S3)."
+  }
+
+  assert {
+    condition     = aws_api_gateway_integration.rmf_api[0].uri == var.rmf_api_url
+    error_message = "The literal /rmf/api integration must target rmf's bare API URL with no {proxy} suffix — there is no path parameter on this resource to interpolate one from."
+  }
+
+  assert {
+    condition     = aws_api_gateway_resource.rmf_api_proxy[0].parent_id == aws_api_gateway_resource.rmf_api[0].id
+    error_message = "/rmf/api/{proxy+} must be nested under /rmf/api, not directly under /rmf — it is api's greedy child, not rmf's."
+  }
+
+  assert {
+    condition     = aws_api_gateway_method.rmf_api_proxy[0].authorization == "NONE"
+    error_message = "The /rmf/api/{proxy+} route must carry NONE at this gateway: rmf's own HTTP API enforces its own Cognito JWT authorizer on every route it defines (verified live by deploy.sh's smoke test expecting 401, not 403/500, on a bare call)."
+  }
+
+  assert {
+    condition     = aws_api_gateway_integration.rmf_api_proxy[0].type == "HTTP_PROXY"
+    error_message = "/rmf/api/{proxy+} must use an HTTP_PROXY integration: it forwards every rmf route to rmf's independently-hosted HTTP API unmodified."
+  }
+
+  assert {
+    condition     = endswith(aws_api_gateway_integration.rmf_api_proxy[0].uri, "/{proxy}")
+    error_message = "The /rmf/api/{proxy+} integration uri must end with /{proxy} so the greedy path segment is forwarded to rmf's API; a bare var.rmf_api_url here (no {proxy}) would proxy every rmf route to the same fixed path."
+  }
+
+  assert {
+    condition     = aws_api_gateway_integration.rmf_api_proxy[0].request_parameters["integration.request.path.proxy"] == "method.request.path.proxy"
+    error_message = "The /rmf/api/{proxy+} integration must map integration.request.path.proxy from method.request.path.proxy — without it the {proxy} template in the uri never gets filled in from the incoming request path."
   }
 }

@@ -132,6 +132,34 @@ run "route_auth_matches_the_security_boundary" {
     error_message = "The authorizer must trust the configured Cognito user pool: the route auth split is the flip's security boundary, and drifted provider_arns would silently stop validating the tokens callers actually present."
   }
 
+  # Nothing above pins WHERE the six data-route resources live in the
+  # resource tree — only that the routes wired to them carry the right auth.
+  # A stray re-parent (e.g. future /rmf work restructuring the tree) could
+  # silently move a data route while every assert above stayed green.
+  assert {
+    condition = (
+      aws_api_gateway_resource.config.parent_id == aws_api_gateway_rest_api.this.root_resource_id &&
+      aws_api_gateway_resource.uploads.parent_id == aws_api_gateway_rest_api.this.root_resource_id &&
+      aws_api_gateway_resource.jobs.parent_id == aws_api_gateway_rest_api.this.root_resource_id
+    )
+    error_message = "config, uploads, and jobs must stay parented directly at the API root: this is the data-route shape the spec pins, and nothing else in this file asserts it."
+  }
+
+  assert {
+    condition     = aws_api_gateway_resource.job.parent_id == aws_api_gateway_resource.jobs.id
+    error_message = "{job_id} must stay nested under jobs (/jobs/{job_id}): nothing else in this file pins this parent-child relationship."
+  }
+
+  assert {
+    condition     = aws_api_gateway_resource.job_result.parent_id == aws_api_gateway_resource.job.id
+    error_message = "result must stay nested under {job_id} (/jobs/{job_id}/result): nothing else in this file pins this parent-child relationship."
+  }
+
+  assert {
+    condition     = aws_api_gateway_resource.job_cancel.parent_id == aws_api_gateway_resource.job.id
+    error_message = "cancel must stay nested under {job_id} (/jobs/{job_id}/cancel): nothing else in this file pins this parent-child relationship."
+  }
+
   assert {
     condition     = aws_api_gateway_method.spa_proxy[0].authorization == "NONE"
     error_message = "The stig SPA's asset route must stay open (NONE): the route auth split is the flip's security boundary, and the login shell itself has to load before a user can authenticate at all."
@@ -148,8 +176,13 @@ run "route_auth_matches_the_security_boundary" {
   }
 
   assert {
-    condition     = endswith(aws_api_gateway_integration.stig[0].uri, "/index.html")
-    error_message = "The /stig integration must proxy to index.html: it is the stig SPA's shell route, and it must resolve to the bundle's entry point, not some other path in the bucket."
+    condition     = endswith(aws_api_gateway_integration.stig[0].uri, "/${aws_s3_bucket.spa[0].bucket}/index.html")
+    error_message = "The /stig integration must proxy to <bucket>/index.html specifically: a bare endswith(uri, \"/index.html\") check also passes for .../landing/index.html (both keys share that suffix), so this has to pin the bucket-root object, not just the filename."
+  }
+
+  assert {
+    condition     = aws_api_gateway_resource.stig[0].path_part == "stig"
+    error_message = "The /stig resource's path_part must stay exactly \"stig\": the landing page links to ./stig/index.html and deploy.sh's smoke test hits /stig/ literally — renaming this resource would break both while every other assert in this file stayed green."
   }
 
   assert {

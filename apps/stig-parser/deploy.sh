@@ -8,8 +8,11 @@
 #   0 guards    account + toolchain + filesystem safety checks
 #   1 preflight the gitignored per-env files exist (backend.tf, terraform.tfvars)
 #   2 layer     reuse the Lambda dependency layer (builds only if missing)
-#   3 infra     terraform init/validate/plan -> y/N gate -> apply  [--plan-only]
-#   4 spa       build the React bundle and sync it + the landing page to S3  [--skip-spa]
+#   3 infra     terraform init/validate/plan -> y/N gate -> apply, then publish
+#               the landing page (S3 only, no node build — runs even with
+#               --skip-spa / --infra-only, since infra already points root at
+#               this key the moment it applies)  [--plan-only]
+#   4 spa       build the React bundle and sync it to the SPA bucket  [--skip-spa]
 #   5 smoke     check landing (/), the stig shell (/stig/), /config (200), and an authorized-only route (401)
 #
 # The dependency layer is REUSED by default (no Docker needed). It builds only
@@ -270,6 +273,21 @@ if [[ -n "$killswitch" ]]; then
   fi
 fi
 
+# --- Landing page (S3 only, no node build needed) ---------------------------
+# Runs whenever the module is in apigw_s3_proxy mode, regardless of
+# --infra-only / --skip-spa: the root integration is repointed at this exact
+# key the moment infra applies (main.tf), so if this step were skippable, `/`
+# would start 500ing the instant someone used either flag.
+spa_bucket="$(tf output -raw spa_bucket 2>/dev/null || true)"
+if [[ -n "$spa_bucket" && "$spa_bucket" != "null" ]]; then
+  step "Landing page"
+  # Key must match the S3 key baked into spa_root's integration URI in
+  # infra/modules/api/main.tf.
+  info "publishing landing page -> s3://${spa_bucket}/landing/index.html ..."
+  aws s3 cp infra/modules/api/landing/index.html "s3://${spa_bucket}/landing/index.html" >/dev/null
+  ok "landing page published"
+fi
+
 if (( INFRA_ONLY )); then
   step "Done (--infra-only)"; exit 0
 fi
@@ -277,7 +295,6 @@ fi
 # ===========================================================================
 # Phase 4 — SPA build + sync
 # ===========================================================================
-spa_bucket="$(tf output -raw spa_bucket 2>/dev/null || true)"
 if (( SKIP_SPA )); then
   step "Phase 4 · SPA (skipped)"
 elif [[ -z "$spa_bucket" || "$spa_bucket" == "null" ]]; then
@@ -305,17 +322,11 @@ else
     die "built bundle does not contain the Cognito pool id — VITE bake failed; refusing to ship an ungated SPA"
   fi
   # --exclude keeps this --delete sync from ever touching landing/ (published
-  # separately below, same bucket) — without it, every deploy would delete the
-  # landing page immediately after publishing it on the previous run.
+  # above, same bucket) — without it, every deploy would immediately delete
+  # the landing page it just published.
   info "syncing dist/ -> s3://${spa_bucket}/ ..."
   aws s3 sync frontend/dist/ "s3://${spa_bucket}/" --delete --exclude "landing/*" >/dev/null
   ok "SPA published to ${spa_bucket}"
-
-  # Key must match the S3 key baked into spa_root's integration URI in
-  # infra/modules/api/main.tf.
-  info "publishing landing page -> s3://${spa_bucket}/landing/index.html ..."
-  aws s3 cp infra/modules/api/landing/index.html "s3://${spa_bucket}/landing/index.html" >/dev/null
-  ok "landing page published"
 fi
 
 # ===========================================================================
@@ -335,6 +346,10 @@ code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${api_url}/jobs/00
 info "smoke: landing 200, stig shell 200, config 200, bare data route 401"
 
 step "${GRN}Deploy complete — ${ENV}${RST}"
-info "API:            $(tf output -raw api_invoke_url 2>/dev/null || echo n/a)"
+# Trailing slash: this is the link people copy-paste. Without it, a relative
+# href on the landing page (e.g. ./stig/index.html) resolves one level too
+# high from the bare invoke URL and 404s/403s — the page itself still loads
+# fine, so the break is silent until someone clicks through.
+info "API:            ${api_url}/"
 info "SPA bucket:     ${spa_bucket:-n/a}"
 info "State machine:  $(tf output -raw state_machine_arn 2>/dev/null || echo n/a)"

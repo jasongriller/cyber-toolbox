@@ -486,11 +486,20 @@ resource "aws_api_gateway_deployment" "this" {
 
   # Redeploy whenever the routing surface changes. Without this the API keeps
   # serving the previous definition after an apply that looked successful.
-  # The two `.uri` entries matter as much as the `.id` ones: aws_api_gateway_
+  #
+  # The `.uri` entries matter as much as the `.id` ones: aws_api_gateway_
   # integration's id is a rest_api_id/resource_id/http_method composite, so a
   # URI-only change (e.g. repointing spa_root at a different S3 key) would
   # NOT change its id and would silently fail to trigger a redeploy without
   # `.uri` captured explicitly here.
+  #
+  # The `.path` entries exist for the same reason, one level up: re-parenting
+  # an aws_api_gateway_resource (parent_id) is an in-place PATCH, not a
+  # replacement — the resource keeps its id. A future re-parent-only change
+  # (Phase R's /rmf work is the obvious candidate) would change neither
+  # resource id nor any integration id/uri above, and would silently apply
+  # with no redeploy without `.path` (computed from the live parent chain)
+  # captured here.
   triggers = {
     redeployment = sha1(jsonencode([
       aws_api_gateway_rest_api.this.body,
@@ -499,10 +508,12 @@ resource "aws_api_gateway_deployment" "this" {
       aws_api_gateway_authorizer.cognito.id,
       [for k, i in aws_api_gateway_integration.this : i.id],
       local.serve_spa_from_s3 ? aws_api_gateway_integration.spa_proxy[0].id : "",
+      local.serve_spa_from_s3 ? aws_api_gateway_resource.spa_proxy[0].path : "",
       local.serve_spa_from_s3 ? aws_api_gateway_integration.spa_root[0].id : "",
       local.serve_spa_from_s3 ? aws_api_gateway_integration.spa_root[0].uri : "",
       local.serve_spa_from_s3 ? aws_api_gateway_method.spa_root[0].authorization : "",
       local.serve_spa_from_s3 ? aws_api_gateway_resource.stig[0].id : "",
+      local.serve_spa_from_s3 ? aws_api_gateway_resource.stig[0].path : "",
       local.serve_spa_from_s3 ? aws_api_gateway_method.stig[0].authorization : "",
       local.serve_spa_from_s3 ? aws_api_gateway_integration.stig[0].id : "",
       local.serve_spa_from_s3 ? aws_api_gateway_integration.stig[0].uri : "",

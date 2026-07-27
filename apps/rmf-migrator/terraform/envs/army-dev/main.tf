@@ -66,6 +66,11 @@ module "rmf_migrator" {
   cognito_user_pool_id = nonsensitive(data.aws_ssm_parameter.cognito_user_pool_id.value)
   cognito_client_id    = nonsensitive(data.aws_ssm_parameter.cognito_client_id.value)
 
+  # CORS allowlist for the API and for direct presigned S3 uploads. Empty
+  # (the default) falls back to "*" — see variables.tf; must not ship empty
+  # once this deployment has a real caller.
+  frame_ancestors = var.frame_ancestors
+
   bedrock_model_id = var.bedrock_model_id
   lambda_zip_path  = var.lambda_zip_path
 

@@ -347,11 +347,15 @@ jobs:
       - name: Format
         run: terraform fmt -check -recursive
         working-directory: apps/rmf-migrator/terraform
-      - name: Validate module
-        working-directory: apps/rmf-migrator/terraform/examples/standalone
+      - name: Validate example roots
+        working-directory: apps/rmf-migrator/terraform
         run: |
-          terraform init -backend=false
-          terraform validate
+          set -euo pipefail
+          for dir in examples/standalone envs/example; do
+            echo "==> $dir"
+            terraform -chdir="$dir" init -backend=false -input=false
+            terraform -chdir="$dir" validate
+          done
       - name: Test module contracts
         run: |
           terraform -chdir=apps/rmf-migrator/terraform/modules/rmf-migrator init -backend=false
@@ -360,6 +364,34 @@ jobs:
         uses: terraform-linters/setup-tflint@v6
       - run: tflint --recursive
         working-directory: apps/rmf-migrator/terraform
+
+  rmf-leak-scan:
+    name: rmf leak scan
+    needs: changes
+    if: needs.changes.outputs.rmf == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/rmf-migrator
+    steps:
+      - uses: actions/checkout@v7
+      # This repo is public-destined. An account id, VPC/subnet/endpoint id or a
+      # real ARN committed to a tracked .tf file is a disclosure, and rewriting
+      # git history after the fact does not un-publish it.
+      - name: No environment-specific values in tracked files
+        run: |
+          set -euo pipefail
+          tracked=$(git ls-files -- 'terraform/**' | wc -l)
+          if [ "$tracked" -eq 0 ]; then
+            echo "::error::Leak-scan pathspec matches no tracked files - layout changed?"
+            exit 1
+          fi
+          pattern='[0-9]{12}|vpc-[0-9a-f]{8,}|subnet-[0-9a-f]{8,}|vpce-[0-9a-f]{8,}|arn:aws-us-gov:[^$"]*[0-9]{12}'
+          if git grep -nEI "$pattern" -- 'terraform/**' ':!terraform/**/*.example'; then
+            echo "::error::Environment-specific value found in a tracked terraform file."
+            exit 1
+          fi
+          echo "Leak scan clean over ${tracked} tracked files."
 
   rmf-security:
     name: rmf security scanning

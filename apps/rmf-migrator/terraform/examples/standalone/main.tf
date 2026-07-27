@@ -16,8 +16,9 @@ terraform {
   required_version = ">= 1.6"
   required_providers {
     aws = {
-      source  = "hashicorp/aws"
-      version = ">= 5.40"
+      source = "hashicorp/aws"
+      # See modules/rmf-migrator/versions.tf for why this floors at 6.0.0.
+      version = ">= 6.0.0, < 7.0.0"
     }
   }
 }

@@ -12,16 +12,23 @@ name_prefix = "cyber-toolbox-rmf-example"
 
 aws_region = "us-gov-west-1"
 
-# Built by `py -3.13 scripts/build_lambda.py` (see apps/rmf-migrator/scripts/
-# build_lambda.py — plain pip, cross-targeted at manylinux2014_x86_64 / cp312,
-# no Docker needed). No default: filebase64sha256 fails at plan time without
-# a real file at this path.
+# Built by scripts/build_lambda.py (see apps/rmf-migrator/scripts/
+# build_lambda.py and deploy.sh's Phase 2 — plain pip, cross-targeted at
+# manylinux2014_x86_64 / cp312, no Docker needed). No default: filebase64sha256
+# fails at plan time without a real file at this path.
 lambda_zip_path = "../../../backend/build/rmf-migrator-lambda.zip"
 
-# Bedrock model id this deployment invokes. No default — a conscious choice;
-# see apps/rmf-migrator/docs/DEPLOYMENT.md for how to validate a candidate
-# model before you apply.
-bedrock_model_id = "" # e.g. "openai.gpt-oss-120b-1:0" — see DEPLOYMENT.md §1 to validate a candidate first
+# Bedrock model id this deployment invokes. Required (no default) at both the
+# module and this variable's own layer, but that only enforces "some string
+# was provided" — an explicit empty string "" still plans and applies
+# cleanly. Unlike stig-parser, whose IAM module treats an empty value as a
+# supported "AI is off" state and skips the Bedrock grant entirely, nothing
+# here conditions on emptiness: the worker role always gets an invoke
+# permission scoped to this exact id, so leaving this empty just fails at
+# RUNTIME the first time a handler calls Bedrock, not at plan/apply. See
+# apps/rmf-migrator/docs/DEPLOYMENT.md §1 to validate a real candidate model
+# before you apply.
+bedrock_model_id = ""
 
 # Shared pool (D2): both toolbox apps use ONE Cognito app client so a single
 # login works across the toolbox. These defaults match the platform's
@@ -29,6 +36,12 @@ bedrock_model_id = "" # e.g. "openai.gpt-oss-120b-1:0" — see DEPLOYMENT.md §1
 # only for a non-default SSM prefix or app-client name.
 # cognito_ssm_prefix      = "/cyber-toolbox/dev"
 # cognito_app_client_name = "stig-parser-web"
+
+# CORS allowlist for the API and for direct presigned S3 uploads (see
+# variables.tf). Empty (the default) falls back to a wildcard; set this to
+# the toolbox front door's origin — scheme + host, no path, no trailing
+# slash — once one exists.
+# frame_ancestors = ["https://your-front-door.example"]
 
 # Your org's tagging standard goes here.
 tags = {

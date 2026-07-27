@@ -8,9 +8,11 @@
 #   0 guards    account + toolchain + filesystem safety checks
 #   1 preflight the gitignored per-env files exist (backend.tf, terraform.tfvars);
 #               the shared Cognito pool exists in SSM
-#   2 build     package the Lambda zip (py -3.13 scripts/build_lambda.py) —
-#               always rebuilds; unlike stig-parser's dependency layer there
-#               is no slow Docker build here worth caching
+#   2 build     package the Lambda zip (scripts/build_lambda.py, run under
+#               whichever interpreter satisfies backend/pyproject.toml's
+#               requires-python) — always rebuilds; unlike stig-parser's
+#               dependency layer there is no slow Docker build here worth
+#               caching
 #   3 infra     terraform init/validate/plan -> y/N gate -> apply  [--plan-only]
 #
 # No SPA phase yet. This script stops at a working HTTP API whose url is
@@ -190,9 +192,32 @@ ok "shared pool present at ${cognito_prefix}"
 # Phase 2 — Lambda package
 # ===========================================================================
 step "Phase 2 · Lambda package"
-need py "install Python 3.13 with the 'py' launcher, or build the zip manually per apps/rmf-migrator/docs/DEPLOYMENT.md"
-info "building the Lambda zip (py -3.13 scripts/build_lambda.py)..."
-py -3.13 scripts/build_lambda.py
+# The host interpreter running this script must itself satisfy the backend
+# package's own requires-python (>= 3.12 — see backend/pyproject.toml), not
+# whatever python_runtime/--python-version the Lambda TARGET uses: pip checks
+# that metadata against the interpreter invoking it before installing a local
+# directory, and build_lambda.py's --platform/--python-version/--implementation
+# flags only steer which wheels get selected for the target's DEPENDENCIES —
+# they don't relax that check. "py" is the Windows launcher and doesn't exist
+# on Linux/WSL (the owner's actual deploy box), so try several interpreter
+# names rather than hard-requiring one, and verify whichever is found is new
+# enough rather than trusting its name.
+PYBIN=""
+for cand in "py -3.13" "py -3.12" "python3.13" "python3.12" "python3" "python"; do
+  command -v "${cand%% *}" >/dev/null 2>&1 || continue
+  # shellcheck disable=SC2086
+  cand_ver="$($cand -c 'import sys; print("%d.%d" % sys.version_info[:2])' 2>/dev/null)" || continue
+  cand_major="${cand_ver%%.*}"; cand_minor="${cand_ver#*.}"
+  if (( cand_major > 3 || (cand_major == 3 && cand_minor >= 12) )); then
+    PYBIN="$cand"; PYVER="$cand_ver"
+    break
+  fi
+done
+[[ -n "$PYBIN" ]] || die "no Python >= 3.12 interpreter found (tried: py -3.13, py -3.12, python3.13, python3.12, python3, python). Install one, or build the zip manually per apps/rmf-migrator/docs/DEPLOYMENT.md."
+ok "using '${PYBIN}' (${PYVER})"
+info "building the Lambda zip (${PYBIN} scripts/build_lambda.py)..."
+# shellcheck disable=SC2086
+$PYBIN scripts/build_lambda.py
 ok "Lambda zip built"
 
 # ===========================================================================

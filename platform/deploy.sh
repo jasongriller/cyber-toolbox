@@ -10,7 +10,7 @@ for arg in "$@"; do
   case "$arg" in
     --plan-only) PLAN_ONLY=true ;;
     --yes)       AUTO_YES=true ;;
-    -*)          echo "unknown flag: $arg" >&2; exit 2 ;;
+    -*)          ;; # app-script flags (--skip-spa etc.) pass through harmlessly when invoked via the root orchestrator
     *)           ENV="$arg" ;;
   esac
 done
@@ -59,7 +59,15 @@ trap 'rm -f "${ENV_DIR}/deploy.tfplan"' EXIT
 
 tf init -input=false
 tf validate
-tf plan -input=false -out=deploy.tfplan
+
+rc=0
+tf plan -input=false -detailed-exitcode -out=deploy.tfplan || rc=$?
+case "$rc" in
+  0) echo "platform: no changes — skipping apply"; exit 0 ;;
+  2) ;;             # changes pending — fall through to the gate below
+  *) exit "$rc" ;;  # plan genuinely failed
+esac
+
 [ "$PLAN_ONLY" = true ] && exit 0
 
 if [ "$AUTO_YES" != true ]; then

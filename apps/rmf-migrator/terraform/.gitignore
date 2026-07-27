@@ -1,0 +1,38 @@
+# Terraform — never commit state, real vars, or backend wiring (public repo).
+# Mirrors apps/stig-parser/infra/.gitignore. The parent apps/rmf-migrator/
+# .gitignore already covers *.tfvars/.terraform/*.tfstate generically; this
+# file makes the terraform/ subtree self-contained and adds what that parent
+# file does not (backend.tf, deploy.env, plans).
+
+# Local state (should be remote S3 anyway, but never commit it)
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# Provider/module cache and lockfile-adjacent noise
+.terraform/
+.terraform.lock.hcl
+
+# Plans can embed resolved values (account IDs, ARNs) — never commit
+*.plan
+*.tfplan
+
+# Real variable and backend files carry environment-specific values.
+# Only the *.example templates are committed.
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+backend.tf
+!backend.tf.example
+
+# Per-env deploy settings (carry the account id — see deploy.sh).
+deploy.env
+!deploy.env.example
+
+# Build artifacts: the Lambda deployment zip built by scripts/build_lambda.py.
+# Reproducible from source.
+build/
+
+# Crash logs
+crash.log
+crash.*.log

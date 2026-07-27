@@ -300,8 +300,16 @@ if [[ -n "$spa_bucket" && "$spa_bucket" != "null" ]]; then
   fi
   # Key must match the S3 key baked into spa_root's integration URI in
   # infra/modules/api/main.tf.
+  #
+  # --content-type is required here: aws s3 cp guesses Content-Type from the
+  # SOURCE filename, not the destination key, and mktemp's output has no
+  # extension — an unguessable name would upload as binary/octet-stream and
+  # the browser would offer "/" as a download instead of rendering it. The
+  # stig bundle sync (Phase 4, below) is not affected: it syncs real files
+  # straight out of frontend/dist/, so its filenames (index.html, *.js, ...)
+  # guess correctly on their own.
   info "publishing landing page -> s3://${spa_bucket}/landing/index.html (stage ${stage_path}) ..."
-  aws s3 cp "$tmp_landing" "s3://${spa_bucket}/landing/index.html" >/dev/null
+  aws s3 cp "$tmp_landing" "s3://${spa_bucket}/landing/index.html" --content-type "text/html; charset=utf-8" >/dev/null
   rm -f "$tmp_landing"
   ok "landing page published"
 fi
@@ -355,6 +363,13 @@ api_url="$(tf output -raw api_invoke_url)"
 # The root method now serves the toolbox landing page — probe exactly what users click.
 code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${api_url}/" || echo 000)"
 [ "$code" = "200" ] || die "smoke: landing page returned ${code}, expected 200 (000 = could not reach the API at all)"
+# A GET, not curl -I: this API defines no HEAD methods and returns 403 for
+# one. Catches an extensionless-upload regression (mktemp has no suffix, so a
+# client-side mimetype guess on the temp file's name would misfire) that a
+# body-only check can't see — the browser would offer "/" as a download
+# instead of rendering it, while every check above would still pass.
+content_type="$(curl -s -o /dev/null -w '%{content_type}' --max-time 30 "${api_url}/" || echo 000)"
+[[ "$content_type" == *"text/html"* ]] || die "smoke: landing page Content-Type is '${content_type}', expected text/html (000 = could not reach the API at all)"
 # Prove the __STAGE__ placeholder was actually substituted at publish time —
 # a silently unsubstituted page would still return 200 here and only break
 # when a user clicks the (broken) link, exactly the failure mode this closes.
@@ -367,7 +382,7 @@ code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${api_url}/config"
 [ "$code" = "200" ] || die "smoke: /config returned ${code}, expected 200 (open route) (000 = could not reach the API at all)"
 code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${api_url}/jobs/00000000-0000-0000-0000-00000000dead" || echo 000)"
 [ "$code" = "401" ] || die "smoke: bare /jobs/{id} returned ${code}, expected 401 (authorizer) (000 = could not reach the API at all)"
-info "smoke: landing 200 (link substituted), stig shell 200, config 200, bare data route 401"
+info "smoke: landing 200 (text/html, link substituted), stig shell 200, config 200, bare data route 401"
 
 step "${GRN}Deploy complete — ${ENV}${RST}"
 # Trailing slash: this is the link people copy-paste. Without it, a relative

@@ -12,6 +12,8 @@ import "@fontsource/ibm-plex-mono/500.css";
 import "./styles/theme.css";
 
 import App from "./App.tsx";
+import AuthGate from "./AuthGate.tsx";
+import { AuthProvider } from "./contexts/AuthContext.tsx";
 
 const root = document.getElementById("root");
 if (!root) {
@@ -20,6 +22,10 @@ if (!root) {
 
 createRoot(root).render(
   <StrictMode>
-    <App />
+    <AuthProvider>
+      <AuthGate>
+        <App />
+      </AuthGate>
+    </AuthProvider>
   </StrictMode>,
 );

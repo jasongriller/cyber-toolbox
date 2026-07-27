@@ -228,3 +228,110 @@ describe("ApiClient", () => {
     expect(text).toContain("component-definition");
   });
 });
+
+// The Cognito JWT authorizer in front of the API rejects any request with no
+// (or a bad) Authorization header, so every one of ApiClient's four fetch()
+// call sites — the request() chokepoint plus the three raw-fetch downloads
+// below it — must attach the current session's raw ID token.
+describe("ApiClient auth token", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  function mockFetchOk(body: unknown = {}) {
+    return vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify(body), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+  }
+
+  it("attaches the raw ID token to a JSON request with no Bearer prefix", async () => {
+    const spy = mockFetchOk({ projects: [] });
+    const getToken = vi.fn().mockResolvedValue("raw-jwt-token");
+    const client = new ApiClient("/api", getToken);
+
+    await client.listProjects();
+
+    const [, init] = spy.mock.calls[0];
+    expect(init?.headers).toMatchObject({ Authorization: "raw-jwt-token" });
+  });
+
+  it("omits the Authorization header when signed out", async () => {
+    const spy = mockFetchOk({ projects: [] });
+    const getToken = vi.fn().mockResolvedValue(null);
+    const client = new ApiClient("/api", getToken);
+
+    await client.listProjects();
+
+    const [, init] = spy.mock.calls[0];
+    expect(init?.headers).not.toHaveProperty("Authorization");
+  });
+
+  it("sends Content-Type alongside Authorization on a body request", async () => {
+    const spy = mockFetchOk({ project_id: "p1" });
+    const getToken = vi.fn().mockResolvedValue("raw-jwt-token");
+    const client = new ApiClient("/api", getToken);
+
+    await client.createProject("Alpha", "generic_800_53");
+
+    const [, init] = spy.mock.calls[0];
+    expect(init?.headers).toMatchObject({
+      Authorization: "raw-jwt-token",
+      "Content-Type": "application/json",
+    });
+  });
+
+  it("attaches the token on the decision-log CSV download (bypasses request())", async () => {
+    const spy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("order,heading\n", { status: 200, headers: { "Content-Type": "text/csv" } }),
+    );
+    const getToken = vi.fn().mockResolvedValue("raw-jwt-token");
+    const client = new ApiClient("/api", getToken);
+
+    await client.getDecisionLogCsv("p1", "d1");
+
+    const [, init] = spy.mock.calls[0];
+    expect(init?.headers).toMatchObject({ Authorization: "raw-jwt-token" });
+  });
+
+  it("attaches the token on the conversion-matrix CSV download (bypasses request())", async () => {
+    const spy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("rev4_control\n", { status: 200, headers: { "Content-Type": "text/csv" } }),
+    );
+    const getToken = vi.fn().mockResolvedValue("raw-jwt-token");
+    const client = new ApiClient("/api", getToken);
+
+    await client.getConversionMatrixCsv("p1");
+
+    const [, init] = spy.mock.calls[0];
+    expect(init?.headers).toMatchObject({ Authorization: "raw-jwt-token" });
+  });
+
+  it("attaches the token on the OSCAL JSON download (bypasses request())", async () => {
+    const spy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response('{"component-definition":{}}', {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+    const getToken = vi.fn().mockResolvedValue("raw-jwt-token");
+    const client = new ApiClient("/api", getToken);
+
+    await client.getOscalJson("p1");
+
+    const [, init] = spy.mock.calls[0];
+    expect(init?.headers).toMatchObject({ Authorization: "raw-jwt-token" });
+  });
+
+  it("defaults the token getter to AuthContext.getIdToken (App.tsx's `new ApiClient()`)", async () => {
+    const spy = mockFetchOk({ projects: [] });
+    // No getToken arg — exercises the real default, which resolves null with
+    // no VITE_COGNITO_* configured (this test run's NO_AUTH mode).
+    const client = new ApiClient("/api");
+
+    await client.listProjects();
+
+    const [, init] = spy.mock.calls[0];
+    expect(init?.headers).not.toHaveProperty("Authorization");
+  });
+});

@@ -21,6 +21,10 @@ import type {
   Section,
   UploadTarget,
 } from "./types";
+import { getIdToken } from "../contexts/AuthContext";
+
+/** Resolves the current session's raw ID token, or null when signed out. */
+export type TokenGetter = () => Promise<string | null>;
 
 export class ApiError extends Error {
   constructor(
@@ -41,15 +45,30 @@ export function joinUrl(base: string, path: string): string {
 
 export class ApiClient {
   private readonly baseUrl: string;
+  private readonly getToken: TokenGetter;
 
-  constructor(baseUrl: string = import.meta.env.VITE_API_BASE_URL ?? "/api") {
+  constructor(
+    baseUrl: string = import.meta.env.VITE_API_BASE_URL ?? "/api",
+    getToken: TokenGetter = getIdToken,
+  ) {
     this.baseUrl = baseUrl;
+    this.getToken = getToken;
+  }
+
+  /** Authorization header for the current session (raw ID token, no "Bearer "
+   *  prefix — see AuthContext.getIdToken), or {} when signed out. Spreadable
+   *  into any fetch() call's headers without a conditional at the call site. */
+  private async authHeaders(): Promise<Record<string, string>> {
+    const token = await this.getToken();
+    return token ? { Authorization: token } : {};
   }
 
   private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
+    const headers = await this.authHeaders();
+    if (body) headers["Content-Type"] = "application/json";
     const res = await fetch(joinUrl(this.baseUrl, path), {
       method,
-      headers: body ? { "Content-Type": "application/json" } : undefined,
+      headers,
       body: body ? JSON.stringify(body) : undefined,
     });
     if (!res.ok) {
@@ -218,6 +237,7 @@ export class ApiClient {
   async getDecisionLogCsv(projectId: string, documentId: string): Promise<string> {
     const res = await fetch(
       joinUrl(this.baseUrl, `/projects/${projectId}/documents/${documentId}/decision-log.csv`),
+      { headers: await this.authHeaders() },
     );
     if (!res.ok) {
       throw new ApiError(res.status, res.statusText);
@@ -236,6 +256,7 @@ export class ApiClient {
   async getConversionMatrixCsv(projectId: string): Promise<string> {
     const res = await fetch(
       joinUrl(this.baseUrl, `/projects/${projectId}/conversion-matrix.csv`),
+      { headers: await this.authHeaders() },
     );
     if (!res.ok) {
       throw new ApiError(res.status, res.statusText);
@@ -245,7 +266,9 @@ export class ApiClient {
 
   /** Fetch the OSCAL component-definition as pretty-printed JSON text. */
   async getOscalJson(projectId: string): Promise<string> {
-    const res = await fetch(joinUrl(this.baseUrl, `/projects/${projectId}/oscal.json`));
+    const res = await fetch(joinUrl(this.baseUrl, `/projects/${projectId}/oscal.json`), {
+      headers: await this.authHeaders(),
+    });
     if (!res.ok) {
       throw new ApiError(res.status, res.statusText);
     }

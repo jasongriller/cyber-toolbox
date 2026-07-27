@@ -145,7 +145,7 @@ describe("ApiClient", () => {
     expect(res.projects[0].name).toBe("Alpha");
   });
 
-  it("deleteProject requires the exact project id in the request body", async () => {
+  it("deleteProject sends the exact project name in the request body", async () => {
     const spy = mockFetch(200, {
       project_id: "p1",
       deleted_object_versions: 2,
@@ -153,12 +153,12 @@ describe("ApiClient", () => {
     });
     const client = new ApiClient("/api");
 
-    await client.deleteProject("p1");
+    await client.deleteProject("p1", "Alpha");
 
     const [url, init] = spy.mock.calls[0];
     expect(url).toBe("/api/projects/p1");
     expect(init?.method).toBe("DELETE");
-    expect(JSON.parse(init?.body as string)).toEqual({ confirm_project_id: "p1" });
+    expect(JSON.parse(init?.body as string)).toEqual({ confirm_project_name: "Alpha" });
   });
 
   it("listDocuments GETs the project's documents", async () => {

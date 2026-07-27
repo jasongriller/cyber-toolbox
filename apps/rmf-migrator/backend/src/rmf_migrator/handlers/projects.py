@@ -70,8 +70,13 @@ def _delete_project(event: dict[str, Any], deps: Deps) -> dict[str, Any]:
         raise HttpError(404, "project not found")
 
     body = parse_body(event)
-    if body.get("confirm_project_id") != project_id:
-        raise HttpError(400, "confirm_project_id must exactly match the project being purged")
+    confirm_name = body.get("confirm_project_name")
+    if not isinstance(confirm_name, str) or confirm_name.strip() != project.name:
+        raise HttpError(
+            400,
+            "confirm_project_name must exactly match the project's name "
+            f"({project.name!r}) to delete it",
+        )
 
     deleted_objects = deps.store.delete_prefix(f"projects/{project_id}/")
     deleted_records = deps.repo.delete_project(project_id)

@@ -73,9 +73,9 @@ export class ApiClient {
     return this.request("GET", "/projects");
   }
 
-  deleteProject(projectId: string): Promise<ProjectPurgeResult> {
+  deleteProject(projectId: string, projectName: string): Promise<ProjectPurgeResult> {
     return this.request("DELETE", `/projects/${projectId}`, {
-      confirm_project_id: projectId,
+      confirm_project_name: projectName,
     });
   }
 

@@ -128,13 +128,14 @@ export default function ProjectBrowser({ client, onOpenDocument, onOpenCoverage 
     if (!selected) return;
     const confirmation = window.prompt(
       `This permanently deletes every document, export, and audit record in ${selected.name}. ` +
-        `Type ${selected.project_id} to continue.`,
+        `Type the project name (${selected.name}) to continue.`,
     );
-    if (confirmation !== selected.project_id) return;
+    const typedName = confirmation?.trim();
+    if (typedName !== selected.name) return;
 
     setBusy(true);
     try {
-      await client.deleteProject(selected.project_id);
+      await client.deleteProject(selected.project_id, typedName);
       setSelected(null);
       setDocuments([]);
       await loadProjects();

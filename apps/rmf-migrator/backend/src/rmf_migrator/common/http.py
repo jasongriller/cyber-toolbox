@@ -1,8 +1,10 @@
 """Helpers for API Gateway (HTTP API / proxy) Lambda handlers.
 
 Keeps handlers free of boilerplate for parsing bodies, building responses, and
-resolving identity. Identity is optional and comes only from a configured
-trusted header injected by an upstream portal/proxy — there is no app-level auth.
+resolving identity. Identity prefers cryptographically verified sources (a
+Cognito JWT authorizer's claims, then a SigV4 principal); a configured trusted
+header injected by an upstream portal/proxy is only a last-resort fallback for
+deployments with no authorizer in front of them.
 """
 
 from __future__ import annotations
@@ -55,15 +57,35 @@ def path_param(event: dict[str, Any], name: str) -> str:
 
 
 def resolve_identity(event: dict[str, Any], identity_header: str | None) -> str:
-    """Return a trusted proxy identity, then fall back to the SigV4 principal.
+    """Return the caller's identity, trusting verified sources before headers.
+
+    Checked in order:
+      1. JWT claims from an HTTP API JWT (Cognito) authorizer — email, then
+         cognito:username, then sub. Cryptographically verified.
+      2. The SigV4 principal from an IAM authorizer. Also verified.
+      3. A configured trusted header, injected by an upstream portal/proxy.
+         Client-supplied and spoofable, so it is only a last resort kept for
+         deployments with no authorizer in front of them.
+      4. "anonymous".
 
     Header lookup is case-insensitive, matching API Gateway's behavior.
     """
+    authorizer = (event.get("requestContext") or {}).get("authorizer") or {}
+
+    claims = authorizer.get("jwt") or {}
+    claims = claims.get("claims") or {}
+    identity = claims.get("email") or claims.get("cognito:username") or claims.get("sub")
+    if identity:
+        return identity
+
+    iam = authorizer.get("iam") or {}
+    identity = iam.get("userArn") or iam.get("callerId")
+    if identity:
+        return identity
+
     if identity_header:
         headers = {k.lower(): v for k, v in (event.get("headers") or {}).items()}
         if identity := headers.get(identity_header.lower()):
             return identity
 
-    authorizer = (event.get("requestContext") or {}).get("authorizer") or {}
-    iam = authorizer.get("iam") or {}
-    return iam.get("userArn") or iam.get("callerId") or "anonymous"
+    return "anonymous"

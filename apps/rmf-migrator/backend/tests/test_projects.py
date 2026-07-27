@@ -75,14 +75,14 @@ def test_list_documents_404_unknown_project(deps):
     assert exc.value.status == 404
 
 
-def test_delete_project_requires_exact_confirmation(deps):
+def test_delete_project_rejects_wrong_name(deps):
     project = Project(name="Sys")
     deps.repo.put_project(project)
 
     with pytest.raises(HttpError) as exc:
         _delete_project(
             {
-                "body": json.dumps({"confirm_project_id": "wrong"}),
+                "body": json.dumps({"confirm_project_name": "Not Sys"}),
                 "pathParameters": {"project_id": project.project_id},
                 "headers": {},
             },
@@ -91,6 +91,59 @@ def test_delete_project_requires_exact_confirmation(deps):
 
     assert exc.value.status == 400
     assert deps.repo.get_project(project.project_id) is not None
+
+
+def test_delete_project_rejects_case_mismatch(deps):
+    project = Project(name="Sys")
+    deps.repo.put_project(project)
+
+    with pytest.raises(HttpError) as exc:
+        _delete_project(
+            {
+                "body": json.dumps({"confirm_project_name": "sys"}),
+                "pathParameters": {"project_id": project.project_id},
+                "headers": {},
+            },
+            deps,
+        )
+
+    assert exc.value.status == 400
+    assert deps.repo.get_project(project.project_id) is not None
+
+
+def test_delete_project_rejects_missing_confirmation_field(deps):
+    project = Project(name="Sys")
+    deps.repo.put_project(project)
+
+    with pytest.raises(HttpError) as exc:
+        _delete_project(
+            {
+                "body": json.dumps({}),
+                "pathParameters": {"project_id": project.project_id},
+                "headers": {},
+            },
+            deps,
+        )
+
+    assert exc.value.status == 400
+    assert deps.repo.get_project(project.project_id) is not None
+
+
+def test_delete_project_accepts_whitespace_trimmed_name(deps):
+    project = Project(name="Sys")
+    deps.repo.put_project(project)
+
+    response = _delete_project(
+        {
+            "body": json.dumps({"confirm_project_name": "  Sys  "}),
+            "pathParameters": {"project_id": project.project_id},
+            "headers": {},
+        },
+        deps,
+    )
+
+    assert response["statusCode"] == 200
+    assert deps.repo.get_project(project.project_id) is None
 
 
 def test_delete_project_purges_metadata_and_all_s3_versions(deps):
@@ -124,7 +177,7 @@ def test_delete_project_purges_metadata_and_all_s3_versions(deps):
 
     response = _delete_project(
         {
-            "body": json.dumps({"confirm_project_id": pid}),
+            "body": json.dumps({"confirm_project_name": "Sys"}),
             "pathParameters": {"project_id": pid},
             "headers": {"X-Remote-User": "reviewer"},
         },

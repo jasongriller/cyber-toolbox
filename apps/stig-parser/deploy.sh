@@ -310,15 +310,15 @@ api_url="$(tf output -raw api_invoke_url)"
 # /index.html, not /: the API has no root method (unlike ssg-star) — the SPA
 # {proxy+} route matches concrete paths only. Pre-existing shape, not a flip
 # regression; a clean-link root method is a user decision at the apply gate.
-code="$(curl -s -o /dev/null -w '%{http_code}' "${api_url}/index.html" || echo 000)"
+code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${api_url}/index.html" || echo 000)"
 [ "$code" = "200" ] || die "smoke: SPA shell returned ${code}, expected 200 (000 = could not reach the API at all)"
-code="$(curl -s -o /dev/null -w '%{http_code}' "${api_url}/config" || echo 000)"
+code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${api_url}/config" || echo 000)"
 [ "$code" = "200" ] || die "smoke: /config returned ${code}, expected 200 (open route) (000 = could not reach the API at all)"
-code="$(curl -s -o /dev/null -w '%{http_code}' "${api_url}/jobs/00000000-0000-0000-0000-000000000000" || echo 000)"
+code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${api_url}/jobs/00000000-0000-0000-0000-00000000dead" || echo 000)"
 [ "$code" = "401" ] || die "smoke: bare /jobs/{id} returned ${code}, expected 401 (authorizer) (000 = could not reach the API at all)"
 info "smoke: shell 200, config 200, bare data route 401"
 
 step "${GRN}Deploy complete — ${ENV}${RST}"
-info "API (private):  $(tf output -raw api_invoke_url 2>/dev/null || echo n/a)"
+info "API:            $(tf output -raw api_invoke_url 2>/dev/null || echo n/a)"
 info "SPA bucket:     ${spa_bucket:-n/a}"
 info "State machine:  $(tf output -raw state_machine_arn 2>/dev/null || echo n/a)"

@@ -77,9 +77,12 @@ class LocalArtifactStore:
 class S3ArtifactStore:
     """S3-backed :class:`ArtifactStore`.
 
-    The only module member permitted to touch boto3. In GovCloud the client
-    reaches S3 through the VPC gateway endpoint; presigned URLs are generated
-    for the interface-endpoint host.
+    The only module member permitted to touch boto3. Lambdas left the VPC
+    in the public flip, so this client reaches S3 at its default Regional
+    endpoint. Presigned URLs target that same default endpoint and are used
+    directly from the public internet: the credential is the URL's own
+    SigV4 signature, time-limited and minted under the presign-scoped role,
+    not network reachability.
     """
 
     def __init__(

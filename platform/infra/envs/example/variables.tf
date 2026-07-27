@@ -6,13 +6,13 @@ variable "aws_region" {
 variable "name_prefix" {
   description = "Prefix for shared platform resources. Pool becomes <prefix>-users."
   type        = string
-  default     = "toolbox-dev"
+  default     = "cyber-toolbox-dev"
 }
 
 variable "ssm_prefix" {
   description = "SSM path the pool/client ids are published under. Apps' env roots read these paths."
   type        = string
-  default     = "/toolbox/dev"
+  default     = "/cyber-toolbox/dev"
 }
 
 variable "app_client_names" {

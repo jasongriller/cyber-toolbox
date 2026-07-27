@@ -1,5 +1,5 @@
 variable "name_prefix" {
-  description = "Prefix for shared platform resources (e.g. \"toolbox-dev\"). The pool is named <prefix>-users."
+  description = "Prefix for shared platform resources (e.g. \"cyber-toolbox-dev\"). The pool is named <prefix>-users."
   type        = string
   validation {
     condition     = can(regex("^[a-z][a-z0-9-]{1,30}$", var.name_prefix))
@@ -8,7 +8,7 @@ variable "name_prefix" {
 }
 
 variable "ssm_prefix" {
-  description = "SSM path prefix the pool/client ids are published under (e.g. \"/toolbox/dev\"). Apps consume these instead of reading this root's state."
+  description = "SSM path prefix the pool/client ids are published under (e.g. \"/cyber-toolbox/dev\"). Apps consume these instead of reading this root's state."
   type        = string
   validation {
     condition     = can(regex("^/", var.ssm_prefix)) && !endswith(var.ssm_prefix, "/")

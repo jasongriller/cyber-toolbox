@@ -178,7 +178,7 @@ tfvar() { sed -n "s/^[[:space:]]*$1[[:space:]]*=[[:space:]]*\"\{0,1\}\([^\"]*\)\
 
 # The env root reads the shared pool from SSM at plan time — the platform
 # root must exist first. Fail here with a pointer, not mid-plan.
-cognito_prefix="$(tfvar cognito_ssm_prefix)"; cognito_prefix="${cognito_prefix:-/toolbox/dev}"
+cognito_prefix="$(tfvar cognito_ssm_prefix)"; cognito_prefix="${cognito_prefix:-/cyber-toolbox/dev}"
 if ! aws ssm get-parameter --name "${cognito_prefix}/cognito_user_pool_id" >/dev/null 2>&1; then
   die "shared pool not found at ${cognito_prefix}/* — apply the platform root first (platform/deploy.sh)"
 fi

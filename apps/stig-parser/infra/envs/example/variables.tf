@@ -140,7 +140,7 @@ variable "identity_header" {
 variable "cognito_ssm_prefix" {
   description = "SSM path prefix the platform root publishes the shared pool under."
   type        = string
-  default     = "/toolbox/dev"
+  default     = "/cyber-toolbox/dev"
 }
 
 variable "cognito_app_client_name" {

@@ -281,10 +281,28 @@ fi
 spa_bucket="$(tf output -raw spa_bucket 2>/dev/null || true)"
 if [[ -n "$spa_bucket" && "$spa_bucket" != "null" ]]; then
   step "Landing page"
+  api_url="$(tf output -raw api_invoke_url)"
+  # The tracked page ships an absolute-path placeholder (__STAGE__) instead of
+  # a relative href: a relative href breaks whenever this page is reached
+  # without a trailing slash (the bare invoke URL has none), because relative
+  # resolution then drops the stage segment entirely. Substitute the real
+  # stage path (scheme+host stripped, leading "/" kept, e.g. "/v1") into a
+  # throwaway copy — never the tracked source — and publish that.
+  stage_path="$(printf '%s' "$api_url" | sed -E 's#^[a-zA-Z][a-zA-Z0-9+.-]*://[^/]+##')"
+  [ -n "$stage_path" ] || die "could not derive a stage path from api_invoke_url ('${api_url}') — refusing to publish a landing page with a broken link."
+  tmp_landing="$(mktemp)"
+  # Extends the top-of-script tfplan trap rather than replacing it — both get
+  # cleaned up on any exit path from here on, not just the success path below.
+  trap 'rm -f "${ENV_DIR}/deploy.tfplan" "$tmp_landing"' EXIT
+  sed "s#__STAGE__#${stage_path}#g" infra/modules/api/landing/index.html > "$tmp_landing"
+  if grep -q '__STAGE__' "$tmp_landing"; then
+    die "landing page still contains the __STAGE__ placeholder after substitution — refusing to publish an unsubstituted page."
+  fi
   # Key must match the S3 key baked into spa_root's integration URI in
   # infra/modules/api/main.tf.
-  info "publishing landing page -> s3://${spa_bucket}/landing/index.html ..."
-  aws s3 cp infra/modules/api/landing/index.html "s3://${spa_bucket}/landing/index.html" >/dev/null
+  info "publishing landing page -> s3://${spa_bucket}/landing/index.html (stage ${stage_path}) ..."
+  aws s3 cp "$tmp_landing" "s3://${spa_bucket}/landing/index.html" >/dev/null
+  rm -f "$tmp_landing"
   ok "landing page published"
 fi
 
@@ -337,13 +355,19 @@ api_url="$(tf output -raw api_invoke_url)"
 # The root method now serves the toolbox landing page — probe exactly what users click.
 code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${api_url}/" || echo 000)"
 [ "$code" = "200" ] || die "smoke: landing page returned ${code}, expected 200 (000 = could not reach the API at all)"
+# Prove the __STAGE__ placeholder was actually substituted at publish time —
+# a silently unsubstituted page would still return 200 here and only break
+# when a user clicks the (broken) link, exactly the failure mode this closes.
+landing_body="$(curl -s --max-time 30 "${api_url}/" || echo '')"
+[[ "$landing_body" == *"/stig/index.html"* ]] || die "smoke: landing page body does not contain /stig/index.html — check the __STAGE__ substitution in deploy.sh's landing-publish step"
+[[ "$landing_body" != *"__STAGE__"* ]] || die "smoke: landing page body still contains the __STAGE__ placeholder — publish-time substitution failed silently"
 code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${api_url}/stig/" || echo 000)"
 [ "$code" = "200" ] || die "smoke: stig SPA shell returned ${code}, expected 200 (000 = could not reach the API at all)"
 code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${api_url}/config" || echo 000)"
 [ "$code" = "200" ] || die "smoke: /config returned ${code}, expected 200 (open route) (000 = could not reach the API at all)"
 code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${api_url}/jobs/00000000-0000-0000-0000-00000000dead" || echo 000)"
 [ "$code" = "401" ] || die "smoke: bare /jobs/{id} returned ${code}, expected 401 (authorizer) (000 = could not reach the API at all)"
-info "smoke: landing 200, stig shell 200, config 200, bare data route 401"
+info "smoke: landing 200 (link substituted), stig shell 200, config 200, bare data route 401"
 
 step "${GRN}Deploy complete — ${ENV}${RST}"
 # Trailing slash: this is the link people copy-paste. Without it, a relative

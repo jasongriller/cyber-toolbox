@@ -73,7 +73,14 @@
   <h1>Cyber Toolbox</h1>
   <p class="lede">Security compliance tools, in one place.</p>
   <div class="grid">
-    <a class="card" href="./stig/index.html">
+    <!-- href is an absolute path with a __STAGE__ placeholder, not a real
+         value: a relative href breaks whenever this page is reached without
+         a trailing slash (the bare invoke URL has none), because relative
+         resolution then drops the stage segment entirely. deploy.sh
+         substitutes the real API Gateway stage path (e.g. /v1) into a
+         throwaway copy at publish time — this tracked file itself never
+         changes. -->
+    <a class="card" href="__STAGE__/stig/index.html">
       <h2>STIG Compliance Parser</h2>
       <p>Parse XCCDF, CKLB, and Nessus scan results into one consolidated compliance workbook.</p>
       <span class="open">Open &rarr;</span>

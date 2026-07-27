@@ -48,11 +48,13 @@ variables {
   kms_key_arn           = "arn:aws-us-gov:kms:us-gov-west-1:test:key/test"
 }
 
-# The route auth split is the flip's security boundary: get_config and the SPA
-# shell must stay reachable before login, and every route that touches
+# The route auth split is the flip's security boundary: get_config, the
+# toolbox landing page (root), and the stig SPA shell (/stig and its asset
+# proxy) must all stay reachable before login, and every route that touches
 # uploads or job data must sit behind the Cognito authorizer. This runs with
 # spa_serving_mode left at its apigw_s3_proxy default (as upload_cors.tftest's
-# base run does) so aws_api_gateway_method.spa_proxy[0] exists to assert on.
+# base run does) so aws_api_gateway_method.spa_proxy[0] and
+# aws_api_gateway_method.stig[0] exist to assert on.
 #
 # command = apply, not plan: authorizer_id is a cross-resource reference to
 # aws_api_gateway_authorizer.cognito.id, a computed value that stays unknown
@@ -132,16 +134,31 @@ run "route_auth_matches_the_security_boundary" {
 
   assert {
     condition     = aws_api_gateway_method.spa_proxy[0].authorization == "NONE"
-    error_message = "The SPA shell route must stay open (NONE): the route auth split is the flip's security boundary, and the login shell itself has to load before a user can authenticate at all."
+    error_message = "The stig SPA's asset route must stay open (NONE): the route auth split is the flip's security boundary, and the login shell itself has to load before a user can authenticate at all."
+  }
+
+  assert {
+    condition     = aws_api_gateway_resource.spa_proxy[0].parent_id == aws_api_gateway_resource.stig[0].id
+    error_message = "The SPA asset proxy must be nested under /stig: the bundle moved off the bare stage URL, and assets are requested relative to /stig/ (base: './'), not the API root."
+  }
+
+  assert {
+    condition     = aws_api_gateway_method.stig[0].authorization == "NONE"
+    error_message = "The /stig shell route must stay open (NONE): the route auth split is the flip's security boundary, and the stig SPA shell has to load before a user can authenticate at all."
+  }
+
+  assert {
+    condition     = endswith(aws_api_gateway_integration.stig[0].uri, "/index.html")
+    error_message = "The /stig integration must proxy to index.html: it is the stig SPA's shell route, and it must resolve to the bundle's entry point, not some other path in the bucket."
   }
 
   assert {
     condition     = aws_api_gateway_method.spa_root[0].authorization == "NONE"
-    error_message = "The bare stage URL's shell route must stay open (NONE): the route auth split is the flip's security boundary, and the root method serves the same login shell that has to load before a user can authenticate at all."
+    error_message = "The bare stage URL's landing route must stay open (NONE): the route auth split is the flip's security boundary, and the toolbox front door has to load before a user has signed in or chosen a tool."
   }
 
   assert {
-    condition     = endswith(aws_api_gateway_integration.spa_root[0].uri, "/index.html")
-    error_message = "The root integration must proxy to index.html: the bare stage URL exists so users get a clean link, and it must resolve to the SPA shell object, not some other path in the bucket."
+    condition     = endswith(aws_api_gateway_integration.spa_root[0].uri, "/landing/index.html")
+    error_message = "The root integration must proxy to the landing page: the bare stage URL is now the toolbox front door, not the stig SPA shell, and it must resolve to the landing object, not some other path in the bucket."
   }
 }

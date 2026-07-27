@@ -9,8 +9,8 @@
 #   1 preflight the gitignored per-env files exist (backend.tf, terraform.tfvars)
 #   2 layer     reuse the Lambda dependency layer (builds only if missing)
 #   3 infra     terraform init/validate/plan -> y/N gate -> apply  [--plan-only]
-#   4 spa       build the React bundle and sync it to the SPA bucket  [--skip-spa]
-#   5 smoke     invoke the API Lambda's GET /config and check 200
+#   4 spa       build the React bundle and sync it + the landing page to S3  [--skip-spa]
+#   5 smoke     check landing (/), the stig shell (/stig/), /config (200), and an authorized-only route (401)
 #
 # The dependency layer is REUSED by default (no Docker needed). It builds only
 # when infra/build/deps-layer.zip is missing, or when you pass --rebuild-layer
@@ -304,9 +304,18 @@ else
   if ! grep -rqs "$pool_id" frontend/dist/assets/; then
     die "built bundle does not contain the Cognito pool id — VITE bake failed; refusing to ship an ungated SPA"
   fi
+  # --exclude keeps this --delete sync from ever touching landing/ (published
+  # separately below, same bucket) — without it, every deploy would delete the
+  # landing page immediately after publishing it on the previous run.
   info "syncing dist/ -> s3://${spa_bucket}/ ..."
-  aws s3 sync frontend/dist/ "s3://${spa_bucket}/" --delete >/dev/null
+  aws s3 sync frontend/dist/ "s3://${spa_bucket}/" --delete --exclude "landing/*" >/dev/null
   ok "SPA published to ${spa_bucket}"
+
+  # Key must match the S3 key baked into spa_root's integration URI in
+  # infra/modules/api/main.tf.
+  info "publishing landing page -> s3://${spa_bucket}/landing/index.html ..."
+  aws s3 cp infra/modules/api/landing/index.html "s3://${spa_bucket}/landing/index.html" >/dev/null
+  ok "landing page published"
 fi
 
 # ===========================================================================
@@ -314,14 +323,16 @@ fi
 # ===========================================================================
 step "Phase 5 · Smoke test"
 api_url="$(tf output -raw api_invoke_url)"
-# The root method serves the shell at the bare stage URL — probe exactly what users click.
+# The root method now serves the toolbox landing page — probe exactly what users click.
 code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${api_url}/" || echo 000)"
-[ "$code" = "200" ] || die "smoke: SPA shell returned ${code}, expected 200 (000 = could not reach the API at all)"
+[ "$code" = "200" ] || die "smoke: landing page returned ${code}, expected 200 (000 = could not reach the API at all)"
+code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${api_url}/stig/" || echo 000)"
+[ "$code" = "200" ] || die "smoke: stig SPA shell returned ${code}, expected 200 (000 = could not reach the API at all)"
 code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${api_url}/config" || echo 000)"
 [ "$code" = "200" ] || die "smoke: /config returned ${code}, expected 200 (open route) (000 = could not reach the API at all)"
 code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${api_url}/jobs/00000000-0000-0000-0000-00000000dead" || echo 000)"
 [ "$code" = "401" ] || die "smoke: bare /jobs/{id} returned ${code}, expected 401 (authorizer) (000 = could not reach the API at all)"
-info "smoke: shell 200, config 200, bare data route 401"
+info "smoke: landing 200, stig shell 200, config 200, bare data route 401"
 
 step "${GRN}Deploy complete — ${ENV}${RST}"
 info "API:            $(tf output -raw api_invoke_url 2>/dev/null || echo n/a)"

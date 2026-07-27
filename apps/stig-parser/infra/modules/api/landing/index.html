@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cyber Toolbox</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f6f7f9;
+    --surface: #ffffff;
+    --border: #dfe3e8;
+    --text: #1b1f24;
+    --muted: #57606a;
+    --accent: #0f766e;
+    --accent-bg: #e6f5f3;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12161b;
+      --surface: #1b2027;
+      --border: #2a313a;
+      --text: #e6e9ec;
+      --muted: #a6adb5;
+      --accent: #5eead4;
+      --accent-bg: #17302c;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 2rem 1rem;
+  }
+  main { max-width: 44rem; width: 100%; }
+  h1 { font-size: 1.75rem; margin: 0 0 0.25rem; }
+  .lede { color: var(--muted); margin: 0 0 2rem; }
+  .grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); }
+  .card {
+    display: block;
+    padding: 1.25rem 1.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    text-decoration: none;
+    color: inherit;
+  }
+  a.card:hover, a.card:focus-visible { border-color: var(--accent); outline: none; }
+  .card h2 { margin: 0 0 0.4rem; font-size: 1.1rem; color: var(--accent); }
+  .card p { margin: 0; color: var(--muted); font-size: 0.92rem; line-height: 1.4; }
+  .card .open { display: inline-block; margin-top: 0.75rem; font-size: 0.85rem; font-weight: 600; color: var(--accent); }
+  .card--soon { opacity: 0.7; }
+  .badge {
+    display: inline-block;
+    margin-top: 0.75rem;
+    padding: 0.15rem 0.55rem;
+    border-radius: 1rem;
+    background: var(--accent-bg);
+    color: var(--accent);
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Cyber Toolbox</h1>
+  <p class="lede">Security compliance tools, in one place.</p>
+  <div class="grid">
+    <a class="card" href="./stig/">
+      <h2>STIG Compliance Parser</h2>
+      <p>Parse XCCDF, CKLB, and Nessus scan results into one consolidated compliance workbook.</p>
+      <span class="open">Open &rarr;</span>
+    </a>
+    <div class="card card--soon" aria-disabled="true">
+      <h2>RMF Rev 4 &rarr; 5 Migrator</h2>
+      <p>Convert Rev 4 security policy documents to Rev 5 with AI-assisted control mapping.</p>
+      <span class="badge">Coming soon</span>
+    </div>
+  </div>
+</main>
+</body>
+</html>

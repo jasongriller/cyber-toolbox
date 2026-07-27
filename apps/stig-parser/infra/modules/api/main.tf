@@ -1,12 +1,12 @@
 # REST API Gateway. Spec §4.6.
 #
-# This is a public REGIONAL endpoint. get_config, the SPA {proxy+} GET, and
-# the root GET (the shell at the bare stage URL) are the only open
-# (authorization = "NONE") routes — the SPA shell and its config must be
-# able to load before a user has signed in. Every other route sits behind
-# the COGNITO_USER_POOLS authorizer below and requires a valid Cognito ID
-# token. There is no gateway-wide resource policy; auth decisions live on
-# the individual method resources.
+# This is a public REGIONAL endpoint. get_config, the stig SPA's /stig GET
+# and /stig/{proxy+} GET, and the root GET (the toolbox landing page) are
+# the only open (authorization = "NONE") routes — the SPA shell, its config,
+# and the front door itself must all be able to load before a user has
+# signed in. Every other route sits behind the COGNITO_USER_POOLS authorizer
+# below and requires a valid Cognito ID token. There is no gateway-wide
+# resource policy; auth decisions live on the individual method resources.
 
 data "aws_partition" "current" {}
 data "aws_region" "current" {}
@@ -276,11 +276,79 @@ resource "aws_iam_role_policy" "spa" {
   policy = data.aws_iam_policy_document.spa_read[0].json
 }
 
-resource "aws_api_gateway_resource" "spa_proxy" {
+# /stig — the stig SPA's own shell route now that it has moved off the bare
+# stage URL (which serves the toolbox landing page instead, below). {proxy+}
+# resolves concrete paths only, so /stig needs this dedicated GET the same
+# way the API root did before the move.
+resource "aws_api_gateway_resource" "stig" {
   count = local.serve_spa_from_s3 ? 1 : 0
 
   rest_api_id = aws_api_gateway_rest_api.this.id
   parent_id   = aws_api_gateway_rest_api.this.root_resource_id
+  path_part   = "stig"
+}
+
+resource "aws_api_gateway_method" "stig" {
+  #checkov:skip=CKV_AWS_59:Serves the stig SPA shell at /stig — must load before a user can authenticate; all data routes carry the Cognito authorizer.
+  #checkov:skip=CKV2_AWS_53:A parameterless GET for the SPA shell has no request body to validate.
+  count = local.serve_spa_from_s3 ? 1 : 0
+
+  rest_api_id   = aws_api_gateway_rest_api.this.id
+  resource_id   = aws_api_gateway_resource.stig[0].id
+  http_method   = "GET"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "stig" {
+  count = local.serve_spa_from_s3 ? 1 : 0
+
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.stig[0].id
+  http_method = aws_api_gateway_method.stig[0].http_method
+
+  type                    = "AWS"
+  integration_http_method = "GET"
+  uri                     = "arn:${local.partition}:apigateway:${local.region}:s3:path/${aws_s3_bucket.spa[0].bucket}/index.html"
+  credentials             = aws_iam_role.spa[0].arn
+}
+
+resource "aws_api_gateway_method_response" "stig" {
+  count = local.serve_spa_from_s3 ? 1 : 0
+
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.stig[0].id
+  http_method = aws_api_gateway_method.stig[0].http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Content-Type" = true
+  }
+}
+
+resource "aws_api_gateway_integration_response" "stig" {
+  count = local.serve_spa_from_s3 ? 1 : 0
+
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.stig[0].id
+  http_method = aws_api_gateway_method.stig[0].http_method
+  status_code = aws_api_gateway_method_response.stig[0].status_code
+
+  response_parameters = {
+    "method.response.header.Content-Type" = "integration.response.header.Content-Type"
+  }
+
+  depends_on = [aws_api_gateway_integration.stig]
+}
+
+# Nested under /stig (not the API root) — the stig SPA moved off the bare
+# stage URL, which now serves the toolbox landing page instead. Assets are
+# requested relative to /stig/ (the bundle is built with base: './'), so the
+# proxy has to live under the same parent as the shell above.
+resource "aws_api_gateway_resource" "spa_proxy" {
+  count = local.serve_spa_from_s3 ? 1 : 0
+
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  parent_id   = aws_api_gateway_resource.stig[0].id
   path_part   = "{proxy+}"
 }
 
@@ -344,12 +412,14 @@ resource "aws_api_gateway_integration_response" "spa_proxy" {
   depends_on = [aws_api_gateway_integration.spa_proxy]
 }
 
-# The bare stage URL serves the shell too — the link users get is just the
-# invoke URL. {proxy+} matches concrete paths only, so the root needs its
-# own method; same private-bucket read role, pinned to index.html.
+# The bare stage URL is the toolbox front door — the link users get is just
+# the invoke URL. {proxy+} matches concrete paths only, so the root needs
+# its own method; same private-bucket read role, pinned to the landing
+# page's key (kept alongside the SPA bundle in the same bucket — see
+# deploy.sh's SPA-sync phase, which publishes this exact key).
 resource "aws_api_gateway_method" "spa_root" {
-  #checkov:skip=CKV_AWS_59:Serves the login shell at the bare URL — must load before a user can authenticate; all data routes carry the Cognito authorizer.
-  #checkov:skip=CKV2_AWS_53:A parameterless GET for the shell has no request body to validate.
+  #checkov:skip=CKV_AWS_59:Serves the toolbox landing page at the bare URL — must load before a user has signed in or chosen a tool; all data routes carry the Cognito authorizer.
+  #checkov:skip=CKV2_AWS_53:A parameterless GET for the landing page has no request body to validate.
   count = local.serve_spa_from_s3 ? 1 : 0
 
   rest_api_id   = aws_api_gateway_rest_api.this.id
@@ -367,7 +437,7 @@ resource "aws_api_gateway_integration" "spa_root" {
 
   type                    = "AWS"
   integration_http_method = "GET"
-  uri                     = "arn:${local.partition}:apigateway:${local.region}:s3:path/${aws_s3_bucket.spa[0].bucket}/index.html"
+  uri                     = "arn:${local.partition}:apigateway:${local.region}:s3:path/${aws_s3_bucket.spa[0].bucket}/landing/index.html"
   credentials             = aws_iam_role.spa[0].arn
 }
 
@@ -416,6 +486,11 @@ resource "aws_api_gateway_deployment" "this" {
 
   # Redeploy whenever the routing surface changes. Without this the API keeps
   # serving the previous definition after an apply that looked successful.
+  # The two `.uri` entries matter as much as the `.id` ones: aws_api_gateway_
+  # integration's id is a rest_api_id/resource_id/http_method composite, so a
+  # URI-only change (e.g. repointing spa_root at a different S3 key) would
+  # NOT change its id and would silently fail to trigger a redeploy without
+  # `.uri` captured explicitly here.
   triggers = {
     redeployment = sha1(jsonencode([
       aws_api_gateway_rest_api.this.body,
@@ -425,7 +500,12 @@ resource "aws_api_gateway_deployment" "this" {
       [for k, i in aws_api_gateway_integration.this : i.id],
       local.serve_spa_from_s3 ? aws_api_gateway_integration.spa_proxy[0].id : "",
       local.serve_spa_from_s3 ? aws_api_gateway_integration.spa_root[0].id : "",
+      local.serve_spa_from_s3 ? aws_api_gateway_integration.spa_root[0].uri : "",
       local.serve_spa_from_s3 ? aws_api_gateway_method.spa_root[0].authorization : "",
+      local.serve_spa_from_s3 ? aws_api_gateway_resource.stig[0].id : "",
+      local.serve_spa_from_s3 ? aws_api_gateway_method.stig[0].authorization : "",
+      local.serve_spa_from_s3 ? aws_api_gateway_integration.stig[0].id : "",
+      local.serve_spa_from_s3 ? aws_api_gateway_integration.stig[0].uri : "",
     ]))
   }
 
@@ -437,6 +517,7 @@ resource "aws_api_gateway_deployment" "this" {
     aws_api_gateway_integration.this,
     aws_api_gateway_integration.spa_proxy,
     aws_api_gateway_integration.spa_root,
+    aws_api_gateway_integration.stig,
   ]
 }
 

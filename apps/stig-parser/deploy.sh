@@ -176,6 +176,13 @@ done
 # Read a value out of terraform.tfvars:  tfvar <key>
 tfvar() { sed -n "s/^[[:space:]]*$1[[:space:]]*=[[:space:]]*\"\{0,1\}\([^\"]*\)\"\{0,1\}.*/\1/p" "${ENV_DIR}/terraform.tfvars" | head -1; }
 
+# The env root reads the shared pool from SSM at plan time — the platform
+# root must exist first. Fail here with a pointer, not mid-plan.
+cognito_prefix="$(tfvar cognito_ssm_prefix)"; cognito_prefix="${cognito_prefix:-/toolbox/dev}"
+if ! aws ssm get-parameter --name "${cognito_prefix}/cognito_user_pool_id" >/dev/null 2>&1; then
+  die "shared pool not found at ${cognito_prefix}/* — apply the platform root first (platform/deploy.sh)"
+fi
+
 # ===========================================================================
 # Phase 2 — dependency layer
 # ===========================================================================
@@ -273,10 +280,22 @@ else
   step "Phase 4 · SPA bundle"
   need node; need npm
   api_url="$(tf output -raw api_invoke_url)"
-  info "building frontend (VITE_API_BASE=${api_url})..."
-  ( cd frontend && npm ci --no-audit --no-fund >/dev/null 2>&1 && VITE_API_BASE="$api_url" npm run build >/dev/null )
+  pool_id="$(tf output -raw cognito_user_pool_id)"
+  client_id="$(tf output -raw cognito_client_id)"
+  cognito_endpoint="https://cognito-idp-fips.${AWS_REGION}.amazonaws.com"
+  info "building frontend (VITE_API_BASE=${api_url}, pool ${pool_id})..."
+  ( cd frontend && npm ci --no-audit --no-fund >/dev/null 2>&1 \
+    && VITE_API_BASE="$api_url" \
+       VITE_COGNITO_USER_POOL_ID="$pool_id" \
+       VITE_COGNITO_CLIENT_ID="$client_id" \
+       VITE_AWS_REGION="$AWS_REGION" \
+       VITE_COGNITO_ENDPOINT="$cognito_endpoint" \
+       npm run build >/dev/null )
   [[ -d frontend/dist && -f frontend/dist/index.html ]] || die "frontend build produced no dist/index.html."
   ok "bundle built"
+  if ! grep -rqs "$pool_id" frontend/dist/assets/; then
+    die "built bundle does not contain the Cognito pool id — VITE bake failed; refusing to ship an ungated SPA"
+  fi
   info "syncing dist/ -> s3://${spa_bucket}/ ..."
   aws s3 sync frontend/dist/ "s3://${spa_bucket}/" --delete >/dev/null
   ok "SPA published to ${spa_bucket}"
@@ -286,25 +305,17 @@ fi
 # Phase 5 — smoke test (in-VPC-blind: invoke the Lambda directly)
 # ===========================================================================
 step "Phase 5 · Smoke test"
-# name_prefix is derivable from a guaranteed output (…-uploads).
-uploads="$(tf output -raw uploads_bucket 2>/dev/null || true)"
-if [[ -z "$uploads" ]]; then
-  warn "no uploads_bucket output — skipping smoke test"
-else
-  api_fn="${uploads%-uploads}-api"
-  tmp="$(mktemp -t stig-smoke.XXXXXX)"
-  event='{"httpMethod":"GET","resource":"/config","path":"/config","headers":{},"body":null,"isBase64Encoded":false,"requestContext":{"identity":{}}}'
-  info "invoking ${api_fn} (GET /config)..."
-  if aws lambda invoke --function-name "$api_fn" \
-       --payload "$event" --cli-binary-format raw-in-base64-out \
-       "$tmp" >/dev/null 2>&1 && grep -q '"statusCode": *200' "$tmp"; then
-    ok "API healthy — $(sed -n 's/.*"body": *"\(.*\)".*/\1/p' "$tmp" | head -c 80)"
-  else
-    warn "smoke test did not return 200. Payload:"; sed 's/^/      /' "$tmp" >&2
-    rm -f "$tmp"; die "deploy applied but the API smoke test failed — investigate before trusting this environment."
-  fi
-  rm -f "$tmp"
-fi
+api_url="$(tf output -raw api_invoke_url)"
+# /index.html, not /: the API has no root method (unlike ssg-star) — the SPA
+# {proxy+} route matches concrete paths only. Pre-existing shape, not a flip
+# regression; a clean-link root method is a user decision at the apply gate.
+code="$(curl -s -o /dev/null -w '%{http_code}' "${api_url}/index.html")"
+[ "$code" = "200" ] || die "smoke: SPA shell returned ${code}, expected 200"
+code="$(curl -s -o /dev/null -w '%{http_code}' "${api_url}/config")"
+[ "$code" = "200" ] || die "smoke: /config returned ${code}, expected 200 (open route)"
+code="$(curl -s -o /dev/null -w '%{http_code}' "${api_url}/jobs/00000000-0000-0000-0000-000000000000")"
+[ "$code" = "401" ] || die "smoke: bare /jobs/{id} returned ${code}, expected 401 (authorizer)"
+info "smoke: shell 200, config 200, bare data route 401"
 
 step "${GRN}Deploy complete — ${ENV}${RST}"
 info "API (private):  $(tf output -raw api_invoke_url 2>/dev/null || echo n/a)"

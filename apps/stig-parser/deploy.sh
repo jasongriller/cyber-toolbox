@@ -40,6 +40,13 @@
 
 set -euo pipefail
 
+# Git Bash (MSYS) rewrites leading-slash args into Windows paths before native
+# exes see them — an SSM name like /cyber-toolbox/... reaches aws.exe as
+# C:/Program Files/Git/... and "does not exist". Disable the conversion for
+# this script; WSL/Linux ignore these variables entirely.
+export MSYS_NO_PATHCONV=1
+export MSYS2_ARG_CONV_EXCL='*'
+
 # --- pretty logging --------------------------------------------------------
 if [[ -t 1 ]]; then
   BOLD=$'\033[1m'; DIM=$'\033[2m'; RED=$'\033[31m'; GRN=$'\033[32m'

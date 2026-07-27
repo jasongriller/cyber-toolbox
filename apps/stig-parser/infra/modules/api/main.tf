@@ -343,6 +343,61 @@ resource "aws_api_gateway_integration_response" "spa_proxy" {
   depends_on = [aws_api_gateway_integration.spa_proxy]
 }
 
+# The bare stage URL serves the shell too — the link users get is just the
+# invoke URL. {proxy+} matches concrete paths only, so the root needs its
+# own method; same private-bucket read role, pinned to index.html.
+resource "aws_api_gateway_method" "spa_root" {
+  #checkov:skip=CKV_AWS_59:Serves the login shell at the bare URL — must load before a user can authenticate; all data routes carry the Cognito authorizer.
+  #checkov:skip=CKV2_AWS_53:A parameterless GET for the shell has no request body to validate.
+  count = local.serve_spa_from_s3 ? 1 : 0
+
+  rest_api_id   = aws_api_gateway_rest_api.this.id
+  resource_id   = aws_api_gateway_rest_api.this.root_resource_id
+  http_method   = "GET"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "spa_root" {
+  count = local.serve_spa_from_s3 ? 1 : 0
+
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_rest_api.this.root_resource_id
+  http_method = aws_api_gateway_method.spa_root[0].http_method
+
+  type                    = "AWS"
+  integration_http_method = "GET"
+  uri                     = "arn:${local.partition}:apigateway:${local.region}:s3:path/${aws_s3_bucket.spa[0].bucket}/index.html"
+  credentials             = aws_iam_role.spa[0].arn
+}
+
+resource "aws_api_gateway_method_response" "spa_root" {
+  count = local.serve_spa_from_s3 ? 1 : 0
+
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_rest_api.this.root_resource_id
+  http_method = aws_api_gateway_method.spa_root[0].http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Content-Type" = true
+  }
+}
+
+resource "aws_api_gateway_integration_response" "spa_root" {
+  count = local.serve_spa_from_s3 ? 1 : 0
+
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_rest_api.this.root_resource_id
+  http_method = aws_api_gateway_method.spa_root[0].http_method
+  status_code = aws_api_gateway_method_response.spa_root[0].status_code
+
+  response_parameters = {
+    "method.response.header.Content-Type" = "integration.response.header.Content-Type"
+  }
+
+  depends_on = [aws_api_gateway_integration.spa_root]
+}
+
 # ---------------------------------------------------------------------------
 # Deployment + stage
 # ---------------------------------------------------------------------------
@@ -368,6 +423,8 @@ resource "aws_api_gateway_deployment" "this" {
       aws_api_gateway_authorizer.cognito.id,
       [for k, i in aws_api_gateway_integration.this : i.id],
       local.serve_spa_from_s3 ? aws_api_gateway_integration.spa_proxy[0].id : "",
+      local.serve_spa_from_s3 ? aws_api_gateway_integration.spa_root[0].id : "",
+      local.serve_spa_from_s3 ? aws_api_gateway_method.spa_root[0].authorization : "",
     ]))
   }
 
@@ -378,6 +435,7 @@ resource "aws_api_gateway_deployment" "this" {
   depends_on = [
     aws_api_gateway_integration.this,
     aws_api_gateway_integration.spa_proxy,
+    aws_api_gateway_integration.spa_root,
   ]
 }
 

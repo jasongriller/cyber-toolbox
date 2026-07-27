@@ -310,7 +310,7 @@ api_url="$(tf output -raw api_invoke_url)"
 # /index.html, not /: the API has no root method (unlike ssg-star) — the SPA
 # {proxy+} route matches concrete paths only. Pre-existing shape, not a flip
 # regression; a clean-link root method is a user decision at the apply gate.
-code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${api_url}/index.html" || echo 000)"
+code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${api_url}/" || echo 000)"
 [ "$code" = "200" ] || die "smoke: SPA shell returned ${code}, expected 200 (000 = could not reach the API at all)"
 code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${api_url}/config" || echo 000)"
 [ "$code" = "200" ] || die "smoke: /config returned ${code}, expected 200 (open route) (000 = could not reach the API at all)"

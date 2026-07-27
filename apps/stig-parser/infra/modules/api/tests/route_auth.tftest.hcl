@@ -134,4 +134,14 @@ run "route_auth_matches_the_security_boundary" {
     condition     = aws_api_gateway_method.spa_proxy[0].authorization == "NONE"
     error_message = "The SPA shell route must stay open (NONE): the route auth split is the flip's security boundary, and the login shell itself has to load before a user can authenticate at all."
   }
+
+  assert {
+    condition     = aws_api_gateway_method.spa_root[0].authorization == "NONE"
+    error_message = "The bare stage URL's shell route must stay open (NONE): the route auth split is the flip's security boundary, and the root method serves the same login shell that has to load before a user can authenticate at all."
+  }
+
+  assert {
+    condition     = endswith(aws_api_gateway_integration.spa_root[0].uri, "/index.html")
+    error_message = "The root integration must proxy to index.html: the bare stage URL exists so users get a clean link, and it must resolve to the SPA shell object, not some other path in the bucket."
+  }
 }

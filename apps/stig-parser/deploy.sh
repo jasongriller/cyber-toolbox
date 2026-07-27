@@ -293,6 +293,7 @@ else
        npm run build >/dev/null )
   [[ -d frontend/dist && -f frontend/dist/index.html ]] || die "frontend build produced no dist/index.html."
   ok "bundle built"
+  [ -n "$pool_id" ] || die "cognito_user_pool_id output is empty — cannot verify the bundle bake"
   if ! grep -rqs "$pool_id" frontend/dist/assets/; then
     die "built bundle does not contain the Cognito pool id — VITE bake failed; refusing to ship an ungated SPA"
   fi
@@ -302,19 +303,19 @@ else
 fi
 
 # ===========================================================================
-# Phase 5 — smoke test (in-VPC-blind: invoke the Lambda directly)
+# Phase 5 — smoke test (public API: SPA shell, open config route, authorizer 401)
 # ===========================================================================
 step "Phase 5 · Smoke test"
 api_url="$(tf output -raw api_invoke_url)"
 # /index.html, not /: the API has no root method (unlike ssg-star) — the SPA
 # {proxy+} route matches concrete paths only. Pre-existing shape, not a flip
 # regression; a clean-link root method is a user decision at the apply gate.
-code="$(curl -s -o /dev/null -w '%{http_code}' "${api_url}/index.html")"
-[ "$code" = "200" ] || die "smoke: SPA shell returned ${code}, expected 200"
-code="$(curl -s -o /dev/null -w '%{http_code}' "${api_url}/config")"
-[ "$code" = "200" ] || die "smoke: /config returned ${code}, expected 200 (open route)"
-code="$(curl -s -o /dev/null -w '%{http_code}' "${api_url}/jobs/00000000-0000-0000-0000-000000000000")"
-[ "$code" = "401" ] || die "smoke: bare /jobs/{id} returned ${code}, expected 401 (authorizer)"
+code="$(curl -s -o /dev/null -w '%{http_code}' "${api_url}/index.html" || echo 000)"
+[ "$code" = "200" ] || die "smoke: SPA shell returned ${code}, expected 200 (000 = could not reach the API at all)"
+code="$(curl -s -o /dev/null -w '%{http_code}' "${api_url}/config" || echo 000)"
+[ "$code" = "200" ] || die "smoke: /config returned ${code}, expected 200 (open route) (000 = could not reach the API at all)"
+code="$(curl -s -o /dev/null -w '%{http_code}' "${api_url}/jobs/00000000-0000-0000-0000-000000000000" || echo 000)"
+[ "$code" = "401" ] || die "smoke: bare /jobs/{id} returned ${code}, expected 401 (authorizer) (000 = could not reach the API at all)"
 info "smoke: shell 200, config 200, bare data route 401"
 
 step "${GRN}Deploy complete — ${ENV}${RST}"

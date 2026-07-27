@@ -30,14 +30,14 @@ override_data {
 }
 
 variables {
-  name_prefix              = "stig-condenser-test"
-  uploads_bucket_arn       = "arn:aws-us-gov:s3:::test-uploads"
-  artifacts_bucket_arn     = "arn:aws-us-gov:s3:::test-artifacts"
-  job_table_arn            = "arn:aws-us-gov:dynamodb:us-gov-west-1:aws:table/test-jobs"
-  kms_key_arn              = "arn:aws-us-gov:kms:us-gov-west-1:aws:key/test"
-  state_machine_arn        = "arn:aws-us-gov:states:us-gov-west-1:aws:stateMachine:test"
-  bedrock_region           = "us-gov-west-1"
-  ai_killswitch_param_arn  = ""
+  name_prefix             = "stig-condenser-test"
+  uploads_bucket_arn      = "arn:aws-us-gov:s3:::test-uploads"
+  artifacts_bucket_arn    = "arn:aws-us-gov:s3:::test-artifacts"
+  job_table_arn           = "arn:aws-us-gov:dynamodb:us-gov-west-1:aws:table/test-jobs"
+  kms_key_arn             = "arn:aws-us-gov:kms:us-gov-west-1:aws:key/test"
+  state_machine_arn       = "arn:aws-us-gov:states:us-gov-west-1:aws:stateMachine:test"
+  bedrock_region          = "us-gov-west-1"
+  ai_killswitch_param_arn = ""
 }
 
 run "presign_policies_scope_to_expected_actions_and_resources" {

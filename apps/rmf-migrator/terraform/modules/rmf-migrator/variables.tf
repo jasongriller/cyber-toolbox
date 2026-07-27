@@ -18,7 +18,7 @@ variable "tags" {
 # ---- Network -----------------------------------------------------------------
 
 variable "network_mode" {
-  description = "\"private\" (default) runs Lambdas in the supplied VPC and requires AWS_IAM authentication on every API route. \"public\" exposes an unauthenticated API for demos/dev. GovCloud production should stay \"private\"."
+  description = "\"private\" (default) runs Lambdas in the supplied VPC. \"public\" runs them without one. Route authorization is a separate axis — see auth_mode — but auth_mode's default derives from this value for backward compatibility: private -> AWS_IAM, public -> unauthenticated. GovCloud production should stay \"private\"."
   type        = string
   default     = "private"
 
@@ -50,6 +50,31 @@ variable "frame_ancestors" {
 # /rmf-migrator/) is a frontend build-time setting — set VITE_BASE_PATH when
 # building the bundle. It is deliberately not a Terraform variable, because this
 # module does not serve the SPA.
+
+# ---- Auth ----------------------------------------------------------------------
+
+variable "auth_mode" {
+  description = "API authorization mechanism: \"iam\" requires AWS_IAM (SigV4) on every route, \"none\" leaves every route unauthenticated, \"cognito\" puts a JWT authorizer backed by a Cognito user pool on every route. Defaults to null, which derives the value implied by network_mode before this variable existed, so existing callers that set only network_mode keep planning identically: network_mode = \"private\" -> \"iam\", network_mode = \"public\" -> \"none\". Set auth_mode = \"cognito\" explicitly (typically alongside network_mode = \"public\") to require a logged-in Cognito user on a VPC-free deployment instead of leaving it open."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.auth_mode == null || contains(["iam", "none", "cognito"], var.auth_mode)
+    error_message = "auth_mode must be \"iam\", \"none\", or \"cognito\"."
+  }
+}
+
+variable "cognito_user_pool_id" {
+  description = "Cognito user pool ID the JWT authorizer trusts. Required when auth_mode is cognito; supplied by the env root from SSM."
+  type        = string
+  default     = ""
+}
+
+variable "cognito_client_id" {
+  description = "Cognito app client ID accepted as the JWT audience. Required when auth_mode is cognito; supplied by the env root from SSM."
+  type        = string
+  default     = ""
+}
 
 # ---- Encryption --------------------------------------------------------------
 

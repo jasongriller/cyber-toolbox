@@ -19,6 +19,12 @@ locals {
 
   is_private = var.network_mode == "private"
 
+  # auth_mode = null (the default) reproduces the coupling that existed before
+  # this variable was introduced, so callers that set only network_mode keep
+  # planning identically: private -> iam, public -> none. An explicit
+  # auth_mode overrides that derivation, e.g. "cognito" on a public deployment.
+  auth_mode = coalesce(var.auth_mode, local.is_private ? "iam" : "none")
+
   # When the module creates its own key, use that; otherwise the caller's.
   kms_key_arn = var.kms_key_arn != null ? var.kms_key_arn : aws_kms_key.this[0].arn
 
@@ -55,6 +61,16 @@ resource "terraform_data" "validate_private_network" {
         length(var.frame_ancestors) > 0
       )
       error_message = "network_mode = \"private\" requires vpc_id, at least one private_subnet_id, and at least one trusted browser origin in frame_ancestors."
+    }
+  }
+}
+
+# Cognito mode needs a user pool and app client to build the JWT authorizer against.
+resource "terraform_data" "validate_cognito_auth" {
+  lifecycle {
+    precondition {
+      condition     = local.auth_mode != "cognito" || (var.cognito_user_pool_id != "" && var.cognito_client_id != "")
+      error_message = "auth_mode = \"cognito\" requires both cognito_user_pool_id and cognito_client_id (non-empty); the env root supplies these from SSM."
     }
   }
 }

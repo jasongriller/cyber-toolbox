@@ -6,6 +6,11 @@
 # endpoint type, so its AWS edge hostname still resolves publicly; unauthenticated
 # requests are rejected. Put an internal signing proxy in front when the browser
 # must not call the AWS hostname directly.
+#
+# Route authorization is governed by auth_mode, independently of network_mode:
+# "iam" requires SigV4, "cognito" requires a valid Cognito-issued JWT (the
+# posture for a public, VPC-free deployment that still must not be anonymous),
+# and "none" leaves every route open (dev/demo only, never for CUI).
 
 locals {
   routes = {
@@ -77,18 +82,47 @@ resource "aws_apigatewayv2_integration" "api" {
   payload_format_version = "2.0"
 }
 
+# JWT authorizer for auth_mode = "cognito": a public (VPC-free) deployment that
+# still must not be anonymous. Created only in that posture.
+resource "aws_apigatewayv2_authorizer" "cognito" {
+  count = local.auth_mode == "cognito" ? 1 : 0
+
+  api_id           = aws_apigatewayv2_api.this.id
+  name             = "${local.name}-cognito"
+  authorizer_type  = "JWT"
+  identity_sources = ["$request.header.Authorization"]
+
+  jwt_configuration {
+    audience = [var.cognito_client_id]
+    # MUST be the non-FIPS hostname (cognito-idp., never cognito-idp-fips.).
+    # Cognito always stamps the non-FIPS host into a token's `iss` claim, no
+    # matter which hostname issued the token — including this deployment's own
+    # SDK login calls, which use the FIPS hostname (cognito-idp-fips.). If this
+    # issuer used the FIPS host instead, it would never match a real token's
+    # iss, and the authorizer would silently 401 every login: nothing short of
+    # an actual human sign-in attempt surfaces it, since forged-token or
+    # API-Gateway-console checks don't exercise a real Cognito-issued iss claim.
+    issuer = "https://cognito-idp.${local.region}.amazonaws.com/${var.cognito_user_pool_id}"
+  }
+}
+
 resource "aws_apigatewayv2_route" "this" {
   for_each = local.routes
 
-  # checkov:skip=CKV_AWS_309: The production/default branch is AWS_IAM. NONE is
-  # retained only for the explicitly selected public dev/demo mode, which the
-  # module and deployment guide prohibit for CUI.
-  # Private mode requires SigV4 on every route. Public mode is an explicit
-  # unauthenticated dev/demo posture and must never carry CUI.
-  api_id             = aws_apigatewayv2_api.this.id
-  route_key          = each.key
-  target             = "integrations/${aws_apigatewayv2_integration.api[each.value].id}"
-  authorization_type = local.is_private ? "AWS_IAM" : "NONE"
+  # checkov:skip=CKV_AWS_309: AWS_IAM and JWT (Cognito) both require an
+  # authenticated caller on every route. NONE is retained only for the
+  # explicitly selected public dev/demo mode, which the module and deployment
+  # guide prohibit for CUI.
+  # Private mode requires SigV4 on every route (auth_mode "iam"). Public mode
+  # defaults to an unauthenticated dev/demo posture (auth_mode "none") but can
+  # instead require Cognito login (auth_mode "cognito") without adding a VPC.
+  api_id    = aws_apigatewayv2_api.this.id
+  route_key = each.key
+  target    = "integrations/${aws_apigatewayv2_integration.api[each.value].id}"
+  authorization_type = (
+    local.auth_mode == "iam" ? "AWS_IAM" : (local.auth_mode == "cognito" ? "JWT" : "NONE")
+  )
+  authorizer_id = local.auth_mode == "cognito" ? aws_apigatewayv2_authorizer.cognito[0].id : null
 }
 
 resource "aws_cloudwatch_log_group" "apigw" {

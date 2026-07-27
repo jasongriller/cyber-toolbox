@@ -126,9 +126,9 @@ describe('Login', () => {
 
     const link = screen.getByRole('link');
     const href = link.getAttribute('href') ?? '';
-    expect(href).toMatch(/^otpauth:\/\/totp\/toolbox:/);
+    expect(href).toMatch(/^otpauth:\/\/totp\/cyber-toolbox:/);
     expect(href).toContain('secret=JBSWY3DPEHPK3PXP');
-    expect(href).toContain('issuer=toolbox');
+    expect(href).toContain('issuer=cyber-toolbox');
 
     expect(screen.getByLabelText(/6-digit/i)).toBeInTheDocument();
   });

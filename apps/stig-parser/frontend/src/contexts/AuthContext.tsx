@@ -165,7 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         onFailure: (err: Error) => reject(err),
       };
       if (mfaStage === 'setup') {
-        pendingUser.verifySoftwareToken(code, 'toolbox', done);
+        pendingUser.verifySoftwareToken(code, 'cyber-toolbox', done);
       } else {
         pendingUser.sendMFACode(code, done, 'SOFTWARE_TOKEN_MFA');
       }

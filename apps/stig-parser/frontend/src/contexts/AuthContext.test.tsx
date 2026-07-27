@@ -270,7 +270,7 @@ describe('AuthContext', () => {
       const user = mocks.createdUsers[0];
       expect(user.verifySoftwareToken).toHaveBeenCalledWith(
         '654321',
-        'toolbox',
+        'cyber-toolbox',
         expect.anything(),
       );
       expect(result.current.email).toBe('user@example.mil');

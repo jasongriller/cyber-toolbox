@@ -65,7 +65,7 @@ export default function Login() {
   const allMet = reqs.every((r) => r.met);
 
   const otpauthUri =
-    `otpauth://totp/toolbox:${encodeURIComponent(email)}?secret=${mfaSecret ?? ''}&issuer=toolbox`;
+    `otpauth://totp/cyber-toolbox:${encodeURIComponent(email)}?secret=${mfaSecret ?? ''}&issuer=cyber-toolbox`;
 
   const onLogin = async (e: FormEvent) => {
     e.preventDefault();

@@ -1,10 +1,11 @@
 # REST API Gateway. Spec §4.6.
 #
-# This is a public REGIONAL endpoint. get_config and the SPA proxy route are
-# the only open (authorization = "NONE") routes — the SPA shell and its config
-# must be able to load before a user has signed in. Every other route sits
-# behind the COGNITO_USER_POOLS authorizer below and requires a valid Cognito
-# ID token. There is no gateway-wide resource policy; auth decisions live on
+# This is a public REGIONAL endpoint. get_config, the SPA {proxy+} GET, and
+# the root GET (the shell at the bare stage URL) are the only open
+# (authorization = "NONE") routes — the SPA shell and its config must be
+# able to load before a user has signed in. Every other route sits behind
+# the COGNITO_USER_POOLS authorizer below and requires a valid Cognito ID
+# token. There is no gateway-wide resource policy; auth decisions live on
 # the individual method resources.
 
 data "aws_partition" "current" {}

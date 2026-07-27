@@ -352,6 +352,10 @@ jobs:
         run: |
           terraform init -backend=false
           terraform validate
+      - name: Test module contracts
+        run: |
+          terraform -chdir=apps/rmf-migrator/terraform/modules/rmf-migrator init -backend=false
+          terraform -chdir=apps/rmf-migrator/terraform/modules/rmf-migrator test
       - name: tflint
         uses: terraform-linters/setup-tflint@v6
       - run: tflint --recursive

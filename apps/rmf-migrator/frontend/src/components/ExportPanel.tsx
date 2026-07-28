@@ -12,9 +12,11 @@ interface Props {
   client: ApiClient;
   projectId: string;
   documentId: string;
+  /** The closing move once the export exists — back to the project browser. */
+  onDone?: () => void;
 }
 
-export default function ExportPanel({ client, projectId, documentId }: Props) {
+export default function ExportPanel({ client, projectId, documentId, onDone }: Props) {
   const [status, setStatus] = useState<DocumentStatus | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -107,6 +109,12 @@ export default function ExportPanel({ client, projectId, documentId }: Props) {
         <p className="banner banner--info" style={{ marginTop: "1rem", marginBottom: 0 }}>
           Approve the control mapping and every draft before exporting.
         </p>
+      )}
+
+      {exported && onDone && (
+        <button className="btn" style={{ marginTop: "1rem" }} onClick={onDone}>
+          Done — back to projects
+        </button>
       )}
     </section>
   );

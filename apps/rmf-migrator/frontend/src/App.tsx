@@ -125,7 +125,12 @@ export default function App() {
             />
           )}
           {view.kind === "export" && (
-            <ExportPanel client={client} projectId={view.projectId} documentId={view.documentId} />
+            <ExportPanel
+              client={client}
+              projectId={view.projectId}
+              documentId={view.documentId}
+              onDone={() => setView({ kind: "browse" })}
+            />
           )}
         </>
       )}

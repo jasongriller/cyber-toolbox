@@ -91,20 +91,20 @@ async function openTheDocument() {
   await screen.findByRole("navigation", { name: /conversion steps/i });
 }
 
-describe("App coverage navigation", () => {
-  beforeEach(() => {
-    localStorage.clear();
-    // jsdom has no matchMedia; useTheme reads `.matches` from it once on mount.
-    window.matchMedia = vi
-      .fn()
-      .mockReturnValue({ matches: false } as unknown as MediaQueryList);
-    stubs.listProjects.mockResolvedValue({ projects: [PROJECT] });
-    stubs.listDocuments.mockResolvedValue({ documents: [DOCUMENT] });
-    stubs.listSections.mockResolvedValue({ sections: [SECTION] });
-    stubs.getMappings.mockResolvedValue({ document_status: "mapped", mappings: [MAPPING] });
-    stubs.getCoverage.mockResolvedValue(COVERAGE);
-  });
+beforeEach(() => {
+  localStorage.clear();
+  // jsdom has no matchMedia; useTheme reads `.matches` from it once on mount.
+  window.matchMedia = vi
+    .fn()
+    .mockReturnValue({ matches: false } as unknown as MediaQueryList);
+  stubs.listProjects.mockResolvedValue({ projects: [PROJECT] });
+  stubs.listDocuments.mockResolvedValue({ documents: [DOCUMENT] });
+  stubs.listSections.mockResolvedValue({ sections: [SECTION] });
+  stubs.getMappings.mockResolvedValue({ document_status: "mapped", mappings: [MAPPING] });
+  stubs.getCoverage.mockResolvedValue(COVERAGE);
+});
 
+describe("App coverage navigation", () => {
   it("keeps the document stepper when coverage is opened from it", async () => {
     await openTheDocument();
 
@@ -133,5 +133,22 @@ describe("App coverage navigation", () => {
     expect(
       screen.queryByRole("navigation", { name: /conversion steps/i }),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe("App project memory", () => {
+  it("returns to the browser with the project still selected", async () => {
+    await openTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /all projects/i }));
+
+    // Not the cold "Select a project…" state: the project's documents render
+    // and its row is marked as the current selection.
+    expect(await screen.findByText("policy.docx")).toBeInTheDocument();
+    expect(screen.queryByText(/select a project to see/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /alpha/i })).toHaveAttribute(
+      "aria-current",
+      "true",
+    );
   });
 });

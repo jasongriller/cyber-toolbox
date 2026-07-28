@@ -30,12 +30,19 @@ const STEPS = [
 
 export default function App() {
   const [view, setView] = useState<View>({ kind: "browse" });
+  // Which project the operator was last inside — "← All projects" lands back
+  // on it instead of the cold no-selection state.
+  const [lastProjectId, setLastProjectId] = useState<string | null>(null);
   const [theme, toggleTheme] = useTheme();
 
-  const openDocument = (projectId: string, documentId: string) =>
+  const openDocument = (projectId: string, documentId: string) => {
+    setLastProjectId(projectId);
     setView({ kind: "mapping", projectId, documentId });
-  const openCoverage = (projectId: string, documentId?: string) =>
+  };
+  const openCoverage = (projectId: string, documentId?: string) => {
+    setLastProjectId(projectId);
     setView({ kind: "coverage", projectId, documentId });
+  };
 
   const inDocument = view.kind === "mapping" || view.kind === "drafting" || view.kind === "export";
   // The stepper renders whenever a document is in scope — including on the
@@ -87,6 +94,7 @@ export default function App() {
       {view.kind === "browse" && (
         <ProjectBrowser
           client={client}
+          initialProjectId={lastProjectId ?? undefined}
           onOpenDocument={openDocument}
           onOpenCoverage={openCoverage}
         />

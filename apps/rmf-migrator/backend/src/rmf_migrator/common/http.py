@@ -9,6 +9,7 @@ deployments with no authorizer in front of them.
 
 from __future__ import annotations
 
+import base64
 import json
 from typing import Any
 
@@ -40,6 +41,14 @@ def parse_body(event: dict[str, Any]) -> dict[str, Any]:
     raw = event.get("body")
     if not raw:
         return {}
+    # A gateway in front of this API may deliver the body base64-encoded with
+    # isBase64Encoded set (the toolbox front door's REST API does this for all
+    # bodies because its S3-serving mode needs binary_media_types = ["*/*"]).
+    if event.get("isBase64Encoded"):
+        try:
+            raw = base64.b64decode(raw).decode("utf-8")
+        except (ValueError, UnicodeDecodeError) as exc:
+            raise HttpError(400, "request body is not valid JSON") from exc
     try:
         parsed = json.loads(raw)
     except (json.JSONDecodeError, TypeError) as exc:

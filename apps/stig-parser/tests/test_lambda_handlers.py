@@ -6,6 +6,7 @@ Step Functions' Catch fires rather than the job silently reporting success),
 and that the API handler enforces the upload allow-list and the AI gate.
 """
 
+import base64
 import json
 
 import boto3
@@ -153,6 +154,35 @@ class TestApiUploads:
         resp = api.handler(
             {"httpMethod": "POST", "resource": "/uploads", "body": "{}"}, None
         )
+        assert resp["statusCode"] == 400
+
+    def test_accepts_base64_encoded_body(self, aws, jobs):
+        # The live REST API sets binary_media_types = ["*/*"] (required to
+        # serve the SPA from S3), so EVERY real request body arrives base64-
+        # encoded with isBase64Encoded=true. This mirrors that exact event
+        # shape; a plain json.loads on it broke every POST in production.
+        event = {
+            "httpMethod": "POST",
+            "resource": "/uploads",
+            "body": base64.b64encode(
+                json.dumps({"filenames": ["scan.xml"]}).encode()
+            ).decode(),
+            "isBase64Encoded": True,
+        }
+        resp = api.handler(event, None)
+        body = json.loads(resp["body"])
+
+        assert resp["statusCode"] == 201
+        assert [u["filename"] for u in body["uploads"]] == ["scan.xml"]
+
+    def test_rejects_undecodable_base64_body(self, aws):
+        event = {
+            "httpMethod": "POST",
+            "resource": "/uploads",
+            "body": "not-valid-base64!!!",
+            "isBase64Encoded": True,
+        }
+        resp = api.handler(event, None)
         assert resp["statusCode"] == 400
 
     def test_records_identity_header_when_configured(self, aws, jobs, monkeypatch):

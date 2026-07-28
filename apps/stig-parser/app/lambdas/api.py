@@ -25,6 +25,7 @@ boundary on its own and must be injected by a trusted upstream identity layer.
 
 from __future__ import annotations
 
+import base64
 import json
 import logging
 import os
@@ -126,6 +127,14 @@ def _owns(record: dict, event: dict) -> bool:
 
 def _body(event: dict) -> dict:
     raw = event.get("body") or "{}"
+    # The REST API serves the SPA bundle from S3, which requires
+    # binary_media_types = ["*/*"] — and that setting makes API Gateway
+    # base64-encode EVERY request body it hands this function, JSON included.
+    if event.get("isBase64Encoded"):
+        try:
+            raw = base64.b64decode(raw).decode("utf-8")
+        except (ValueError, UnicodeDecodeError):
+            return {}
     try:
         parsed = json.loads(raw)
     except json.JSONDecodeError:

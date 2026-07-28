@@ -3,11 +3,20 @@
 Order under test: JWT claims (HTTP API JWT/Cognito authorizer) > SigV4 IAM
 principal > the legacy trusted-proxy header > "anonymous". The header is
 client-supplied and must never win over a cryptographically verified source.
+
+Also covers parse_body's base64 handling: a gateway can deliver the body
+base64-encoded with isBase64Encoded set (the toolbox front door does, because
+its S3-serving mode forces binary_media_types = ["*/*"]).
 """
 
 from __future__ import annotations
 
-from rmf_migrator.common.http import resolve_identity
+import base64
+import json
+
+import pytest
+
+from rmf_migrator.common.http import HttpError, parse_body, resolve_identity
 
 
 def _event(*, claims=None, iam=None, headers=None):
@@ -115,3 +124,27 @@ def test_missing_headers_key_does_not_raise():
 def test_completely_empty_event_does_not_raise():
     assert resolve_identity({}, "X-Remote-User") == "anonymous"
     assert resolve_identity({}, None) == "anonymous"
+
+
+def test_parse_body_plain_json():
+    event = {"body": json.dumps({"name": "Sys"})}
+    assert parse_body(event) == {"name": "Sys"}
+
+
+def test_parse_body_decodes_base64_when_flagged():
+    event = {
+        "body": base64.b64encode(json.dumps({"name": "Sys"}).encode()).decode(),
+        "isBase64Encoded": True,
+    }
+    assert parse_body(event) == {"name": "Sys"}
+
+
+def test_parse_body_rejects_undecodable_base64():
+    event = {"body": "not-valid-base64!!!", "isBase64Encoded": True}
+    with pytest.raises(HttpError) as exc:
+        parse_body(event)
+    assert exc.value.status == 400
+
+
+def test_parse_body_base64_flag_with_empty_body_is_fine():
+    assert parse_body({"body": "", "isBase64Encoded": True}) == {}

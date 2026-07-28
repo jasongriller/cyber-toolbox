@@ -159,8 +159,10 @@ describe('App focus management (WCAG 2.4.3)', () => {
     );
     await waitFor(() => expect(ready).toHaveFocus());
 
-    // And back again on reset.
+    // And back again on reset — through the download guard, since this report
+    // was never downloaded.
     await userEvent.click(screen.getByRole('button', { name: /process another set/i }));
+    await userEvent.click(screen.getByRole('button', { name: /discard & start new/i }));
     const upload = await screen.findByRole('heading', { name: /upload scan files/i });
     await waitFor(() => expect(upload).toHaveFocus());
   });

@@ -120,6 +120,32 @@ test('cancel returns to the upload form', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Process' })).toBeVisible();
 });
 
+test('a report that was never downloaded asks before being discarded', async ({ page }) => {
+  await mockApi(page, { statuses: ['complete'] });
+  await page.goto('/');
+
+  await page.getByLabel('Scan Results files').setInputFiles({
+    name: 'scan.xml',
+    mimeType: 'text/xml',
+    buffer: Buffer.from('<xml/>'),
+  });
+  await page.getByRole('button', { name: 'Process' }).click();
+  await expect(page.getByRole('status')).toContainText('Report Ready', { timeout: 15_000 });
+
+  // First click asks instead of discarding.
+  await page.getByRole('button', { name: /process another set/i }).click();
+  await expect(page.getByText(/haven't downloaded/i)).toBeVisible();
+
+  // Keep: the card stays intact.
+  await page.getByRole('button', { name: /keep report/i }).click();
+  await expect(page.getByRole('status')).toContainText('Report Ready');
+
+  // Discard: through to a fresh upload form.
+  await page.getByRole('button', { name: /process another set/i }).click();
+  await page.getByRole('button', { name: /discard & start new/i }).click();
+  await expect(page.getByRole('button', { name: 'Process' })).toBeVisible();
+});
+
 test('the toolbox bar links home and to the sibling tool', async ({ page }) => {
   await mockApi(page, { statuses: ['running'] });
   await page.goto('/');

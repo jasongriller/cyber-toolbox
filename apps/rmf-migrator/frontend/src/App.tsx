@@ -17,7 +17,10 @@ const client = new ApiClient();
 type View =
   | { kind: "browse" }
   | { kind: "mapping" | "drafting" | "export"; projectId: string; documentId: string }
-  | { kind: "coverage"; projectId: string };
+  // documentId travels along when coverage is opened from a document's stepper,
+  // so the stepper (and the way back to that document) survives the hop. Opened
+  // from the project browser there is no document and no stepper.
+  | { kind: "coverage"; projectId: string; documentId?: string };
 
 const STEPS = [
   { kind: "mapping", label: "Mapping review" },
@@ -31,9 +34,17 @@ export default function App() {
 
   const openDocument = (projectId: string, documentId: string) =>
     setView({ kind: "mapping", projectId, documentId });
-  const openCoverage = (projectId: string) => setView({ kind: "coverage", projectId });
+  const openCoverage = (projectId: string, documentId?: string) =>
+    setView({ kind: "coverage", projectId, documentId });
 
   const inDocument = view.kind === "mapping" || view.kind === "drafting" || view.kind === "export";
+  // The stepper renders whenever a document is in scope — including on the
+  // coverage view, if that's where the operator came from.
+  const docCtx = inDocument
+    ? { projectId: view.projectId, documentId: view.documentId }
+    : view.kind === "coverage" && view.documentId
+      ? { projectId: view.projectId, documentId: view.documentId }
+      : null;
 
   return (
     <main className="app">
@@ -81,29 +92,34 @@ export default function App() {
         />
       )}
 
+      {docCtx && (
+        <nav className="stepper" aria-label="Conversion steps">
+          {STEPS.map((step, i) => (
+            <button
+              key={step.kind}
+              className="step"
+              aria-current={view.kind === step.kind}
+              onClick={() => setView({ kind: step.kind, ...docCtx })}
+              disabled={view.kind === step.kind}
+            >
+              <span className="step-idx">{i + 1}</span>
+              {step.label}
+            </button>
+          ))}
+          <button
+            className="step"
+            aria-current={view.kind === "coverage"}
+            onClick={() => openCoverage(docCtx.projectId, docCtx.documentId)}
+            disabled={view.kind === "coverage"}
+          >
+            <span className="step-idx">4</span>
+            Coverage
+          </button>
+        </nav>
+      )}
+
       {inDocument && (
         <>
-          <nav className="stepper" aria-label="Conversion steps">
-            {STEPS.map((step, i) => (
-              <button
-                key={step.kind}
-                className="step"
-                aria-current={view.kind === step.kind}
-                onClick={() =>
-                  setView({ kind: step.kind, projectId: view.projectId, documentId: view.documentId })
-                }
-                disabled={view.kind === step.kind}
-              >
-                <span className="step-idx">{i + 1}</span>
-                {step.label}
-              </button>
-            ))}
-            <button className="step" onClick={() => openCoverage(view.projectId)}>
-              <span className="step-idx">4</span>
-              Coverage
-            </button>
-          </nav>
-
           {view.kind === "mapping" && (
             <MappingReview
               client={client}

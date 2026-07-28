@@ -109,6 +109,13 @@ export default function App() {
         <div className="result-card error" role="alert">
           <h2>Unavailable</h2>
           <p>{configError}</p>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => window.location.reload()}
+          >
+            Reload
+          </button>
         </div>
       </div>
     );

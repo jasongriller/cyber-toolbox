@@ -365,7 +365,9 @@ else
   client_id="$(tf output -raw cognito_client_id)"
   cognito_endpoint="https://cognito-idp-fips.${AWS_REGION}.amazonaws.com"
   info "building frontend (VITE_API_BASE=${api_url}, pool ${pool_id})..."
-  ( cd frontend && npm ci --no-audit --no-fund >/dev/null 2>&1 \
+  # npm ci: quiet stdout only — its stderr must stay visible, or a failed
+  # install kills the script via set -e with no output at all.
+  ( cd frontend && npm ci --no-audit --no-fund >/dev/null \
     && VITE_API_BASE="$api_url" \
        VITE_COGNITO_USER_POOL_ID="$pool_id" \
        VITE_COGNITO_CLIENT_ID="$client_id" \
@@ -414,7 +416,9 @@ else
   [ -n "$rmf_stage_path" ] || die "could not derive a stage path from api_invoke_url ('${api_url}') — refusing to build the rmf bundle with a broken asset base path."
   rmf_api_base="${api_url}/rmf/api"
   info "building rmf frontend (VITE_BASE_PATH=${rmf_stage_path}/rmf/, VITE_API_BASE_URL=${rmf_api_base}, pool ${pool_id})..."
-  ( cd "$RMF_DIR/frontend" && npm ci --no-audit --no-fund >/dev/null 2>&1 \
+  # npm ci: stderr stays visible (see the stig build above) — this exact
+  # subshell once died silently mid-deploy and left rmf/ unpublished.
+  ( cd "$RMF_DIR/frontend" && npm ci --no-audit --no-fund >/dev/null \
     && VITE_BASE_PATH="${rmf_stage_path}/rmf/" \
        VITE_API_BASE_URL="$rmf_api_base" \
        VITE_COGNITO_USER_POOL_ID="$pool_id" \

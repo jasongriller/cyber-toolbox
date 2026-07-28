@@ -56,6 +56,22 @@ def test_presign_get_returns_https_url(s3_bucket):
     assert "k/o" in url
 
 
+def test_default_presign_client_signs_v4(s3_bucket):
+    # The live lambda constructs the store with NO presign client and NO
+    # endpoint pinning (the post-flip shape). In us-gov-west-1 the default
+    # boto3 client presigns SigV2-form URLs unless the store pins s3v4 — and
+    # buckets created after 2020-06 reject SigV2 with 403, which is exactly
+    # how the first real upload after the public flip failed.
+    store = S3ArtifactStore(BUCKET, region="us-gov-west-1")
+    urls = (
+        store.presign_put("jobs/1/input/scan.xml"),
+        store.presign_get("jobs/1/report.xlsx"),
+    )
+    for url in urls:
+        assert "X-Amz-Algorithm=AWS4-HMAC-SHA256" in url
+        assert "AWSAccessKeyId=" not in url
+
+
 def test_presign_operations_use_the_dedicated_client():
     runtime_client = Mock()
     presign_client = Mock()

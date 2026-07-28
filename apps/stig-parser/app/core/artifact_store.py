@@ -108,7 +108,16 @@ class S3ArtifactStore:
                 ),
             )
         else:
-            self._presign_client = self._client
+            # Presigns MUST pin SigV4: in legacy-listed regions (us-gov-west-1
+            # included) the default client emits SigV2-form presigned URLs, and
+            # buckets created after 2020-06 reject SigV2 outright — every
+            # presigned request 403s. Live API calls sign V4 regardless of this
+            # config, which is why only presigning breaks without it.
+            self._presign_client = boto3.client(
+                "s3",
+                region_name=region,
+                config=Config(signature_version="s3v4"),
+            )
 
     def put_bytes(self, key: str, data: bytes) -> None:
         self._client.put_object(Bucket=self._bucket, Key=key, Body=data)

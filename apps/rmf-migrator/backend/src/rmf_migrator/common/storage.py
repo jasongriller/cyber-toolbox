@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Any
 
 import boto3
+from botocore.config import Config
 
 from rmf_migrator.common.limits import MAX_DOCX_BYTES, ObjectTooLarge
 
@@ -40,7 +41,12 @@ class DocumentStore:
     def __init__(self, bucket: str, kms_key_id: str, *, s3_client: Any = None) -> None:
         self._bucket = bucket
         self._kms_key_id = kms_key_id
-        self._s3 = s3_client or boto3.client("s3")
+        # SigV4 pinned: the default client in legacy-listed regions
+        # (us-gov-west-1 included) presigns SigV2-form URLs, which buckets
+        # created after 2020-06 reject with 403.
+        self._s3 = s3_client or boto3.client(
+            "s3", config=Config(signature_version="s3v4")
+        )
 
     def presigned_put_url(self, key: str) -> dict[str, Any]:
         """Return a presigned PUT URL and the headers the caller must send.

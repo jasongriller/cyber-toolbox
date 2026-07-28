@@ -120,6 +120,20 @@ test('cancel returns to the upload form', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Process' })).toBeVisible();
 });
 
+test('the toolbox bar links home and to the sibling tool', async ({ page }) => {
+  await mockApi(page, { statuses: ['running'] });
+  await page.goto('/');
+
+  // Served from "/" here, so the runtime stage derivation degrades to "/";
+  // deployed, the same links carry the API Gateway stage prefix.
+  const nav = page.getByRole('navigation', { name: /cyber toolbox/i });
+  await expect(nav.getByRole('link', { name: /cyber toolbox/i })).toHaveAttribute('href', '/');
+  await expect(nav.getByRole('link', { name: /rmf migrator/i })).toHaveAttribute(
+    'href',
+    '/rmf/index.html',
+  );
+});
+
 test('the whole flow is operable by keyboard alone', async ({ page }) => {
   await mockApi(page, { statuses: ['running', 'complete'] });
   await page.goto('/');
@@ -132,6 +146,12 @@ test('the whole flow is operable by keyboard alone', async ({ page }) => {
     buffer: Buffer.from('<xml/>'),
   });
 
+  // The toolbox bar's two links come first in tab order; the upload form is
+  // still reachable right behind them.
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('link', { name: /cyber toolbox/i })).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('link', { name: /rmf migrator/i })).toBeFocused();
   await page.keyboard.press('Tab');
   await expect(page.getByRole('button', { name: /choose files/i }).first()).toBeFocused();
 

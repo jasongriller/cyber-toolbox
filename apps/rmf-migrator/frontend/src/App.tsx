@@ -115,7 +115,14 @@ export default function App() {
             />
           )}
           {view.kind === "drafting" && (
-            <DraftEditor client={client} projectId={view.projectId} documentId={view.documentId} />
+            <DraftEditor
+              client={client}
+              projectId={view.projectId}
+              documentId={view.documentId}
+              onContinue={() =>
+                setView({ kind: "export", projectId: view.projectId, documentId: view.documentId })
+              }
+            />
           )}
           {view.kind === "export" && (
             <ExportPanel client={client} projectId={view.projectId} documentId={view.documentId} />

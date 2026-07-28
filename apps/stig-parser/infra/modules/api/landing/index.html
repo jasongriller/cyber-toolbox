@@ -51,7 +51,12 @@
     text-decoration: none;
     color: inherit;
   }
-  a.card:hover, a.card:focus-visible { border-color: var(--accent); outline: none; }
+  a.card:hover { border-color: var(--accent); }
+  a.card:focus-visible {
+    border-color: var(--accent);
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
   .card h2 { margin: 0 0 0.4rem; font-size: 1.1rem; color: var(--accent); }
   .card p { margin: 0; color: var(--muted); font-size: 0.92rem; line-height: 1.4; }
   .card .open { display: inline-block; margin-top: 0.75rem; font-size: 0.85rem; font-weight: 600; color: var(--accent); }

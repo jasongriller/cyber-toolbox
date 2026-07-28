@@ -15,8 +15,10 @@
 #   4 spa       build the stig + rmf React bundles and sync them to the SPA
 #               bucket (stig at its root, rmf under rmf/)  [--skip-spa]
 #   5 smoke     check landing (/), the stig shell (/stig/), the rmf shell
-#               (/rmf/), /config (200), and an authorized-only route on each
-#               app's API (401)
+#               (/rmf/), each shell's first script/stylesheet asset (200 —
+#               catches a blank page even when the shell itself loads fine),
+#               /config (200), and an authorized-only route on each app's
+#               API (401)
 #
 # The dependency layer is REUSED by default (no Docker needed). It builds only
 # when infra/build/deps-layer.zip is missing, or when you pass --rebuild-layer
@@ -24,10 +26,15 @@
 #
 # Flags:
 #   --plan-only     stop after `terraform plan` (never applies; implies no spa/smoke)
-#   --infra-only    run guards + preflight + layer + infra, skip spa + smoke
+#   --infra-only    run guards + preflight + layer + infra, skip spa + smoke.
+#                   Warns loudly if the rmf bundle isn't published yet — the
+#                   /rmf route this apply just wired up would 500 with
+#                   nothing behind it until a later run publishes it.
 #   --rebuild-layer force a fresh Docker build of the dependency layer
 #   --skip-layer    never build; fail if the layer zip is missing (rarely needed)
-#   --skip-spa      do not build or sync the frontend
+#   --skip-spa      do not build or sync the frontend (same rmf-bundle warning
+#                   as --infra-only, since this also skips the phase that
+#                   publishes it)
 #   --yes           skip the interactive apply prompt (also: AUTO_APPROVE=1)
 #   -h, --help      show this help
 #
@@ -86,6 +93,7 @@ for arg in "$@"; do
     --skip-spa)   SKIP_SPA=1 ;;
     --yes|-y)     AUTO_APPROVE=1 ;;
     -h|--help)    usage 0 ;;
+    --skip-model-check) : ;; # rmf-only flag; tolerated so the root orchestrator can forward it to every app script (see rmf-migrator/deploy.sh's header comment)
     -*)           die "unknown flag: $arg  (try --help)" ;;
     *)            [[ -z "$ENV" ]] && ENV="$arg" || die "unexpected argument: $arg" ;;
   esac
@@ -317,6 +325,26 @@ if [[ -n "$spa_bucket" && "$spa_bucket" != "null" ]]; then
   ok "landing page published"
 fi
 
+# --- rmf bundle presence check (I2): only matters when we're about to skip
+# the SPA phase. --infra-only exits before Phase 4 ever runs, and --skip-spa
+# skips it outright: either way, if the rmf bundle has never been published (a
+# from-scratch env, or the SPA phase failed on a previous run), the /rmf
+# route this apply just wired up points at an S3 key that does not exist, and
+# the landing page's rmf link 500s. --skip-spa at least gets caught by Phase
+# 5's smoke test below; --infra-only exits 0 right after this block and would
+# otherwise never reach Phase 5 at all — check explicitly, here, before either
+# exit path, rather than let --infra-only fail silently.
+if (( INFRA_ONLY || SKIP_SPA )) && [[ -n "$spa_bucket" && "$spa_bucket" != "null" ]]; then
+  if ! aws s3api head-object --bucket "$spa_bucket" --key "rmf/index.html" >/dev/null 2>&1; then
+    warn "################################################################"
+    warn "  s3://${spa_bucket}/rmf/index.html does not exist."
+    warn "  The /rmf route this apply just wired up has no bundle behind"
+    warn "  it — visiting /rmf, or the landing page's rmf link, will 500"
+    warn "  until a run without --infra-only/--skip-spa publishes it."
+    warn "################################################################"
+  fi
+fi
+
 if (( INFRA_ONLY )); then
   step "Done (--infra-only)"; exit 0
 fi
@@ -351,10 +379,14 @@ else
     die "built bundle does not contain the Cognito pool id — VITE bake failed; refusing to ship an ungated SPA"
   fi
   # --exclude keeps this --delete sync from ever touching landing/ (published
-  # above, same bucket) — without it, every deploy would immediately delete
-  # the landing page it just published.
+  # above, same bucket) or rmf/ (published by the rmf SPA step below, same
+  # bucket): without both carve-outs, every stig deploy would immediately
+  # delete the landing page it just published, and would delete the live rmf
+  # bundle outright — including the window before the rmf step below
+  # re-uploads it, and permanently if that step then fails, since set -e
+  # kills the script after this delete but before the re-upload.
   info "syncing dist/ -> s3://${spa_bucket}/ ..."
-  aws s3 sync frontend/dist/ "s3://${spa_bucket}/" --delete --exclude "landing/*" >/dev/null
+  aws s3 sync frontend/dist/ "s3://${spa_bucket}/" --delete --exclude "landing/*" --exclude "rmf/*" >/dev/null
   ok "SPA published to ${spa_bucket}"
 
   # --- rmf SPA (Phase R) -----------------------------------------------------
@@ -362,13 +394,28 @@ else
   # the exact pool/client/region/endpoint values just baked into the stig
   # bundle above, unchanged. rmf's own vite.config.ts already supports
   # VITE_BASE_PATH for subpath serving — no frontend code change needed.
+  #
+  # VITE_BASE_PATH must include the API Gateway stage prefix, not just
+  # "/rmf/": unlike stig's own `base: './'` (relative), rmf's vite.config.ts
+  # uses this value as Vite's `base` directly, which emits ABSOLUTE asset
+  # URLs. The document is served at .../v1/rmf/, so a bare "/rmf/" base would
+  # make the browser request "/rmf/assets/..." off the origin root — API
+  # Gateway reads that first path segment as a stage name, finds no stage
+  # called "rmf" (the real stage is "v1"), and 403s every asset. rmf's
+  # index.html un-hides the body before the bundle loads, so that renders as
+  # a blank white page with no visible error. Same stage-prefix trap the
+  # landing page burned three rounds on. Recompute the stage path locally
+  # here (don't rely on the landing-page phase's stage_path still being in
+  # scope) and die rather than build a bundle with a broken base.
   step "rmf SPA bundle"
   RMF_DIR="../rmf-migrator"
   [[ -d "$RMF_DIR/frontend" ]] || die "rmf-migrator frontend not found at ${RMF_DIR}/frontend (expected apps/stig-parser and apps/rmf-migrator as siblings)."
+  rmf_stage_path="$(printf '%s' "$api_url" | sed -E 's#^[a-zA-Z][a-zA-Z0-9+.-]*://[^/]+##')"
+  [ -n "$rmf_stage_path" ] || die "could not derive a stage path from api_invoke_url ('${api_url}') — refusing to build the rmf bundle with a broken asset base path."
   rmf_api_base="${api_url}/rmf/api"
-  info "building rmf frontend (VITE_API_BASE_URL=${rmf_api_base}, pool ${pool_id})..."
+  info "building rmf frontend (VITE_BASE_PATH=${rmf_stage_path}/rmf/, VITE_API_BASE_URL=${rmf_api_base}, pool ${pool_id})..."
   ( cd "$RMF_DIR/frontend" && npm ci --no-audit --no-fund >/dev/null 2>&1 \
-    && VITE_BASE_PATH="/rmf/" \
+    && VITE_BASE_PATH="${rmf_stage_path}/rmf/" \
        VITE_API_BASE_URL="$rmf_api_base" \
        VITE_COGNITO_USER_POOL_ID="$pool_id" \
        VITE_COGNITO_CLIENT_ID="$client_id" \
@@ -393,6 +440,28 @@ fi
 # ===========================================================================
 step "Phase 5 · Smoke test"
 api_url="$(tf output -raw api_invoke_url)"
+origin="$(printf '%s' "$api_url" | sed -E 's#^([a-zA-Z][a-zA-Z0-9+.-]*://[^/]+).*#\1#')"
+# A 200 on a shell's HTML is not enough: both tools' index.html un-hide the
+# body before their bundle loads, so a shell that 200s while its assets 403
+# still renders as a blank white page with no visible error — exactly the C1
+# failure mode (a stage-prefix mismatch in VITE_BASE_PATH). Pull the first
+# script/stylesheet URL out of the served HTML and fetch it directly, the way
+# a browser would: an absolute path (leading "/") resolves against the origin
+# (scheme+host, no stage); anything else resolves next to the page itself.
+# Finding no asset URL at all is itself a failure, not something to skip.
+check_first_asset() {
+  local tool="$1" page_url="$2" html asset resolved code
+  html="$(curl -s --max-time 30 "$page_url" || echo '')"
+  asset="$(printf '%s' "$html" | grep -oE '(src|href)="[^"]+\.(js|css)[^"]*"' | head -1 | sed -E 's/^(src|href)="//; s/"$//' || true)"
+  [ -n "$asset" ] || die "smoke: found no script/stylesheet asset URL in ${tool}'s served HTML (${page_url}) — cannot verify its bundle is reachable"
+  case "$asset" in
+    http://*|https://*) resolved="$asset" ;;
+    /*)                  resolved="${origin}${asset}" ;;
+    *)                   resolved="${page_url%/*}/${asset#./}" ;;
+  esac
+  code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$resolved" || echo 000)"
+  [ "$code" = "200" ] || die "smoke: ${tool} asset ${resolved} returned ${code}, expected 200 (000 = could not reach it at all) — the shell HTML loaded but its bundle did not, which renders as a blank page in the browser"
+}
 # The root method now serves the toolbox landing page — probe exactly what users click.
 code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${api_url}/" || echo 000)"
 [ "$code" = "200" ] || die "smoke: landing page returned ${code}, expected 200 (000 = could not reach the API at all)"
@@ -416,13 +485,15 @@ code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${api_url}/rmf/" |
 [ "$code" = "200" ] || die "smoke: rmf SPA shell returned ${code}, expected 200 (000 = could not reach the API at all)"
 rmf_content_type="$(curl -s -o /dev/null -w '%{content_type}' --max-time 30 "${api_url}/rmf/" || echo 000)"
 [[ "$rmf_content_type" == *"text/html"* ]] || die "smoke: rmf SPA shell Content-Type is '${rmf_content_type}', expected text/html (000 = could not reach the API at all)"
+check_first_asset "stig" "${api_url}/stig/"
+check_first_asset "rmf" "${api_url}/rmf/"
 code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${api_url}/config" || echo 000)"
 [ "$code" = "200" ] || die "smoke: /config returned ${code}, expected 200 (open route) (000 = could not reach the API at all)"
 code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${api_url}/jobs/00000000-0000-0000-0000-00000000dead" || echo 000)"
 [ "$code" = "401" ] || die "smoke: bare /jobs/{id} returned ${code}, expected 401 (authorizer) (000 = could not reach the API at all)"
 code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${api_url}/rmf/api/projects" || echo 000)"
 [ "$code" = "401" ] || die "smoke: bare /rmf/api/projects returned ${code}, expected 401 (rmf's own Cognito authorizer, reached through the proxy) (000 = could not reach the API at all)"
-info "smoke: landing 200 (text/html, links substituted), stig shell 200, rmf shell 200 (text/html), config 200, bare data route 401, bare rmf api route 401"
+info "smoke: landing 200 (text/html, links substituted), stig shell 200, rmf shell 200 (text/html), stig+rmf first asset 200, config 200, bare data route 401, bare rmf api route 401"
 
 step "${GRN}Deploy complete — ${ENV}${RST}"
 # Trailing slash: this is the link people copy-paste. Without it, a relative

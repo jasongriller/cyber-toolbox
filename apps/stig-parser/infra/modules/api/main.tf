@@ -479,9 +479,12 @@ resource "aws_api_gateway_integration_response" "rmf" {
   depends_on = [aws_api_gateway_integration.rmf]
 }
 
-# Nested under /rmf (not the API root) — same reasoning as spa_proxy above:
-# the rmf bundle is built with VITE_BASE_PATH=/rmf/, so its assets are
-# requested relative to /rmf/, not the API root.
+# Nested under /rmf (not the API root) — unlike spa_proxy above (stig's
+# bundle uses base: './', so its assets are requested relative to /stig/),
+# the rmf bundle is built with VITE_BASE_PATH set to the stage path plus
+# /rmf/ (e.g. /v1/rmf/), which Vite emits as ABSOLUTE asset URLs (e.g.
+# /v1/rmf/assets/index-HASH.js) — this resource is what makes those absolute
+# paths resolve.
 resource "aws_api_gateway_resource" "rmf_proxy" {
   count = local.serve_spa_from_s3 ? 1 : 0
 

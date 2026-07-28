@@ -46,9 +46,13 @@ prompts/responses are never written to logs.
 
 ## 3. Before you start
 
-- **Access.** In a production (private) deployment the app is reached through your
-  organization's internal portal or signing proxy; your existing network/identity
-  controls gate it. There is no in-app login.
+- **Access.** How you sign in depends on how this deployment is configured (see
+  DEPLOYMENT.md's Network modes). In a **private** deployment the app is reached
+  through your organization's internal portal or signing proxy; your existing
+  network/identity controls gate it, and there is no in-app login. In a
+  **public + Cognito** deployment — e.g. this tool served through the cyber
+  toolbox's shared front door — you sign in with the toolbox's shared login,
+  and every API route requires that login's token.
 - **Input format.** Policy documents must be `.docx`. The parser reads paragraphs
   **and table cells** in reading order, so requirements stated inside tables are
   captured.

@@ -7,22 +7,29 @@
 # Phases:
 #   0 guards    account + toolchain + filesystem safety checks
 #   1 preflight the gitignored per-env files exist (backend.tf, terraform.tfvars);
-#               the shared Cognito pool exists in SSM
-#   2 build     package the Lambda zip (scripts/build_lambda.py, run under
-#               whichever interpreter satisfies backend/pyproject.toml's
-#               requires-python) — always rebuilds; unlike stig-parser's
-#               dependency layer there is no slow Docker build here worth
-#               caching
+#               the shared Cognito pool exists in SSM; locate a Python >= 3.12
+#               interpreter; pre-flight the configured Bedrock model against
+#               the tool's real prompts (scripts/check_bedrock_model.py) —
+#               skip with --skip-model-check
+#   2 build     package the Lambda zip (scripts/build_lambda.py, using the
+#               interpreter Phase 1 located) — always rebuilds; unlike
+#               stig-parser's dependency layer there is no slow Docker build
+#               here worth caching
 #   3 infra     terraform init/validate/plan -> y/N gate -> apply  [--plan-only]
 #
-# No SPA phase yet. This script stops at a working HTTP API whose url is
-# published to SSM (rmf_api_url) — wiring the rmf SPA and its /rmf route onto
-# the shared toolbox front door is a later phase.
+# This script deploys rmf's own backend (HTTP API, Lambda, data stores) and
+# publishes its url to SSM (rmf_api_url). The rmf SPA build/publish and the
+# shared /rmf route live in stig-parser/deploy.sh, which reads rmf_api_url
+# from SSM at plan time and serves both tools through one toolbox front door
+# — run that script (from apps/stig-parser) after this one to make rmf
+# reachable at /rmf.
 #
 # Flags:
-#   --plan-only     stop after `terraform plan` (never applies)
-#   --yes           skip the interactive apply prompt (also: AUTO_APPROVE=1)
-#   -h, --help      show this help
+#   --plan-only         stop after `terraform plan` (never applies)
+#   --skip-model-check  skip the Bedrock model pre-flight (Phase 1); use on a
+#                       rerun once the configured model is already proven
+#   --yes               skip the interactive apply prompt (also: AUTO_APPROVE=1)
+#   -h, --help          show this help
 #   Unknown flags are ignored, not rejected: the root orchestrator forwards
 #   every app script's flags to every app script (e.g. stig-parser's
 #   --skip-spa reaching this script when you run the toolbox's ./deploy.sh).
@@ -67,18 +74,19 @@ cd "$APP_ROOT"
 
 # --- parse args --------------------------------------------------------------
 ENV=""
-PLAN_ONLY=0; AUTO_ENV=0
+PLAN_ONLY=0; AUTO_ENV=0; SKIP_MODEL_CHECK=0
 AUTO_APPROVE="${AUTO_APPROVE:-0}"
 
 usage() { sed -n '3,/^$/p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
 
 for arg in "$@"; do
   case "$arg" in
-    --plan-only)  PLAN_ONLY=1 ;;
-    --yes|-y)     AUTO_APPROVE=1 ;;
-    -h|--help)    usage 0 ;;
-    -*)           : ;; # unknown flag — ignored, see header comment
-    *)            [[ -z "$ENV" ]] && ENV="$arg" || die "unexpected argument: $arg" ;;
+    --plan-only)        PLAN_ONLY=1 ;;
+    --skip-model-check) SKIP_MODEL_CHECK=1 ;;
+    --yes|-y)           AUTO_APPROVE=1 ;;
+    -h|--help)          usage 0 ;;
+    -*)                 : ;; # unknown flag — ignored, see header comment
+    *)                  [[ -z "$ENV" ]] && ENV="$arg" || die "unexpected argument: $arg" ;;
   esac
 done
 # No env name given: auto-select the single configured environment — the one
@@ -188,14 +196,12 @@ if ! aws ssm get-parameter --name "${cognito_prefix}/cognito_user_pool_id" >/dev
 fi
 ok "shared pool present at ${cognito_prefix}"
 
-# ===========================================================================
-# Phase 2 — Lambda package
-# ===========================================================================
-step "Phase 2 · Lambda package"
-# The host interpreter running this script must itself satisfy the backend
-# package's own requires-python (>= 3.12 — see backend/pyproject.toml), not
-# whatever python_runtime/--python-version the Lambda TARGET uses: pip checks
-# that metadata against the interpreter invoking it before installing a local
+# Python interpreter: needed both by the Bedrock model check right below and
+# by Phase 2's Lambda build, so it's located once, here. The host interpreter
+# running this script must itself satisfy the backend package's own
+# requires-python (>= 3.12 — see backend/pyproject.toml), not whatever
+# python_runtime/--python-version the Lambda TARGET uses: pip checks that
+# metadata against the interpreter invoking it before installing a local
 # directory, and build_lambda.py's --platform/--python-version/--implementation
 # flags only steer which wheels get selected for the target's DEPENDENCIES —
 # they don't relax that check. "py" is the Windows launcher and doesn't exist
@@ -215,6 +221,31 @@ for cand in "py -3.13" "py -3.12" "python3.13" "python3.12" "python3" "python"; 
 done
 [[ -n "$PYBIN" ]] || die "no Python >= 3.12 interpreter found (tried: py -3.13, py -3.12, python3.13, python3.12, python3, python). Install one, or build the zip manually per apps/rmf-migrator/docs/DEPLOYMENT.md."
 ok "using '${PYBIN}' (${PYVER})"
+
+# Bedrock model check (I4): the module builds the model ARN and grants
+# invoke unconditionally — nothing at plan/apply time confirms the configured
+# id is real, enabled in this account/region, and Converse-capable. A wrong
+# or unenabled model id would otherwise only fail at first use, after ~40
+# sticky resources (DynamoDB deletion protection, force_destroy = false) are
+# already live. Run the real preflight (scripts/check_bedrock_model.py, which
+# exercises this tool's actual mapping/drafting prompts) against the tfvars
+# value before any terraform. --skip-model-check bypasses this on reruns
+# where the model is already proven.
+if (( SKIP_MODEL_CHECK )); then
+  warn "skipping the Bedrock model check (--skip-model-check)"
+else
+  bedrock_model_id="$(tfvar bedrock_model_id)"
+  info "checking Bedrock model '${bedrock_model_id}' (scripts/check_bedrock_model.py)..."
+  # shellcheck disable=SC2086
+  $PYBIN scripts/check_bedrock_model.py "$bedrock_model_id" --region "$AWS_REGION" \
+    || die "Bedrock model '${bedrock_model_id}' failed pre-flight — see output above. Fix bedrock_model_id in ${ENV_DIR}/terraform.tfvars (see docs/DEPLOYMENT.md §1), or pass --skip-model-check to bypass on a rerun once it's already proven."
+  ok "Bedrock model check passed"
+fi
+
+# ===========================================================================
+# Phase 2 — Lambda package
+# ===========================================================================
+step "Phase 2 · Lambda package"
 info "building the Lambda zip (${PYBIN} scripts/build_lambda.py)..."
 # shellcheck disable=SC2086
 $PYBIN scripts/build_lambda.py
@@ -261,4 +292,4 @@ rm -f "${ENV_DIR}/deploy.tfplan"
 step "${GRN}Deploy complete — ${ENV}${RST}"
 info "API:               $(tf output -raw rmf_api_url 2>/dev/null || echo n/a)"
 info "Published to SSM:  $(tf output -raw rmf_api_url_ssm_parameter 2>/dev/null || echo n/a)"
-info "SPA + shared front-door routing not wired yet — a later phase."
+info "Next: apps/stig-parser/deploy.sh publishes the rmf SPA and serves this tool at /rmf through the shared toolbox front door."

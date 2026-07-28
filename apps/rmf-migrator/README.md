@@ -15,7 +15,7 @@ Moving an A&A package from NIST SP 800-53 Rev 4 to Rev 5 is tedious and error-pr
 ## Design principles
 
 - **Runs in your boundary.** Everything deploys via Terraform into *your* AWS account. Documents never leave it. GovCloud (`us-gov-west-1`) is a supported target; commercial regions work for development.
-- **Authenticated by default.** Production mode puts Lambdas in your VPC and requires AWS SigV4 on every API route. Serve the SPA through an internal signing proxy or portal so browser users inherit your existing IAM/identity controls.
+- **Authenticated by default.** Every route requires a real credential, in either supported posture: **private** mode puts Lambdas in your VPC and requires AWS SigV4 on every route (serve the SPA through an internal signing proxy or portal so browser users inherit your existing IAM/identity controls); **public + Cognito** mode skips the VPC and instead puts a JWT authorizer backed by a Cognito user pool on every route, so the browser calls the API directly with a signed-in user's token. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)'s Network modes.
 - **CUI-aware.** Document content and LLM prompts/responses are never written to logs. All data at rest is encrypted with a customer-managed KMS key. Hard delete purges everything.
 - **Human-verified.** The LLM proposes; a person confirms. The section→control mapping is reviewed and corrected *before* any drafting happens.
 - **Toolbox-friendly.** Built to slot into a security team's internal tool portal — configurable base path, deep links, and a Terraform module that consumes your existing VPC/KMS/ALB.

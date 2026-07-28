@@ -221,7 +221,7 @@ run "route_auth_matches_the_security_boundary" {
 
   assert {
     condition     = aws_api_gateway_resource.rmf_proxy[0].parent_id == aws_api_gateway_resource.rmf[0].id
-    error_message = "The rmf asset proxy must be nested under /rmf: the bundle is built with VITE_BASE_PATH=/rmf/, so assets are requested relative to /rmf/, not the API root."
+    error_message = "The rmf asset proxy must be nested under /rmf: the bundle is built with VITE_BASE_PATH set to the stage path plus /rmf/ (e.g. /v1/rmf/), which Vite emits as ABSOLUTE asset URLs (e.g. /v1/rmf/assets/index-HASH.js) — not relative ones — so this resource is what makes those absolute paths resolve."
   }
 
   assert {

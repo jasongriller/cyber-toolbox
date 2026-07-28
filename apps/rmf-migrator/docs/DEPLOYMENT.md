@@ -66,6 +66,31 @@ Before deploying, confirm in your account/region:
 
 The HTTP API is reachable directly. Quickest to stand up. Do not put CUI through a public deployment.
 
+### `public` + `auth_mode = "cognito"`
+
+A third posture, distinct from both plain `public` above and `private` below:
+`network_mode = "public"` (no VPC, same as plain `public`) combined with
+`auth_mode = "cognito"` instead of leaving auth at its `public`-derived
+default of `none`.
+
+- The HTTP API is network-reachable the same as plain `public` mode, but every
+  route carries a JWT authorizer backed by a Cognito user pool — an
+  unauthenticated request is rejected (401) before it reaches Lambda, on every
+  route, with no unauthenticated routes carved out.
+- The authorizer validates the token's issuer against the pool's **non-FIPS**
+  `cognito-idp.<region>.amazonaws.com` hostname — Cognito always stamps that
+  host into a token's `iss` claim regardless of which endpoint issued it, so a
+  FIPS-hostname issuer would silently reject every real login.
+- Set `cognito_user_pool_id` and `cognito_client_id` (typically sourced from
+  SSM, not hard-coded) instead of provisioning VPC networking. A browser calls
+  the API directly with the signed-in user's JWT; there is no `AWS_IAM`/SigV4
+  hop and no trusted signing proxy in the request path.
+- This is how the tool is deployed behind the cyber toolbox's shared front
+  door: `network_mode = "public"`, `auth_mode = "cognito"`, one Cognito app
+  client shared across every tool in the toolbox (one login covers all of
+  them), and the SPA served through the toolbox's own API Gateway at `/rmf`
+  rather than this app's bare HTTP API URL.
+
 ### `private` (production, recommended for CUI)
 
 - Set `network_mode = "private"` and pass `vpc_id`, `private_subnet_ids`, and

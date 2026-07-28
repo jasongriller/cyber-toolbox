@@ -22,6 +22,7 @@ interface FakeAuthState {
   completeNewPassword: ReturnType<typeof vi.fn>;
   submitTotpCode: ReturnType<typeof vi.fn>;
   logout: ReturnType<typeof vi.fn>;
+  resetChallenge: ReturnType<typeof vi.fn>;
 }
 
 function mockAuth(overrides: Partial<FakeAuthState> = {}) {
@@ -35,6 +36,7 @@ function mockAuth(overrides: Partial<FakeAuthState> = {}) {
     completeNewPassword: vi.fn().mockResolvedValue(undefined),
     submitTotpCode: vi.fn().mockResolvedValue(undefined),
     logout: vi.fn(),
+    resetChallenge: vi.fn(),
     ...overrides,
   };
   mockUseAuth.mockReturnValue(state);
@@ -159,6 +161,37 @@ describe('Login', () => {
     await userEvent.click(screen.getByRole('button', { name: /verify/i }));
 
     expect(auth.submitTotpCode).toHaveBeenCalledWith('123456');
+  });
+
+  it('lets the set-password view go back to sign in', async () => {
+    const auth = mockAuth({ requiresNewPassword: true });
+    render(<Login />);
+
+    await userEvent.click(screen.getByRole('button', { name: /back to sign in/i }));
+
+    expect(auth.resetChallenge).toHaveBeenCalled();
+    expect(screen.getByLabelText(/^password$/i)).toBeInTheDocument();
+  });
+
+  it('lets the TOTP enroll view go back to sign in', async () => {
+    const auth = mockAuth({ mfaStage: 'setup', mfaSecret: 'JBSWY3DPEHPK3PXP' });
+    render(<Login />);
+
+    await userEvent.click(screen.getByRole('button', { name: /back to sign in/i }));
+
+    expect(auth.resetChallenge).toHaveBeenCalled();
+    expect(screen.getByLabelText(/^password$/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/6-digit/i)).not.toBeInTheDocument();
+  });
+
+  it('lets the TOTP code view go back to sign in', async () => {
+    const auth = mockAuth({ mfaStage: 'code' });
+    render(<Login />);
+
+    await userEvent.click(screen.getByRole('button', { name: /back to sign in/i }));
+
+    expect(auth.resetChallenge).toHaveBeenCalled();
+    expect(screen.getByLabelText(/^password$/i)).toBeInTheDocument();
   });
 
   describe('accessibility', () => {

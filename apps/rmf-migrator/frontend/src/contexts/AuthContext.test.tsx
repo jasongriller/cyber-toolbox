@@ -377,6 +377,55 @@ describe('AuthContext', () => {
       expect(result.current.email).toBe('user@example.mil');
     });
 
+    it('resetChallenge abandons a pending new-password challenge', async () => {
+      mocks.authBehavior = 'newPasswordRequired';
+      setPoolConfigured(true);
+      const { AuthProvider, useAuth } = await freshAuthContext();
+      const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await act(async () => {
+        await result.current.login('user@example.mil', 'Password123!').catch(() => {});
+      });
+      expect(result.current.requiresNewPassword).toBe(true);
+
+      act(() => {
+        result.current.resetChallenge();
+      });
+
+      expect(result.current.requiresNewPassword).toBe(false);
+      expect(result.current.email).toBeNull();
+      // The abandoned instance is gone — completing now fails loudly instead of
+      // silently driving a stale user.
+      await expect(result.current.completeNewPassword('NewPassword123!')).rejects.toThrow(
+        'No pending challenge',
+      );
+    });
+
+    it('resetChallenge abandons a pending MFA challenge including the issued secret', async () => {
+      mocks.authBehavior = 'mfaSetup';
+      setPoolConfigured(true);
+      const { AuthProvider, useAuth } = await freshAuthContext();
+      const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await act(async () => {
+        await result.current.login('user@example.mil', 'Password123!').catch(() => {});
+      });
+      expect(result.current.mfaStage).toBe('setup');
+      expect(result.current.mfaSecret).toBe(mocks.secret);
+
+      act(() => {
+        result.current.resetChallenge();
+      });
+
+      expect(result.current.mfaStage).toBe('none');
+      expect(result.current.mfaSecret).toBeNull();
+      await expect(result.current.submitTotpCode('123456')).rejects.toThrow(
+        'No pending challenge',
+      );
+    });
+
     it('(negative) an unsupported challenge (e.g. SMS MFA) rejects login() instead of hanging', async () => {
       mocks.authBehavior = 'mfaRequired';
       setPoolConfigured(true);

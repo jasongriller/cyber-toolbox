@@ -42,6 +42,9 @@ interface AuthContextValue {
   /** Completes a TOTP challenge — enrollment verification (mfaStage 'setup') or an
    *  ordinary SOFTWARE_TOKEN_MFA code (mfaStage 'code'). */
   submitTotpCode: (code: string) => Promise<void>;
+  /** Abandons an in-flight challenge (new password / MFA) so Login can return
+   *  to the sign-in form — e.g. a mistyped email discovered at the code prompt. */
+  resetChallenge: () => void;
   logout: () => void;
 }
 
@@ -171,6 +174,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
+  // Dropping the pending CognitoUser means the only way forward is a fresh
+  // login() — exactly the semantics "Back to sign in" needs. Deliberately does
+  // not touch email: an already-signed-in session is not a challenge.
+  const resetChallenge = () => {
+    setPendingUser(null);
+    setMfaStage("none");
+    setMfaSecret(null);
+  };
+
   const logout = () => {
     if (userPool) {
       const current = userPool.getCurrentUser();
@@ -195,6 +207,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         completeNewPassword,
         submitTotpCode,
+        resetChallenge,
         logout,
       }}
     >

@@ -34,7 +34,13 @@ resource "aws_kms_key" "this" {
         Resource = "*"
         Condition = {
           ArnLike = {
-            "kms:EncryptionContext:aws:logs:arn" = "arn:${local.partition}:logs:${local.region}:${local.account_id}:log-group:/aws/lambda/${local.name}-*"
+            # Every log-group path this module creates must be listed here —
+            # KMS denies CreateLogGroup for any group whose ARN is absent
+            # (multiple values are OR'd; no wildcard means exact match).
+            "kms:EncryptionContext:aws:logs:arn" = [
+              "arn:${local.partition}:logs:${local.region}:${local.account_id}:log-group:/aws/lambda/${local.name}-*",
+              "arn:${local.partition}:logs:${local.region}:${local.account_id}:log-group:/aws/apigateway/${local.name}",
+            ]
           }
         }
       },

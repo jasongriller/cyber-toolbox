@@ -162,3 +162,34 @@ run "public_without_auth_mode_stays_open" {
     error_message = "No JWT authorizer should exist when auth_mode resolves to \"none\"."
   }
 }
+
+# The module-created CMK must let CloudWatch Logs use it for EVERY log-group
+# path the module creates. KMS denies CreateLogGroup for any group whose ARN
+# is absent from the encryption-context condition, and no mock run can evaluate
+# a key policy — the first live apply failed on exactly this (the condition
+# listed /aws/lambda/* only, so the /aws/apigateway/* access-log group was
+# denied). Pin the policy text so the next log-group consumer added without a
+# matching condition entry fails here instead of mid-apply.
+run "created_kms_key_covers_every_log_group_path" {
+  command = plan
+
+  variables {
+    network_mode = "public"
+    kms_key_arn  = null
+  }
+
+  assert {
+    condition     = length(aws_kms_key.this) == 1
+    error_message = "With kms_key_arn unset the module must create its own CMK."
+  }
+
+  assert {
+    condition     = strcontains(aws_kms_key.this[0].policy, ":log-group:/aws/lambda/")
+    error_message = "The CMK policy's CloudWatch Logs encryption-context condition must cover the Lambda log groups (/aws/lambda/<name>-*)."
+  }
+
+  assert {
+    condition     = strcontains(aws_kms_key.this[0].policy, ":log-group:/aws/apigateway/")
+    error_message = "The CMK policy's CloudWatch Logs encryption-context condition must cover the API Gateway access-log group (/aws/apigateway/<name>) — missing it makes CreateLogGroup fail with AccessDeniedException on a live apply."
+  }
+}

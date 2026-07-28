@@ -495,6 +495,25 @@ def _get_job(job_id: str, event: dict) -> dict:
     return _response(200, {"jobId": job_id, **record})
 
 
+def _report_download_name(record: dict) -> str:
+    """Filename the report downloads under, derived from the uploaded scans.
+
+    Rides inside a quoted Content-Disposition token on the presigned URL, so
+    the charset is a conservative allowlist — quotes, separators, and control
+    characters are dropped, not escaped.
+    """
+    names = [str(n) for n in record.get("input_filenames") or [] if str(n).strip()]
+    if not names:
+        return "stig-findings.xlsx"
+    first = names[0].rsplit("/", 1)[-1]
+    stem = first.rsplit(".", 1)[0] or first
+    stem = "".join(ch for ch in stem if ch.isalnum() or ch in "._ -").strip(" .")
+    stem = stem[:80] or "stig"
+    if len(names) > 1:
+        return f"{stem}-and-{len(names) - 1}-more-findings.xlsx"
+    return f"{stem}-findings.xlsx"
+
+
 def _get_result(job_id: str, event: dict) -> dict:
     jobs = common.job_store()
     record = jobs.get(job_id)
@@ -515,7 +534,13 @@ def _get_result(job_id: str, event: dict) -> dict:
 
     return _response(
         200,
-        {"url": store.presign_get(key, expires=PRESIGN_EXPIRY_SECONDS)},
+        {
+            "url": store.presign_get(
+                key,
+                expires=PRESIGN_EXPIRY_SECONDS,
+                download_name=_report_download_name(record),
+            )
+        },
     )
 
 

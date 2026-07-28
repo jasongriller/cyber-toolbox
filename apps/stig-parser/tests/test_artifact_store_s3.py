@@ -56,6 +56,25 @@ def test_presign_get_returns_https_url(s3_bucket):
     assert "k/o" in url
 
 
+def test_presign_get_names_the_download(s3_bucket):
+    # The result route passes a download name so the browser saves the report
+    # under the scan's name instead of an invented one. The disposition rides
+    # the signed query string of the presigned URL.
+    store = S3ArtifactStore(BUCKET, region="us-gov-west-1")
+    url = store.presign_get("jobs/1/report.xlsx", download_name="scan-findings.xlsx")
+    q = parse_qs(urlparse(url).query)
+    assert q["response-content-disposition"] == [
+        'attachment; filename="scan-findings.xlsx"'
+    ]
+    assert "X-Amz-Algorithm=AWS4-HMAC-SHA256" in url
+
+
+def test_presign_get_without_name_adds_no_disposition(s3_bucket):
+    store = S3ArtifactStore(BUCKET, region="us-gov-west-1")
+    url = store.presign_get("jobs/1/report.xlsx")
+    assert "response-content-disposition" not in parse_qs(urlparse(url).query)
+
+
 def test_default_presign_client_signs_v4(s3_bucket):
     # The live lambda constructs the store with NO presign client and NO
     # endpoint pinning (the post-flip shape). In us-gov-west-1 the default

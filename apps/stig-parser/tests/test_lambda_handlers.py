@@ -835,6 +835,36 @@ class TestApiStatusAndResult:
         assert resp["statusCode"] == 200
         assert json.loads(resp["body"])["url"].startswith("https://")
 
+    def test_result_download_is_named_after_the_scan_file(self, aws, jobs):
+        jobs.create("job1", status="complete", input_filenames=["scc_results.xml"])
+        boto3.client("s3", region_name=REGION).put_object(
+            Bucket=ARTIFACTS, Key="jobs/job1/report.xlsx", Body=b"x"
+        )
+        resp = api.handler(
+            {
+                "httpMethod": "GET",
+                "resource": "/jobs/{job_id}/result",
+                "pathParameters": {"job_id": "job1"},
+            },
+            None,
+        )
+        url = json.loads(resp["body"])["url"]
+        assert "scc_results-findings.xlsx" in url
+
+    def test_report_download_name_derivations(self):
+        name = api._report_download_name
+        assert name({"input_filenames": ["scan.xml"]}) == "scan-findings.xlsx"
+        assert (
+            name({"input_filenames": ["a.xml", "b.xml", "c.zip"]})
+            == "a-and-2-more-findings.xlsx"
+        )
+        # Quotes and separators are dropped, never escaped — the value lands
+        # inside a quoted Content-Disposition token.
+        assert name({"input_filenames": ['we"ird;scan.xml']}) == "weirdscan-findings.xlsx"
+        assert name({"input_filenames": []}) == "stig-findings.xlsx"
+        assert name({}) == "stig-findings.xlsx"
+        assert name({"input_filenames": ['"""']}) == "stig-findings.xlsx"
+
     def test_result_conflicts_while_still_running(self, aws, jobs):
         jobs.create("job1", status="running")
         resp = api.handler(

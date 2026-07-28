@@ -23,7 +23,9 @@ class ArtifactStore(Protocol):
     def size(self, key: str) -> int: ...
     def upload_from(self, key: str, path: Path) -> None: ...
     def download_to(self, key: str, path: Path) -> None: ...
-    def presign_get(self, key: str, expires: int = 900) -> str: ...
+    def presign_get(
+        self, key: str, expires: int = 900, download_name: str | None = None
+    ) -> str: ...
     def presign_put(self, key: str, expires: int = 900) -> str: ...
 
 
@@ -67,7 +69,11 @@ class LocalArtifactStore:
         dst.parent.mkdir(parents=True, exist_ok=True)
         dst.write_bytes(self.get_bytes(key))
 
-    def presign_get(self, key: str, expires: int = 900) -> str:
+    def presign_get(
+        self, key: str, expires: int = 900, download_name: str | None = None
+    ) -> str:
+        # download_name is a browser concern (Content-Disposition); a file://
+        # URI has no response headers, so it is accepted and ignored here.
         return self._resolve(key).as_uri()
 
     def presign_put(self, key: str, expires: int = 900) -> str:
@@ -149,10 +155,21 @@ class S3ArtifactStore:
         dst.parent.mkdir(parents=True, exist_ok=True)
         self._client.download_file(self._bucket, key, str(dst))
 
-    def presign_get(self, key: str, expires: int = 900) -> str:
+    def presign_get(
+        self, key: str, expires: int = 900, download_name: str | None = None
+    ) -> str:
+        params: dict[str, str] = {"Bucket": self._bucket, "Key": key}
+        if download_name:
+            # Names the browser's save-as. Without this a presigned GET opened
+            # by navigation downloads under whatever the browser invents. The
+            # value rides the SIGNED query string, so the caller must pass a
+            # name already safe for a quoted Content-Disposition token.
+            params["ResponseContentDisposition"] = (
+                f'attachment; filename="{download_name}"'
+            )
         return self._presign_client.generate_presigned_url(
             "get_object",
-            Params={"Bucket": self._bucket, "Key": key},
+            Params=params,
             ExpiresIn=expires,
         )
 

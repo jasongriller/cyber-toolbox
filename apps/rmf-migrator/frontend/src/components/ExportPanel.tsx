@@ -16,6 +16,7 @@ interface Props {
 
 export default function ExportPanel({ client, projectId, documentId }: Props) {
   const [status, setStatus] = useState<DocumentStatus | null>(null);
+  const [filename, setFilename] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,6 +24,7 @@ export default function ExportPanel({ client, projectId, documentId }: Props) {
     try {
       const doc = await client.getDocument(projectId, documentId);
       setStatus(doc.status);
+      setFilename(doc.filename);
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -63,7 +65,11 @@ export default function ExportPanel({ client, projectId, documentId }: Props) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `decision-log-${documentId}.csv`;
+      // Name the download after the source document, matching the docx
+      // export's convention; the id is only a fallback for a not-yet-loaded
+      // record.
+      const stem = (filename ?? documentId).replace(/\.[^.]+$/, "");
+      a.download = `decision-log-${stem}.csv`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {

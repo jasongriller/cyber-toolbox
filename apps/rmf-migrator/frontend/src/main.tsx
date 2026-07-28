@@ -13,6 +13,7 @@ import "./styles/theme.css";
 
 import App from "./App.tsx";
 import AuthGate from "./AuthGate.tsx";
+import ErrorBoundary from "./components/ErrorBoundary.tsx";
 import { AuthProvider } from "./contexts/AuthContext.tsx";
 
 const root = document.getElementById("root");
@@ -22,10 +23,12 @@ if (!root) {
 
 createRoot(root).render(
   <StrictMode>
-    <AuthProvider>
-      <AuthGate>
-        <App />
-      </AuthGate>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <AuthGate>
+          <App />
+        </AuthGate>
+      </AuthProvider>
+    </ErrorBoundary>
   </StrictMode>,
 );

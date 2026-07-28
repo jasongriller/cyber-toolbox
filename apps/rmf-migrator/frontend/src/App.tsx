@@ -109,6 +109,9 @@ export default function App() {
               client={client}
               projectId={view.projectId}
               documentId={view.documentId}
+              onContinue={() =>
+                setView({ kind: "drafting", projectId: view.projectId, documentId: view.documentId })
+              }
             />
           )}
           {view.kind === "drafting" && (

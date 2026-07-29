@@ -15,12 +15,14 @@ interface Props {
   client: ApiClient;
   projectId: string;
   documentId: string;
+  /** Rendered as "Continue to export" once every section is approved. */
+  onContinue?: () => void;
 }
 
 const POLL_MS = 2500;
 const DRAFTING: DocumentStatus[] = ["mapping_approved", "drafting"];
 
-export default function DraftEditor({ client, projectId, documentId }: Props) {
+export default function DraftEditor({ client, projectId, documentId, onContinue }: Props) {
   const [status, setStatus] = useState<DocumentStatus | null>(null);
   const [sections, setSections] = useState<Section[]>([]);
   const [drafts, setDrafts] = useState<Draft[]>([]);
@@ -116,6 +118,9 @@ export default function DraftEditor({ client, projectId, documentId }: Props) {
   }
 
   const approvedCount = drafts.filter((d) => d.status === "approved").length;
+  // Revealed rather than auto-jumped: the reviewer may still be reading the
+  // section they just approved.
+  const allApproved = drafts.length > 0 && approvedCount === drafts.length;
 
   return (
     <section>
@@ -210,6 +215,12 @@ export default function DraftEditor({ client, projectId, documentId }: Props) {
           </article>
         );
       })}
+
+      {allApproved && onContinue && (
+        <button className="btn btn--accent" style={{ marginTop: "1rem" }} onClick={onContinue}>
+          Continue to export →
+        </button>
+      )}
     </section>
   );
 }

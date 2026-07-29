@@ -13,6 +13,10 @@ import type { Baseline, DocumentRecord, DocumentStatus, Project } from "../api/t
 
 interface Props {
   client: ApiClient;
+  /** Reselect this project once the list loads — the browser remounts on every
+   *  return from a document, and forgetting the selection each time made "← All
+   *  projects" land on a cold "Select a project" state. */
+  initialProjectId?: string;
   onOpenDocument: (projectId: string, documentId: string) => void;
   onOpenCoverage: (projectId: string) => void;
 }
@@ -42,7 +46,12 @@ const BUSY: DocumentStatus[] = [
 
 const POLL_MS = 2500;
 
-export default function ProjectBrowser({ client, onOpenDocument, onOpenCoverage }: Props) {
+export default function ProjectBrowser({
+  client,
+  initialProjectId,
+  onOpenDocument,
+  onOpenCoverage,
+}: Props) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [selected, setSelected] = useState<Project | null>(null);
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
@@ -80,6 +89,18 @@ export default function ProjectBrowser({ client, onOpenDocument, onOpenCoverage 
   useEffect(() => {
     void loadProjects();
   }, [loadProjects]);
+
+  // One-shot: applies once the project list holds the remembered project, and
+  // never again after that (or after the operator picks anything themselves) —
+  // so a later deselect (e.g. post-purge) stays deselected.
+  const appliedInitial = useRef(false);
+  useEffect(() => {
+    if (appliedInitial.current || selected || !initialProjectId) return;
+    const match = projects.find((p) => p.project_id === initialProjectId);
+    if (!match) return;
+    appliedInitial.current = true;
+    setSelected(match);
+  }, [projects, selected, initialProjectId]);
 
   useEffect(() => {
     if (!selected) return;

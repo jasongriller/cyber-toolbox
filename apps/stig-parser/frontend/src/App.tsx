@@ -16,6 +16,7 @@ export default function App() {
   const [benchmarks, setBenchmarks] = useState<File[]>([]);
   const [ai, setAi] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [downloadStarted, setDownloadStarted] = useState(false);
 
   const { state, submit, cancel, reconnect, reset, canCancel, canReconnect } = useJob();
 
@@ -75,6 +76,9 @@ export default function App() {
     setDownloadError(null);
     try {
       const { url } = await api.getResultUrl(state.jobId);
+      // Only a URL that actually navigated counts — a 409/410/failure below
+      // leaves the guard armed, because the report was still never fetched.
+      setDownloadStarted(true);
       window.location.href = url;
     } catch (err) {
       // 409: the object is not on S3 yet. Not an error — the operator is early,
@@ -100,6 +104,7 @@ export default function App() {
     setResults([]);
     setBenchmarks([]);
     setDownloadError(null);
+    setDownloadStarted(false);
     reset();
   }
 
@@ -109,6 +114,13 @@ export default function App() {
         <div className="result-card error" role="alert">
           <h2>Unavailable</h2>
           <p>{configError}</p>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => window.location.reload()}
+          >
+            Reload
+          </button>
         </div>
       </div>
     );
@@ -229,6 +241,7 @@ export default function App() {
               ai={state.ai}
               aiError={state.aiError}
               downloadError={downloadError}
+              downloadStarted={downloadStarted}
               onReconnect={canReconnect ? () => void reconnect() : undefined}
               onDownload={() => void onDownload()}
               onReset={onReset}

@@ -702,6 +702,20 @@ footer .small {
   }
 }
 
+/* Inline stand-in for a destructive-action confirm dialog: the report handle
+   is gone for good once reset runs, so the first click asks instead. */
+.reset-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  margin-top: .75rem;
+  padding: .75rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: var(--text-small);
+  text-align: center;
+}
+
 /* Screen-reader-only label. The file input is visually hidden behind the
    Choose Files button, but it still needs an accessible name. */
 .visually-hidden {

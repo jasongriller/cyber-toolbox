@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 import { explainAiGate } from '../aiGate';
 import type { AiGate, Summary } from '../types';
@@ -21,6 +22,8 @@ interface Props {
   aiError: string | null;
   /** Why the last Download click did not produce a file. */
   downloadError?: string | null;
+  /** True once a download actually started — the reset guard stands down. */
+  downloadStarted?: boolean;
   /** Present only when the job id survived a lost connection: offer it back. */
   onReconnect?: () => void;
   onDownload: () => void;
@@ -28,9 +31,28 @@ interface Props {
 }
 
 export default function ResultCard({
-  headingRef, status, summary, warnings, error, ai, aiError, downloadError, onReconnect,
-  onDownload, onReset,
+  headingRef, status, summary, warnings, error, ai, aiError, downloadError, downloadStarted,
+  onReconnect, onDownload, onReset,
 }: Props) {
+  // "Process Another Set" permanently discards the report handle. Clicked
+  // before any download, it swaps for an inline confirm instead of obeying —
+  // the one case where instant obedience loses data.
+  const [confirmingReset, setConfirmingReset] = useState(false);
+
+  // Swapping the clicked button out from under the operator drops focus to
+  // <body> (WCAG 2.4.3) — same problem App solves for phase changes. Focus
+  // lands on the non-destructive choice when the confirm opens, and back on
+  // the reset button when it closes.
+  const keepButton = useRef<HTMLButtonElement>(null);
+  const resetButton = useRef<HTMLButtonElement>(null);
+  const wasConfirming = useRef(false);
+  useEffect(() => {
+    if (confirmingReset === wasConfirming.current) return;
+    wasConfirming.current = confirmingReset;
+    if (confirmingReset) keepButton.current?.focus();
+    else resetButton.current?.focus();
+  }, [confirmingReset]);
+
   if (status === 'error') {
     return (
       <div className="result-card error" role="alert">
@@ -162,9 +184,34 @@ export default function ResultCard({
       <button type="button" className="btn btn-primary" onClick={onDownload}>
         Download Excel Report
       </button>
-      <button type="button" className="btn btn-secondary" onClick={onReset}>
-        Process Another Set
-      </button>
+      {confirmingReset && !downloadStarted ? (
+        <div className="reset-confirm">
+          <p role="alert">
+            <span aria-hidden="true">⚠ </span>
+            You haven&apos;t downloaded this report. Starting a new set discards it permanently.
+          </p>
+          <button type="button" className="btn btn-secondary" onClick={onReset}>
+            Discard &amp; start new
+          </button>
+          <button
+            type="button"
+            className="btn btn-primary"
+            ref={keepButton}
+            onClick={() => setConfirmingReset(false)}
+          >
+            Keep report
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          className="btn btn-secondary"
+          ref={resetButton}
+          onClick={() => (downloadStarted ? onReset() : setConfirmingReset(true))}
+        >
+          Process Another Set
+        </button>
+      )}
 
       <WarningsBox warnings={warnings} title="Warnings from this run" />
     </div>

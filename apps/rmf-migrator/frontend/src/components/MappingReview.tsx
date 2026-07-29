@@ -13,12 +13,14 @@ interface Props {
   client: ApiClient;
   projectId: string;
   documentId: string;
+  /** Where "Approve mapping & continue" actually continues to. */
+  onContinue?: () => void;
 }
 
 const POLL_MS = 2000;
 const IN_PROGRESS: DocumentStatus[] = ["uploaded", "parsing", "parsed", "mapping"];
 
-export default function MappingReview({ client, projectId, documentId }: Props) {
+export default function MappingReview({ client, projectId, documentId, onContinue }: Props) {
   const [status, setStatus] = useState<DocumentStatus | null>(null);
   const [sections, setSections] = useState<Section[]>([]);
   const [mappings, setMappings] = useState<ControlMapping[]>([]);
@@ -85,6 +87,12 @@ export default function MappingReview({ client, projectId, documentId }: Props) 
     setBusy(true);
     try {
       const res = await client.approveMappings(projectId, documentId);
+      // The button says "& continue" — honor it. The view is about to unmount,
+      // so the reload below would only race the unmount.
+      if (onContinue) {
+        onContinue();
+        return;
+      }
       setStatus(res.document_status);
       await load();
       setError(null);

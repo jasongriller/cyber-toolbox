@@ -204,3 +204,66 @@ describe('ResultCard (error)', () => {
     expect(screen.getByRole('button', { name: /reconnect/i })).toBeInTheDocument();
   });
 });
+
+describe('ResultCard (download guard)', () => {
+  it('asks before discarding a report that was never downloaded', async () => {
+    const onReset = vi.fn();
+    render(
+      <ResultCard status="complete" summary={SUMMARY} warnings={[]} error={null}
+                  ai={null} aiError={null} onDownload={vi.fn()} onReset={onReset} />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: /process another set/i }));
+
+    expect(onReset).not.toHaveBeenCalled();
+    expect(screen.getByText(/haven't downloaded this report/i)).toBeInTheDocument();
+  });
+
+  it('discards only on explicit confirmation', async () => {
+    const onReset = vi.fn();
+    render(
+      <ResultCard status="complete" summary={SUMMARY} warnings={[]} error={null}
+                  ai={null} aiError={null} onDownload={vi.fn()} onReset={onReset} />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: /process another set/i }));
+    await userEvent.click(screen.getByRole('button', { name: /discard & start new/i }));
+
+    expect(onReset).toHaveBeenCalled();
+  });
+
+  it('keeps the report on request and restores the normal card', async () => {
+    const onReset = vi.fn();
+    render(
+      <ResultCard status="complete" summary={SUMMARY} warnings={[]} error={null}
+                  ai={null} aiError={null} onDownload={vi.fn()} onReset={onReset} />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: /process another set/i }));
+    await userEvent.click(screen.getByRole('button', { name: /keep report/i }));
+
+    expect(onReset).not.toHaveBeenCalled();
+    expect(screen.queryByText(/haven't downloaded this report/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /process another set/i })).toBeInTheDocument();
+  });
+
+  it('resets immediately once the report was downloaded', async () => {
+    const onReset = vi.fn();
+    render(
+      <ResultCard status="complete" summary={SUMMARY} warnings={[]} error={null}
+                  ai={null} aiError={null} downloadStarted
+                  onDownload={vi.fn()} onReset={onReset} />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: /process another set/i }));
+
+    expect(onReset).toHaveBeenCalled();
+    expect(screen.queryByText(/haven't downloaded this report/i)).not.toBeInTheDocument();
+  });
+
+  it('moves focus to the safe choice when the confirm opens', async () => {
+    render(
+      <ResultCard status="complete" summary={SUMMARY} warnings={[]} error={null}
+                  ai={null} aiError={null} onDownload={vi.fn()} onReset={vi.fn()} />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: /process another set/i }));
+
+    expect(screen.getByRole('button', { name: /keep report/i })).toHaveFocus();
+  });
+});

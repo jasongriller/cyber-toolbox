@@ -40,8 +40,15 @@ const SECRET_INPUT: CSSProperties = {
 };
 
 export default function Login() {
-  const { login, requiresNewPassword, completeNewPassword, mfaStage, mfaSecret, submitTotpCode } =
-    useAuth();
+  const {
+    login,
+    requiresNewPassword,
+    completeNewPassword,
+    mfaStage,
+    mfaSecret,
+    submitTotpCode,
+    resetChallenge,
+  } = useAuth();
 
   const [view, setView] = useState<View>('login');
   const [email, setEmail] = useState('');
@@ -116,6 +123,18 @@ export default function Login() {
     } finally {
       setBusy(false);
     }
+  };
+
+  // Escape hatch for every challenge view — a mistyped email discovered at the
+  // code prompt used to require a full page reload. The challenge fields are
+  // cleared, but not email/password: the usual reason to bail is fixing a typo.
+  const backToSignIn = () => {
+    resetChallenge();
+    setView('login');
+    setError(null);
+    setNewPw('');
+    setConfirmPw('');
+    setTotpCode('');
   };
 
   const heading =
@@ -234,6 +253,14 @@ export default function Login() {
             >
               {busy ? 'Saving…' : 'Set password & sign in'}
             </button>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              disabled={busy}
+              onClick={backToSignIn}
+            >
+              ← Back to sign in
+            </button>
             {error ? (
               <p role="alert" style={{ color: 'var(--color-danger)', fontSize: 12.5 }}>{error}</p>
             ) : null}
@@ -270,6 +297,14 @@ export default function Login() {
             <button type="submit" className="btn btn-primary" disabled={busy || totpCode.length !== 6}>
               {busy ? 'Verifying…' : 'Verify & finish setup'}
             </button>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              disabled={busy}
+              onClick={backToSignIn}
+            >
+              ← Back to sign in
+            </button>
             {error ? (
               <p role="alert" style={{ color: 'var(--color-danger)', fontSize: 12.5 }}>{error}</p>
             ) : null}
@@ -294,6 +329,14 @@ export default function Login() {
             />
             <button type="submit" className="btn btn-primary" disabled={busy || totpCode.length !== 6}>
               {busy ? 'Verifying…' : 'Verify code'}
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              disabled={busy}
+              onClick={backToSignIn}
+            >
+              ← Back to sign in
             </button>
             {error ? (
               <p role="alert" style={{ color: 'var(--color-danger)', fontSize: 12.5 }}>{error}</p>

@@ -87,6 +87,14 @@ describe('App', () => {
     render(<App />);
     expect(await screen.findByRole('alert')).toHaveTextContent(/could not reach the server/i);
   });
+
+  it('offers a reload escape on the unavailable screen', async () => {
+    vi.spyOn(api, 'getConfig').mockRejectedValue(new Error('network'));
+    render(<App />);
+
+    await screen.findByRole('alert');
+    expect(screen.getByRole('button', { name: /reload/i })).toBeInTheDocument();
+  });
 });
 
 describe('App cancelled job', () => {
@@ -151,8 +159,10 @@ describe('App focus management (WCAG 2.4.3)', () => {
     );
     await waitFor(() => expect(ready).toHaveFocus());
 
-    // And back again on reset.
+    // And back again on reset — through the download guard, since this report
+    // was never downloaded.
     await userEvent.click(screen.getByRole('button', { name: /process another set/i }));
+    await userEvent.click(screen.getByRole('button', { name: /discard & start new/i }));
     const upload = await screen.findByRole('heading', { name: /upload scan files/i });
     await waitFor(() => expect(upload).toHaveFocus());
   });

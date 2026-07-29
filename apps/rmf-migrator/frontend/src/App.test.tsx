@@ -152,3 +152,16 @@ describe("App project memory", () => {
     );
   });
 });
+
+describe("App header", () => {
+  it("shows the tool name without any studio branding", async () => {
+    const { container } = render(<App />);
+    await screen.findByRole("button", { name: /alpha/i });
+
+    expect(screen.queryByText(/binary systems/i)).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /rmf rev 5 migrator/i }),
+    ).toBeInTheDocument();
+    expect(container.querySelector(".brand-mark")).toBeInTheDocument();
+  });
+});

@@ -62,7 +62,6 @@ export default function App() {
               <Cube size={18} weight="duotone" />
             </span>
             <div>
-              <p className="eyebrow">Binary Systems</p>
               <h1>RMF Rev 5 Migrator</h1>
             </div>
           </div>

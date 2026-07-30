@@ -84,9 +84,38 @@ def test_oversized_bytes_are_rejected():
         guard_docx_bytes(b"x" * (MAX_DOCX_BYTES + 1))
 
 
-def test_non_zip_bytes_are_rejected():
-    with pytest.raises(DocxTooLarge):
+def test_non_zip_bytes_are_rejected_as_invalid_not_too_large():
+    """Garbage bytes are a *format* problem, not a size problem — reporting
+    DocxTooLarge for them sends the operator chasing the wrong cause."""
+    from rmf_migrator.common.limits import InvalidDocx
+
+    with pytest.raises(InvalidDocx):
         guard_docx_bytes(b"this is not a docx")
+
+
+def test_legacy_doc_is_named_in_the_rejection():
+    """A binary .doc renamed to .docx is the classic real-world failure; the
+    error must say re-save as .docx, not talk about size limits."""
+    from rmf_migrator.common.limits import InvalidDocx
+
+    ole2 = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1" + b"\x00" * 64
+    with pytest.raises(InvalidDocx, match="legacy Word"):
+        guard_docx_bytes(ole2)
+
+
+def test_html_saved_as_docx_is_named_in_the_rejection():
+    from rmf_migrator.common.limits import InvalidDocx
+
+    html = b"<!DOCTYPE html><html><body>Download page</body></html>"
+    with pytest.raises(InvalidDocx, match="HTML"):
+        guard_docx_bytes(html)
+
+
+def test_pdf_renamed_to_docx_is_named_in_the_rejection():
+    from rmf_migrator.common.limits import InvalidDocx
+
+    with pytest.raises(InvalidDocx, match="PDF"):
+        guard_docx_bytes(b"%PDF-1.7 garbage")
 
 
 def test_ratio_constant_is_sane_for_real_documents():
@@ -109,12 +138,19 @@ def test_guard_rejects_a_zip_that_underdeclares_member_sizes():
     assert declared_total < MAX_UNCOMPRESSED_BYTES
     assert declared_total / len(data) < MAX_COMPRESSION_RATIO
 
-    with pytest.raises(DocxTooLarge):
+    # Rejection is what matters: the forged sizes either cross the actual-
+    # decompression ceiling (DocxTooLarge) or trip zipfile's own consistency
+    # checks (InvalidDocx) — both stop the bomb before it reaches the parser.
+    from rmf_migrator.common.limits import InvalidDocx
+
+    with pytest.raises((DocxTooLarge, InvalidDocx)):
         guard_docx_bytes(data)
 
 
 def test_parser_rejects_a_lying_zip_bomb():
-    with pytest.raises(DocxTooLarge):
+    from rmf_migrator.common.limits import InvalidDocx
+
+    with pytest.raises((DocxTooLarge, InvalidDocx)):
         parse_docx_bytes(_lying_zip_bomb(), document_id="d", project_id="p")
 
 

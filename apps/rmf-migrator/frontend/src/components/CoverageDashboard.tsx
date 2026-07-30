@@ -56,6 +56,15 @@ export default function CoverageDashboard({ client, projectId }: Props) {
     }
   };
 
+  const downloadEmass = async () => {
+    try {
+      const csv = await client.getEmassCsv(projectId);
+      downloadBlob(csv, "text/csv", `emass-controls-${projectId}.csv`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
   const downloadOscal = async () => {
     try {
       const jsonText = await client.getOscalJson(projectId);
@@ -94,6 +103,9 @@ export default function CoverageDashboard({ client, projectId }: Props) {
         </button>
         <button className="btn" onClick={() => void downloadMatrix()}>
           <FileCsv size={14} /> Conversion matrix (CSV)
+        </button>
+        <button className="btn" onClick={() => void downloadEmass()}>
+          <FileCsv size={14} /> eMASS controls (CSV)
         </button>
         <button className="btn" onClick={() => void downloadOscal()}>
           <BracketsCurly size={14} /> OSCAL (JSON)

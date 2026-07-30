@@ -68,6 +68,7 @@ locals {
     coverage          = { handler = "rmf_migrator.handlers.coverage.coverage" }
     conversion-matrix = { handler = "rmf_migrator.handlers.coverage.conversion_matrix" }
     oscal             = { handler = "rmf_migrator.handlers.coverage.oscal" }
+    emass-export      = { handler = "rmf_migrator.handlers.coverage.emass_export" }
   }
 
   api_role_arns = {

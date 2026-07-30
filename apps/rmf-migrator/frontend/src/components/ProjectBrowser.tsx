@@ -46,6 +46,29 @@ const BUSY: DocumentStatus[] = [
 
 const POLL_MS = 2500;
 
+const OLE2_MAGIC = [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
+
+// FileReader rather than Blob.arrayBuffer: identical support in every real
+// browser, and it also exists in the jsdom test environment.
+function readHeadBytes(file: File): Promise<Uint8Array> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(new Uint8Array(reader.result as ArrayBuffer));
+    reader.onerror = () => reject(reader.error ?? new Error("could not read the file"));
+    reader.readAsArrayBuffer(file.slice(0, 8));
+  });
+}
+
+// The same check the backend's parse guard runs, moved to the moment of file
+// selection: a renamed legacy .doc opens fine in Word (Word sniffs content,
+// not extensions), so the person uploading cannot tell — the first 8 bytes can.
+async function sniffWordFormat(file: File): Promise<"docx" | "legacy-doc" | "unknown"> {
+  const head = await readHeadBytes(file);
+  if (OLE2_MAGIC.every((b, i) => head[i] === b)) return "legacy-doc";
+  if (head[0] === 0x50 && head[1] === 0x4b) return "docx";
+  return "unknown";
+}
+
 export default function ProjectBrowser({
   client,
   initialProjectId,
@@ -135,6 +158,16 @@ export default function ProjectBrowser({
     if (!selected) return;
     setBusy(true);
     try {
+      const format = await sniffWordFormat(file);
+      if (format !== "docx") {
+        setError(
+          format === "legacy-doc"
+            ? "This is an older binary .doc file — open it in Word, use Save As to make a real .docx, and upload that instead."
+            : "That file is not a .docx Word document.",
+        );
+        if (fileInput.current) fileInput.current.value = "";
+        return;
+      }
       await client.uploadDocument(selected.project_id, file);
       await loadDocuments(selected.project_id);
       if (fileInput.current) fileInput.current.value = "";

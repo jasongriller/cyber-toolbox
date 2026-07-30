@@ -22,6 +22,15 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Header cleanup.** The studio name is gone from the top of the app; the header
   is just the tool name and mark.
 
+### Fixed
+
+- **Wrong-format uploads now say so.** A legacy binary `.doc` renamed to
+  `.docx` used to die in parsing as a bare `failed` with a misleading
+  "too large" error type. The file picker now checks the real file signature
+  before uploading and explains the fix ("open in Word, Save As .docx"), the
+  parser reports `UnsupportedDocumentFormat` for non-OOXML bytes, and failed
+  documents show a plain-language reason in the project browser.
+
 ### Removed
 
 - **Bundled PDF manual.** The stale `docs/USER_MANUAL.pdf` copy is removed;

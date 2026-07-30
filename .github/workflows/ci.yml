@@ -98,6 +98,10 @@ jobs:
           cache: npm
           cache-dependency-path: apps/stig-parser/frontend/package-lock.json
       - run: npm ci
+      # Matches the rmf-frontend gate. Without it the stig frontend carried a
+      # critical and a high advisory through CI unnoticed.
+      - name: npm audit
+        run: npm audit --audit-level=high
       # Type errors must fail the build, not get discovered at runtime.
       - name: Typecheck
         run: npx tsc --noEmit

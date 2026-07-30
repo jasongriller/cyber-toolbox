@@ -86,6 +86,9 @@ module "rmf_migrator" {
 # instead of touching this root's state, the same pattern the platform root
 # uses to publish the shared pool itself.
 resource "aws_ssm_parameter" "rmf_api_url" {
+  # checkov:skip=CKV2_AWS_34: The value is the public API base URL — it is
+  # served to every browser client and carries no confidentiality. SecureString
+  # would only add KMS coupling for the cross-stack reader.
   name  = "${var.cognito_ssm_prefix}/rmf_api_url"
   type  = "String"
   value = module.rmf_migrator.api_endpoint

@@ -145,6 +145,22 @@ export default function ProjectBrowser({
     }
   };
 
+  // Re-parse a failed document. The backend re-admits any FAILED document to
+  // the parse endpoint and re-parsing auto-chains mapping, so this one action
+  // restarts the whole pipeline regardless of which stage failed.
+  const retry = async (documentId: string) => {
+    if (!selected) return;
+    setBusy(true);
+    try {
+      await client.startParse(selected.project_id, documentId);
+      await loadDocuments(selected.project_id);
+    } catch (e) {
+      fail(e);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const purgeProject = async () => {
     if (!selected) return;
     const confirmation = window.prompt(
@@ -261,10 +277,23 @@ export default function ProjectBrowser({
                         <tr key={d.document_id}>
                           <td>{d.filename}</td>
                           <td>
-                            <StatusBadge status={d.status} />
+                            <StatusBadge
+                              status={d.status}
+                              failureStage={d.failure_stage}
+                              parseError={d.parse_error}
+                            />
                           </td>
                           <td className="num">{d.section_count > 0 ? d.section_count : ""}</td>
                           <td>
+                            {d.status === "failed" && (
+                              <button
+                                className="btn btn--sm"
+                                disabled={busy}
+                                onClick={() => void retry(d.document_id)}
+                              >
+                                Retry
+                              </button>
+                            )}
                             <button
                               className="btn btn--sm"
                               onClick={() => onOpenDocument(selected.project_id, d.document_id)}
@@ -322,9 +351,26 @@ export default function ProjectBrowser({
   );
 }
 
-function StatusBadge({ status }: { status: DocumentStatus }) {
+function StatusBadge({
+  status,
+  failureStage,
+  parseError,
+}: {
+  status: DocumentStatus;
+  failureStage?: string | null;
+  parseError?: string | null;
+}) {
   const working = BUSY.includes(status) && status !== "parsed";
   const failed = status === "failed";
   const cls = failed ? "pill pill--crit" : working ? "pill pill--work" : "pill pill--ok";
-  return <span className={cls}>{status}</span>;
+  // On failure, name the stage (parse/mapping/drafting) and the error type so
+  // the operator can tell a bad document from an infrastructure problem
+  // without console access.
+  let label: string = status;
+  if (failed && failureStage) {
+    label = parseError
+      ? `failed (${failureStage}: ${parseError})`
+      : `failed (${failureStage})`;
+  }
+  return <span className={cls}>{label}</span>;
 }

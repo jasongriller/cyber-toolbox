@@ -44,9 +44,7 @@ class DocumentStore:
         # SigV4 pinned: the default client in legacy-listed regions
         # (us-gov-west-1 included) presigns SigV2-form URLs, which buckets
         # created after 2020-06 reject with 403.
-        self._s3 = s3_client or boto3.client(
-            "s3", config=Config(signature_version="s3v4")
-        )
+        self._s3 = s3_client or boto3.client("s3", config=Config(signature_version="s3v4"))
 
     def presigned_put_url(self, key: str) -> dict[str, Any]:
         """Return a presigned PUT URL and the headers the caller must send.

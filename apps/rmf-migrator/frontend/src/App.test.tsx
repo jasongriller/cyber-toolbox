@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
@@ -11,6 +11,7 @@ const stubs = vi.hoisted(() => ({
   listSections: vi.fn(),
   getMappings: vi.fn(),
   getCoverage: vi.fn(),
+  uploadDocument: vi.fn(),
 }));
 
 vi.mock("./api/client", () => ({
@@ -20,6 +21,7 @@ vi.mock("./api/client", () => ({
     listSections = stubs.listSections;
     getMappings = stubs.getMappings;
     getCoverage = stubs.getCoverage;
+    uploadDocument = stubs.uploadDocument;
   },
   parseControlIds: (raw: string) =>
     raw.split(",").map((s) => s.trim()).filter(Boolean),
@@ -167,6 +169,38 @@ describe("Failed document reasons", () => {
     await screen.findByText("policy.docx");
     expect(screen.queryByText(/processing failed/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/older binary/i)).not.toBeInTheDocument();
+  });
+});
+
+describe("Wrong-format uploads", () => {
+  it("blocks a legacy .doc at selection, before any upload starts", async () => {
+    render(<App />);
+    await userEvent.click(await screen.findByRole("button", { name: /alpha/i }));
+
+    const input = await screen.findByLabelText(/upload a .docx policy document/i);
+    const renamedDoc = new File(
+      [new Uint8Array([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1])],
+      "renamed.docx",
+    );
+    await userEvent.upload(input, renamedDoc);
+
+    expect(await screen.findByText(/older binary \.doc file/i)).toBeInTheDocument();
+    expect(stubs.uploadDocument).not.toHaveBeenCalled();
+  });
+
+  it("lets zip-signature files through to the normal upload", async () => {
+    stubs.uploadDocument.mockResolvedValue({});
+    render(<App />);
+    await userEvent.click(await screen.findByRole("button", { name: /alpha/i }));
+
+    const input = await screen.findByLabelText(/upload a .docx policy document/i);
+    const realDocx = new File(
+      [new Uint8Array([0x50, 0x4b, 0x03, 0x04, 1, 2, 3, 4])],
+      "real.docx",
+    );
+    await userEvent.upload(input, realDocx);
+
+    await waitFor(() => expect(stubs.uploadDocument).toHaveBeenCalled());
   });
 });
 

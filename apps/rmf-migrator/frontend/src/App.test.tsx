@@ -162,6 +162,50 @@ describe("Failed document reasons", () => {
     expect(await screen.findByText(/processing failed/i)).toBeInTheDocument();
   });
 
+  it("covers damaged files in the size-limit wording", async () => {
+    // Historical rows carry DocxTooLarge even when the real cause was format,
+    // and PK-prefixed-but-corrupt files land here too — the copy must not
+    // promise that size is the only cause.
+    stubs.listDocuments.mockResolvedValue({
+      documents: [{ ...DOCUMENT, status: "failed", parse_error: "DocxTooLarge" }],
+    });
+    render(<App />);
+    await userEvent.click(await screen.findByRole("button", { name: /alpha/i }));
+
+    expect(await screen.findByText(/unreadable as a \.docx/i)).toBeInTheDocument();
+  });
+
+  it("disables Open when parsing failed — there is nothing behind it", async () => {
+    stubs.listDocuments.mockResolvedValue({
+      documents: [
+        {
+          ...DOCUMENT,
+          status: "failed",
+          parse_error: "UnsupportedDocumentFormat",
+          failure_stage: "parse",
+        },
+      ],
+    });
+    render(<App />);
+    await userEvent.click(await screen.findByRole("button", { name: /alpha/i }));
+
+    expect(await screen.findByRole("button", { name: /^open$/i })).toBeDisabled();
+  });
+
+  it("keeps Open available when a document failed after parsing", async () => {
+    // A drafting-stage failure still has parsed sections and mappings worth
+    // seeing; only parse-stage failures have nothing behind the button.
+    stubs.listDocuments.mockResolvedValue({
+      documents: [
+        { ...DOCUMENT, status: "failed", parse_error: null, failure_stage: "drafting" },
+      ],
+    });
+    render(<App />);
+    await userEvent.click(await screen.findByRole("button", { name: /alpha/i }));
+
+    expect(await screen.findByRole("button", { name: /^open$/i })).toBeEnabled();
+  });
+
   it("shows no reason line on healthy documents", async () => {
     render(<App />);
     await userEvent.click(await screen.findByRole("button", { name: /alpha/i }));
@@ -201,6 +245,24 @@ describe("Wrong-format uploads", () => {
     await userEvent.upload(input, realDocx);
 
     await waitFor(() => expect(stubs.uploadDocument).toHaveBeenCalled());
+  });
+
+  it("clears the picker after a failed upload so the same file can retry", async () => {
+    stubs.uploadDocument.mockRejectedValue(new Error("network sad"));
+    render(<App />);
+    await userEvent.click(await screen.findByRole("button", { name: /alpha/i }));
+
+    const input = await screen.findByLabelText<HTMLInputElement>(
+      /upload a .docx policy document/i,
+    );
+    await userEvent.upload(
+      input,
+      new File([new Uint8Array([0x50, 0x4b, 0x03, 0x04])], "real.docx"),
+    );
+
+    expect(await screen.findByText(/network sad/i)).toBeInTheDocument();
+    // Re-choosing the identical file must re-fire onChange.
+    expect(input.value).toBe("");
   });
 });
 

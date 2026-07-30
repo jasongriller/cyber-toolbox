@@ -173,8 +173,9 @@ def test_enqueue_parse_failure_keeps_failed_document_retryable(deps):
     job = json.loads(_enqueue(_event(path={"project_id": pid, "document_id": did}), deps)["body"])[
         "job"
     ]
-    with pytest.raises(Exception, match="docx"):
-        run_parse_job(pid, did, job["job_id"], deps)
+    # A deterministic format failure records FAILED and ends without raising —
+    # retrying identical bytes could only fail identically.
+    assert run_parse_job(pid, did, job["job_id"], deps) is False
     document = deps.repo.get_document(pid, did)
     assert document.status == DocumentStatus.FAILED
     assert document.failure_stage == "parse"
@@ -267,13 +268,46 @@ def test_run_parse_job_marks_failed_on_bad_bytes(deps):
         "job"
     ]
 
-    with pytest.raises(Exception):  # noqa: B017 — re-raised for SQS retry semantics
-        run_parse_job(pid, did, job["job_id"], deps)
+    # Deterministic verdict on the bytes: recorded once, no re-raise, so SQS
+    # does not redeliver a job that can only fail the same way again.
+    assert run_parse_job(pid, did, job["job_id"], deps) is False
 
-    assert deps.repo.get_document(pid, did).status == DocumentStatus.FAILED
+    document = deps.repo.get_document(pid, did)
+    assert document.status == DocumentStatus.FAILED
+    assert document.parse_error == "UnsupportedDocumentFormat"
     failed_job = deps.repo.get_job(pid, job["job_id"])
     assert failed_job.status == JobStatus.FAILED
-    assert failed_job.error_type is not None
+    assert failed_job.error_type == "UnsupportedDocumentFormat"
+
+
+def test_run_parse_job_reraises_transient_errors_for_retry(deps):
+    import dataclasses
+
+    project = json.loads(_create(_event(body={"name": "S"}), deps)["body"])
+    pid = project["project_id"]
+    up = json.loads(
+        _request_upload(_event(body={"filename": "a.docx"}, path={"project_id": pid}), deps)["body"]
+    )
+    did = up["document"]["document_id"]
+    deps.store._s3.put_object(  # noqa: SLF001
+        Bucket=deps.config.documents_bucket,
+        Key=up["document"]["s3_key"],
+        Body=_make_docx_bytes(),
+    )
+    job = json.loads(_enqueue(_event(path={"project_id": pid, "document_id": did}), deps)["body"])[
+        "job"
+    ]
+
+    class _BoomStore:
+        def get_bytes(self, *_args, **_kwargs):
+            raise RuntimeError("s3 unavailable")
+
+    broken = dataclasses.replace(deps, store=_BoomStore())
+    with pytest.raises(RuntimeError):
+        run_parse_job(pid, did, job["job_id"], broken)
+
+    # Still recorded as failed, but the raise lets SQS redeliver.
+    assert deps.repo.get_document(pid, did).status == DocumentStatus.FAILED
 
 
 # ---- get_job ---------------------------------------------------------------

@@ -62,6 +62,16 @@ class UnsupportedDocumentFormat(ValueError):
 _OLE2_MAGIC = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"  # Word 97-2003 .doc container
 _ZIP_MAGIC = b"PK"
 
+# python-docx's own acceptance test (docx.api.Document): the package must
+# declare a WordprocessingML main document part in [Content_Types].xml. The
+# part's NAME is free — the library resolves it through the relationship
+# graph, and real Word files occasionally carry word/document2.xml — so the
+# guard matches the declaration, never a filename.
+_CONTENT_TYPES_MEMBER = "[Content_Types].xml"
+_WML_MAIN_CONTENT_TYPE = (
+    b"application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"
+)
+
 
 class ParsedDocumentTooLarge(ValueError):
     """Raised when extracted policy text cannot safely traverse the application."""
@@ -82,9 +92,8 @@ def guard_docx_bytes(data: bytes) -> None:
     tracking the *actual* decompressed total, and aborts the instant that total
     crosses the ceiling — before the bytes can accumulate in memory.
     """
-    if len(data) > MAX_DOCX_BYTES:
-        raise DocxTooLarge(f"document exceeds {MAX_DOCX_BYTES} bytes")
-
+    # Format first, size second: the remedies differ, and telling someone to
+    # shrink a legacy .doc sends them down the wrong path entirely.
     if data.startswith(_OLE2_MAGIC):
         raise UnsupportedDocumentFormat(
             "legacy binary .doc container; renaming does not convert it"
@@ -92,18 +101,27 @@ def guard_docx_bytes(data: bytes) -> None:
     if not data.startswith(_ZIP_MAGIC):
         raise UnsupportedDocumentFormat("not an OOXML .docx container")
 
-    # Two independent ceilings, whichever is tighter: an absolute cap and a
-    # compression-ratio cap relative to the bytes on the wire.
-    ceiling = MAX_UNCOMPRESSED_BYTES
-    if data:
-        ceiling = min(ceiling, MAX_COMPRESSION_RATIO * len(data))
+    if len(data) > MAX_DOCX_BYTES:
+        raise DocxTooLarge(f"document exceeds {MAX_DOCX_BYTES} bytes")
 
+    # Two independent ceilings, whichever is tighter: an absolute cap and a
+    # compression-ratio cap relative to the bytes on the wire (data is
+    # non-empty here — the PK check guarantees at least two bytes).
+    ceiling = min(MAX_UNCOMPRESSED_BYTES, MAX_COMPRESSION_RATIO * len(data))
+
+    # Any zip passes the magic check; only a package declaring a Word main
+    # document is a .docx. The declaration is collected during the same
+    # bounded walk (it is attacker-controlled bytes like everything else), so
+    # a renamed spreadsheet or plain archive is named for what it is instead
+    # of dying inside python-docx as a bare ValueError.
+    content_types = bytearray()
     total = 0
     try:
         with zipfile.ZipFile(io.BytesIO(data)) as archive:
             for info in archive.infolist():
                 if info.is_dir():
                     continue
+                capture = info.filename == _CONTENT_TYPES_MEMBER
                 with archive.open(info) as member:
                     while True:
                         chunk = member.read(_DECOMPRESS_CHUNK)
@@ -114,8 +132,15 @@ def guard_docx_bytes(data: bytes) -> None:
                             raise DocxTooLarge(
                                 "document decompresses past the allowed size/ratio limit"
                             )
+                        if capture:
+                            content_types.extend(chunk)
     except zipfile.BadZipFile as exc:
         raise DocxTooLarge("document is not a readable .docx archive") from exc
+
+    if _WML_MAIN_CONTENT_TYPE not in bytes(content_types):
+        raise UnsupportedDocumentFormat(
+            "zip package without a Word main document declaration"
+        )
 
 
 def guard_parsed_sections(sections: list[object]) -> None:

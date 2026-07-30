@@ -55,6 +55,7 @@ function readHeadBytes(file: File): Promise<Uint8Array> {
     const reader = new FileReader();
     reader.onload = () => resolve(new Uint8Array(reader.result as ArrayBuffer));
     reader.onerror = () => reject(reader.error ?? new Error("could not read the file"));
+    reader.onabort = () => reject(new Error("file read aborted"));
     reader.readAsArrayBuffer(file.slice(0, 8));
   });
 }
@@ -165,15 +166,16 @@ export default function ProjectBrowser({
             ? "This is an older binary .doc file — open it in Word, use Save As to make a real .docx, and upload that instead."
             : "That file is not a .docx Word document.",
         );
-        if (fileInput.current) fileInput.current.value = "";
         return;
       }
       await client.uploadDocument(selected.project_id, file);
       await loadDocuments(selected.project_id);
-      if (fileInput.current) fileInput.current.value = "";
     } catch (e) {
       fail(e);
     } finally {
+      // Always reset the picker — success, block, or failure — so choosing
+      // the same file again re-fires onChange.
+      if (fileInput.current) fileInput.current.value = "";
       setBusy(false);
     }
   };
@@ -308,7 +310,10 @@ export default function ProjectBrowser({
                             <button
                               className="btn btn--sm"
                               onClick={() => onOpenDocument(selected.project_id, d.document_id)}
-                              disabled={BUSY.includes(d.status) && d.status !== "parsed"}
+                              disabled={
+                                (BUSY.includes(d.status) && d.status !== "parsed") ||
+                                (d.status === "failed" && d.failure_stage === "parse")
+                              }
                             >
                               Open
                             </button>
@@ -369,7 +374,7 @@ function failureReason(d: DocumentRecord): string {
     case "UnsupportedDocumentFormat":
       return "This is an older binary .doc file — open it in Word, use Save As to make a real .docx, and re-upload.";
     case "DocxTooLarge":
-      return "Too large or too complex to parse safely (25 MB limit).";
+      return "Too large, too complex, or unreadable as a .docx (25 MB limit).";
     case "ParsedDocumentTooLarge":
       return "The parsed text exceeds the size limit.";
     default:

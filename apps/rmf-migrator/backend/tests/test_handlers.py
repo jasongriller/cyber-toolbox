@@ -201,6 +201,44 @@ def test_enqueue_parse_failure_keeps_failed_document_retryable(deps):
     assert resp["statusCode"] == 202
 
 
+def test_enqueue_parse_readmits_document_failed_past_parse_stage(deps):
+    """A document that failed in a later stage (e.g. mapping) must be re-parseable.
+
+    Re-parsing restarts the whole parse -> map pipeline, so it is the recovery
+    path for *any* failed document — without it, a mapping-stage failure is a
+    permanent dead end (no API re-enqueues mapping directly).
+    """
+    project = json.loads(_create(_event(body={"name": "S"}), deps)["body"])
+    pid = project["project_id"]
+    up = json.loads(
+        _request_upload(_event(body={"filename": "a.docx"}, path={"project_id": pid}), deps)["body"]
+    )
+    did = up["document"]["document_id"]
+    deps.store._s3.put_object(  # noqa: SLF001
+        Bucket=deps.config.documents_bucket,
+        Key=up["document"]["s3_key"],
+        Body=_make_docx_bytes(),
+    )
+
+    # Simulate a worker crash during mapping: document FAILED, stage=mapping.
+    document = deps.repo.get_document(pid, did)
+    document.status = DocumentStatus.FAILED
+    document.failure_stage = "mapping"
+    deps.repo.put_document(document)
+
+    resp = _enqueue(_event(path={"project_id": pid, "document_id": did}), deps)
+    assert resp["statusCode"] == 202
+
+    document = deps.repo.get_document(pid, did)
+    assert document.status == DocumentStatus.PARSING
+    assert document.failure_stage is None
+
+    # And the restarted pipeline runs to completion.
+    job = json.loads(resp["body"])["job"]
+    assert run_parse_job(pid, did, job["job_id"], deps) is True
+    assert deps.repo.get_document(pid, did).status == DocumentStatus.PARSED
+
+
 def test_enqueue_parse_404_missing_document(deps):
     project = json.loads(_create(_event(body={"name": "S"}), deps)["body"])
     with pytest.raises(HttpError) as exc:

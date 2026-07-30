@@ -46,6 +46,23 @@ class DocxTooLarge(ValueError):
     """Raised when .docx bytes exceed a size or decompression-ratio limit."""
 
 
+class UnsupportedDocumentFormat(ValueError):
+    """Raised when uploaded bytes are not an OOXML .docx container at all.
+
+    Kept distinct from DocxTooLarge because the operator remedy is different:
+    a legacy binary .doc (or arbitrary non-zip bytes) needs re-saving as
+    .docx, not shrinking. The class name is the only thing recorded and
+    logged (error types only, never content), so it has to say what happened.
+    """
+
+
+# Magic numbers, checked before any zip handling. A renamed legacy .doc still
+# opens in Word (Word sniffs content, not extensions), so these uploads look
+# fine to the person who made them.
+_OLE2_MAGIC = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"  # Word 97-2003 .doc container
+_ZIP_MAGIC = b"PK"
+
+
 class ParsedDocumentTooLarge(ValueError):
     """Raised when extracted policy text cannot safely traverse the application."""
 
@@ -67,6 +84,13 @@ def guard_docx_bytes(data: bytes) -> None:
     """
     if len(data) > MAX_DOCX_BYTES:
         raise DocxTooLarge(f"document exceeds {MAX_DOCX_BYTES} bytes")
+
+    if data.startswith(_OLE2_MAGIC):
+        raise UnsupportedDocumentFormat(
+            "legacy binary .doc container; renaming does not convert it"
+        )
+    if not data.startswith(_ZIP_MAGIC):
+        raise UnsupportedDocumentFormat("not an OOXML .docx container")
 
     # Two independent ceilings, whichever is tighter: an absolute cap and a
     # compression-ratio cap relative to the bytes on the wire.

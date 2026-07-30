@@ -14,6 +14,7 @@ from rmf_migrator.common.limits import (
     MAX_UNCOMPRESSED_BYTES,
     DocxTooLarge,
     ObjectTooLarge,
+    UnsupportedDocumentFormat,
     guard_docx_bytes,
 )
 from rmf_migrator.docx.export_docx import export_rev5_docx
@@ -84,9 +85,33 @@ def test_oversized_bytes_are_rejected():
         guard_docx_bytes(b"x" * (MAX_DOCX_BYTES + 1))
 
 
+def _ole2_doc() -> bytes:
+    """Bytes shaped like a legacy Word 97-2003 binary .doc (OLE2 container)."""
+    return b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1" + b"\x00" * 512
+
+
+def test_legacy_doc_bytes_are_rejected_as_unsupported_format():
+    # A renamed .doc opens fine in Word, so the rejection has to say what it
+    # actually is — not "too large".
+    with pytest.raises(UnsupportedDocumentFormat):
+        guard_docx_bytes(_ole2_doc())
+
+
 def test_non_zip_bytes_are_rejected():
-    with pytest.raises(DocxTooLarge):
+    with pytest.raises(UnsupportedDocumentFormat):
         guard_docx_bytes(b"this is not a docx")
+
+
+def test_truncated_zip_is_still_reported_as_unreadable_docx():
+    # Starts with the zip signature but is unreadable — a genuinely mangled
+    # .docx, which keeps the original class.
+    with pytest.raises(DocxTooLarge):
+        guard_docx_bytes(b"PK\x03\x04" + b"\x00" * 32)
+
+
+def test_parser_rejects_legacy_doc_bytes():
+    with pytest.raises(UnsupportedDocumentFormat):
+        parse_docx_bytes(_ole2_doc(), document_id="d", project_id="p")
 
 
 def test_ratio_constant_is_sane_for_real_documents():

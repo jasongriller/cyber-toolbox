@@ -65,6 +65,12 @@ variable "frame_ancestors" {
   default     = []
 }
 
+variable "alert_email" {
+  description = "Email address notified when a background job dead-letters (see the module's alert_email). Null disables the subscription; the alarm and SNS topic still exist."
+  type        = string
+  default     = null
+}
+
 # --- Tagging ---------------------------------------------------------------
 
 variable "tags" {

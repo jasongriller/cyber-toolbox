@@ -141,6 +141,17 @@ variable "worker_timeout_seconds" {
   }
 }
 
+variable "alert_email" {
+  description = "Email address subscribed to the module's SNS alert topic (dead-letter queue alarm). Leave null to create the topic with no subscription — the alarm still exists and other subscribers can be attached out-of-band. When supplying your own kms_key_arn, its key policy must allow cloudwatch.amazonaws.com to Decrypt/GenerateDataKey, or alarm notifications to the encrypted topic are silently dropped."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.alert_email == null || can(regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", var.alert_email))
+    error_message = "alert_email must be a plausible email address."
+  }
+}
+
 variable "log_retention_days" {
   description = "CloudWatch log retention. Logs contain metadata only (never document content), but retention is still bounded by default."
   type        = number

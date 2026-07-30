@@ -75,6 +75,9 @@ module "rmf_migrator" {
   bedrock_model_id = var.bedrock_model_id
   lambda_zip_path  = var.lambda_zip_path
 
+  # Unattended-failure alerting: email notified when a job dead-letters.
+  alert_email = var.alert_email
+
   tags = var.tags
 }
 

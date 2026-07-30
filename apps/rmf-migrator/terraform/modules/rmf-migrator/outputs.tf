@@ -28,6 +28,11 @@ output "parse_dlq_url" {
   value       = aws_sqs_queue.parse_dlq.id
 }
 
+output "alerts_topic_arn" {
+  description = "ARN of the SNS topic the DLQ alarm publishes to. Subscribe additional endpoints (chat webhooks, ticketing) out-of-band."
+  value       = aws_sns_topic.alerts.arn
+}
+
 output "kms_key_arn" {
   description = "ARN of the CMK protecting data at rest (created or supplied)."
   value       = local.kms_key_arn

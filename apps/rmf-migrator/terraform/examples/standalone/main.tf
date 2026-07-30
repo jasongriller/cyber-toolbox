@@ -45,5 +45,8 @@ module "rmf_migrator" {
   identity_header = var.identity_header
   frame_ancestors = var.frame_ancestors
 
+  # Unattended-failure alerting: email notified when a job dead-letters.
+  alert_email = var.alert_email
+
   tags = var.tags
 }

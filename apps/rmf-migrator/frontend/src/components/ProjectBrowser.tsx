@@ -259,7 +259,14 @@ export default function ProjectBrowser({
                     <tbody>
                       {documents.map((d) => (
                         <tr key={d.document_id}>
-                          <td>{d.filename}</td>
+                          <td>
+                            {d.filename}
+                            {d.status === "failed" && (
+                              <p className="muted" style={{ margin: "4px 0 0", fontSize: 12 }}>
+                                {failureReason(d)}
+                              </p>
+                            )}
+                          </td>
                           <td>
                             <StatusBadge status={d.status} />
                           </td>
@@ -320,6 +327,23 @@ export default function ProjectBrowser({
       </div>
     </section>
   );
+}
+
+// The backend records failures as an error type only (never content); this is
+// where those types become words an operator can act on.
+function failureReason(d: DocumentRecord): string {
+  switch (d.parse_error) {
+    case "UnsupportedDocumentFormat":
+      return "This is an older binary .doc file — open it in Word, use Save As to make a real .docx, and re-upload.";
+    case "DocxTooLarge":
+      return "Too large or too complex to parse safely (25 MB limit).";
+    case "ParsedDocumentTooLarge":
+      return "The parsed text exceeds the size limit.";
+    default:
+      return d.parse_error
+        ? `Processing failed (${d.parse_error}). Fix the file and re-upload.`
+        : "Processing failed. Re-upload the document to retry.";
+  }
 }
 
 function StatusBadge({ status }: { status: DocumentStatus }) {

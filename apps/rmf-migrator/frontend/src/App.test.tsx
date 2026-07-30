@@ -136,6 +136,40 @@ describe("App coverage navigation", () => {
   });
 });
 
+describe("Failed document reasons", () => {
+  it("explains a legacy .doc rejection in plain words", async () => {
+    stubs.listDocuments.mockResolvedValue({
+      documents: [
+        { ...DOCUMENT, status: "failed", parse_error: "UnsupportedDocumentFormat", failure_stage: "parse" },
+      ],
+    });
+    render(<App />);
+    await userEvent.click(await screen.findByRole("button", { name: /alpha/i }));
+
+    expect(await screen.findByText(/older binary \.doc file/i)).toBeInTheDocument();
+    expect(screen.getByText(/save as/i)).toBeInTheDocument();
+  });
+
+  it("still says something useful when no reason was recorded", async () => {
+    stubs.listDocuments.mockResolvedValue({
+      documents: [{ ...DOCUMENT, status: "failed", parse_error: null }],
+    });
+    render(<App />);
+    await userEvent.click(await screen.findByRole("button", { name: /alpha/i }));
+
+    expect(await screen.findByText(/processing failed/i)).toBeInTheDocument();
+  });
+
+  it("shows no reason line on healthy documents", async () => {
+    render(<App />);
+    await userEvent.click(await screen.findByRole("button", { name: /alpha/i }));
+
+    await screen.findByText("policy.docx");
+    expect(screen.queryByText(/processing failed/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/older binary/i)).not.toBeInTheDocument();
+  });
+});
+
 describe("App project memory", () => {
   it("returns to the browser with the project still selected", async () => {
     await openTheDocument();

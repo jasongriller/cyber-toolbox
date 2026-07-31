@@ -5,7 +5,7 @@
 // While the backend is still mapping (document_status "parsing"/"mapping"), this
 // polls until proposals are ready.
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiClient, parseControlIds } from "../api/client";
 import type { ControlMapping, DocumentStatus, Section } from "../api/types";
 
@@ -34,12 +34,18 @@ export default function MappingReview({ client, projectId, documentId, onContinu
     return m;
   }, [sections]);
 
+  // Monotonic id per request: only the latest response lands, so a slow poll
+  // tick can't overwrite fresher data and nothing writes state after unmount.
+  const loadId = useRef(0);
+
   const load = useCallback(async () => {
+    const id = ++loadId.current;
     try {
       const [sec, map] = await Promise.all([
         client.listSections(projectId, documentId),
         client.getMappings(projectId, documentId),
       ]);
+      if (id !== loadId.current) return;
       setSections(sec.sections);
       setMappings(map.mappings);
       setStatus(map.document_status);
@@ -54,12 +60,15 @@ export default function MappingReview({ client, projectId, documentId, onContinu
       });
       setError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      if (id === loadId.current) setError(e instanceof Error ? e.message : String(e));
     }
   }, [client, projectId, documentId]);
 
   useEffect(() => {
     void load();
+    return () => {
+      loadId.current += 1; // invalidate in-flight work on dep change/unmount
+    };
   }, [load]);
 
   // Poll while mapping is still in progress.

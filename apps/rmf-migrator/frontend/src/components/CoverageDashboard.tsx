@@ -3,7 +3,7 @@
 // controls (e.g. the SR supply-chain family) that no Rev 4 document carried
 // forward. Also downloads the conversion summary matrix (CSV).
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowsClockwise, FileCsv, BracketsCurly } from "@phosphor-icons/react";
 import { ApiClient } from "../api/client";
 import type { Coverage } from "../api/types";
@@ -21,21 +21,33 @@ export default function CoverageDashboard({ client, projectId }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Monotonic id per request: a response only lands if it is still the latest,
+  // so a slow answer for the previous baseline can't overwrite a newer one and
+  // nothing writes state after unmount.
+  const loadId = useRef(0);
+
   const load = useCallback(async () => {
+    const id = ++loadId.current;
     setLoading(true);
     try {
       const override = baseline === "(project default)" ? undefined : baseline;
-      setCoverage(await client.getCoverage(projectId, override));
+      const result = await client.getCoverage(projectId, override);
+      if (id !== loadId.current) return;
+      setCoverage(result);
       setError(null);
     } catch (e) {
+      if (id !== loadId.current) return;
       setError(e instanceof Error ? e.message : String(e));
     } finally {
-      setLoading(false);
+      if (id === loadId.current) setLoading(false);
     }
   }, [client, projectId, baseline]);
 
   useEffect(() => {
     void load();
+    return () => {
+      loadId.current += 1; // invalidate in-flight work on dep change/unmount
+    };
   }, [load]);
 
   const downloadBlob = (data: string, mime: string, filename: string) => {

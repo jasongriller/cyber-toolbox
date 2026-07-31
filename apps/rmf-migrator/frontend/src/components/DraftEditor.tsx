@@ -5,7 +5,7 @@
 // While the backend is still drafting (status mapping_approved/drafting), this
 // polls until drafts are ready.
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChatCircleDots, Check } from "@phosphor-icons/react";
 import { ApiClient } from "../api/client";
 import type { Draft, DocumentStatus, Section } from "../api/types";
@@ -37,12 +37,18 @@ export default function DraftEditor({ client, projectId, documentId, onContinue 
     return m;
   }, [sections]);
 
+  // Monotonic id per request: only the latest response lands, so a slow poll
+  // tick can't overwrite fresher data and nothing writes state after unmount.
+  const loadId = useRef(0);
+
   const load = useCallback(async () => {
+    const id = ++loadId.current;
     try {
       const [sec, dr] = await Promise.all([
         client.listSections(projectId, documentId),
         client.getDrafts(projectId, documentId),
       ]);
+      if (id !== loadId.current) return;
       setSections(sec.sections);
       setDrafts(dr.drafts);
       setStatus(dr.document_status);
@@ -57,12 +63,15 @@ export default function DraftEditor({ client, projectId, documentId, onContinue 
       });
       setError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      if (id === loadId.current) setError(e instanceof Error ? e.message : String(e));
     }
   }, [client, projectId, documentId]);
 
   useEffect(() => {
     void load();
+    return () => {
+      loadId.current += 1; // invalidate in-flight work on dep change/unmount
+    };
   }, [load]);
 
   useEffect(() => {

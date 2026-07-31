@@ -63,24 +63,34 @@ export default function ProjectBrowser({
 
   const fail = (e: unknown) => setError(e instanceof Error ? e.message : String(e));
 
+  // Monotonic id per request: a response only lands if it is still the latest,
+  // so switching projects mid-flight can't paint the old project's documents
+  // and nothing writes state after unmount.
+  const projectsLoadId = useRef(0);
+  const documentsLoadId = useRef(0);
+
   const loadProjects = useCallback(async () => {
+    const id = ++projectsLoadId.current;
     try {
       const { projects } = await client.listProjects();
+      if (id !== projectsLoadId.current) return;
       setProjects(projects);
       setError(null);
     } catch (e) {
-      fail(e);
+      if (id === projectsLoadId.current) fail(e);
     }
   }, [client]);
 
   const loadDocuments = useCallback(
     async (projectId: string) => {
+      const id = ++documentsLoadId.current;
       try {
         const { documents } = await client.listDocuments(projectId);
+        if (id !== documentsLoadId.current) return;
         setDocuments(documents);
         setError(null);
       } catch (e) {
-        fail(e);
+        if (id === documentsLoadId.current) fail(e);
       }
     },
     [client],
@@ -88,6 +98,9 @@ export default function ProjectBrowser({
 
   useEffect(() => {
     void loadProjects();
+    return () => {
+      projectsLoadId.current += 1; // invalidate in-flight work on unmount
+    };
   }, [loadProjects]);
 
   // One-shot: applies once the project list holds the remembered project, and
@@ -105,6 +118,9 @@ export default function ProjectBrowser({
   useEffect(() => {
     if (!selected) return;
     void loadDocuments(selected.project_id);
+    return () => {
+      documentsLoadId.current += 1; // invalidate on project switch/unmount
+    };
   }, [selected, loadDocuments]);
 
   // Keep refreshing while anything is still parsing/mapping.

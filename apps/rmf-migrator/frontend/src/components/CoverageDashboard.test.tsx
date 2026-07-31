@@ -31,6 +31,37 @@ describe("CoverageDashboard", () => {
     expect(screen.getByText("SR-3")).toBeInTheDocument();
   });
 
+  it("offers every baseline the backend accepts, not just the FIPS tiers", async () => {
+    // The API's ?baseline= accepts low/moderate/high plus the four FedRAMP
+    // sets; a project created as fedramp_high must be viewable against its
+    // own baseline name here.
+    const getCoverage = vi.fn().mockResolvedValue(COVERAGE);
+    render(
+      <CoverageDashboard client={stubClient({ getCoverage })} projectId="proj_1" />,
+    );
+    await screen.findByText("80%");
+
+    const { fireEvent } = await import("@testing-library/react");
+    const select = screen.getByDisplayValue("(project default)");
+    for (const name of [
+      "low",
+      "moderate",
+      "high",
+      "fedramp_low",
+      "fedramp_moderate",
+      "fedramp_high",
+      "fedramp_li_saas",
+    ]) {
+      expect(
+        Array.from(select.querySelectorAll("option")).map((o) => o.getAttribute("value")),
+      ).toContain(name);
+    }
+    fireEvent.change(select, { target: { value: "fedramp_high" } });
+    await vi.waitFor(() =>
+      expect(getCoverage).toHaveBeenLastCalledWith("proj_1", "fedramp_high"),
+    );
+  });
+
   it("ignores a stale response that lands after a newer request", async () => {
     // Switching baselines fires a second getCoverage while the first may still
     // be in flight; if the first resolves last, its data must not overwrite

@@ -13,7 +13,19 @@ interface Props {
   projectId: string;
 }
 
-const BASELINES = ["(project default)", "low", "moderate", "high"];
+// Every override the API's ?baseline= accepts (see backend BASELINE_NAMES),
+// so a project can be measured against its own FedRAMP set, not just the
+// generic FIPS tiers.
+const BASELINES: { value: string; label: string }[] = [
+  { value: "(project default)", label: "(project default)" },
+  { value: "low", label: "NIST low" },
+  { value: "moderate", label: "NIST moderate" },
+  { value: "high", label: "NIST high" },
+  { value: "fedramp_low", label: "FedRAMP low" },
+  { value: "fedramp_moderate", label: "FedRAMP moderate" },
+  { value: "fedramp_high", label: "FedRAMP high" },
+  { value: "fedramp_li_saas", label: "FedRAMP LI-SaaS" },
+];
 
 export default function CoverageDashboard({ client, projectId }: Props) {
   const [baseline, setBaseline] = useState("(project default)");
@@ -105,8 +117,8 @@ export default function CoverageDashboard({ client, projectId }: Props) {
           onChange={(e) => setBaseline(e.target.value)}
         >
           {BASELINES.map((b) => (
-            <option key={b} value={b}>
-              {b}
+            <option key={b.value} value={b.value}>
+              {b.label}
             </option>
           ))}
         </select>

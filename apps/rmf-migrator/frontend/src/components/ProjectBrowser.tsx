@@ -177,18 +177,22 @@ export default function ProjectBrowser({
     }
   };
 
+  // In-app type-to-confirm (not window.prompt): stylable, focus-managed, and
+  // testable like every other control here. Reset whenever the project
+  // selection changes so a half-typed confirmation never carries over.
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleteName, setDeleteName] = useState("");
+  useEffect(() => {
+    setConfirmingDelete(false);
+    setDeleteName("");
+  }, [selected?.project_id]);
+
   const purgeProject = async () => {
-    if (!selected) return;
-    const confirmation = window.prompt(
-      `This permanently deletes every document, export, and audit record in ${selected.name}. ` +
-        `Type the project name (${selected.name}) to continue.`,
-    );
-    const typedName = confirmation?.trim();
-    if (typedName !== selected.name) return;
+    if (!selected || deleteName.trim() !== selected.name) return;
 
     setBusy(true);
     try {
-      await client.deleteProject(selected.project_id, typedName);
+      await client.deleteProject(selected.project_id, deleteName.trim());
       setSelected(null);
       setDocuments([]);
       await loadProjects();
@@ -353,12 +357,48 @@ export default function ProjectBrowser({
                 </button>
                 <button
                   className="btn btn--danger"
-                  disabled={busy}
-                  onClick={() => void purgeProject()}
+                  disabled={busy || confirmingDelete}
+                  onClick={() => setConfirmingDelete(true)}
                 >
                   <Trash size={14} /> Delete project
                 </button>
               </div>
+
+              {confirmingDelete && (
+                <div className="banner banner--danger" style={{ marginTop: "0.75rem" }}>
+                  <p style={{ marginTop: 0 }}>
+                    This permanently deletes every document, export, and audit record in{" "}
+                    <strong>{selected.name}</strong>.
+                  </p>
+                  <div className="toolbar">
+                    <input
+                      className="field"
+                      style={{ flex: "1 1 160px" }}
+                      value={deleteName}
+                      placeholder={selected.name}
+                      onChange={(e) => setDeleteName(e.target.value)}
+                      aria-label={`type the project name (${selected.name}) to confirm deletion`}
+                    />
+                    <button
+                      className="btn btn--danger"
+                      disabled={busy || deleteName.trim() !== selected.name}
+                      onClick={() => void purgeProject()}
+                    >
+                      <Trash size={14} /> Permanently delete
+                    </button>
+                    <button
+                      className="btn"
+                      disabled={busy}
+                      onClick={() => {
+                        setConfirmingDelete(false);
+                        setDeleteName("");
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -88,6 +88,59 @@ describe("ProjectBrowser failed-document handling", () => {
     expect(client.listDocuments).toHaveBeenCalledTimes(2);
   });
 
+  it("deletes only after the project name is typed into the inline confirm", async () => {
+    // In-app confirm (not window.prompt): stylable, focus-managed, testable.
+    const client = makeClient([]);
+    (client as unknown as Record<string, unknown>).deleteProject = vi
+      .fn()
+      .mockResolvedValue({ project_id: "proj_1" });
+    render(
+      <ProjectBrowser
+        client={client}
+        initialProjectId="proj_1"
+        onOpenDocument={vi.fn()}
+        onOpenCoverage={vi.fn()}
+      />,
+    );
+
+    await userEvent.click(await screen.findByRole("button", { name: /delete project/i }));
+
+    // Revealed confirm: nothing deleted yet, and the confirm button is
+    // disabled until the typed name matches exactly.
+    const confirmButton = screen.getByRole("button", { name: /permanently delete/i });
+    expect(client.deleteProject).not.toHaveBeenCalled();
+    expect(confirmButton).toBeDisabled();
+
+    const nameInput = screen.getByLabelText(/type the project name/i);
+    await userEvent.type(nameInput, "System Alph");
+    expect(confirmButton).toBeDisabled();
+
+    await userEvent.type(nameInput, "a");
+    expect(confirmButton).toBeEnabled();
+    await userEvent.click(confirmButton);
+
+    expect(client.deleteProject).toHaveBeenCalledWith("proj_1", "System Alpha");
+  });
+
+  it("cancel hides the delete confirm without deleting", async () => {
+    const client = makeClient([]);
+    (client as unknown as Record<string, unknown>).deleteProject = vi.fn();
+    render(
+      <ProjectBrowser
+        client={client}
+        initialProjectId="proj_1"
+        onOpenDocument={vi.fn()}
+        onOpenCoverage={vi.fn()}
+      />,
+    );
+
+    await userEvent.click(await screen.findByRole("button", { name: /delete project/i }));
+    await userEvent.click(screen.getByRole("button", { name: /cancel/i }));
+
+    expect(screen.queryByLabelText(/type the project name/i)).not.toBeInTheDocument();
+    expect(client.deleteProject).not.toHaveBeenCalled();
+  });
+
   it("offers no retry action on documents that have not failed", async () => {
     const client = makeClient([failedDoc({ status: "mapped", failure_stage: null })]);
     render(

@@ -758,6 +758,10 @@ details.suggest li {
   border-left-color: var(--blue);
   color: var(--text);
 }
+.banner--danger {
+  border-left-color: var(--crit);
+  color: var(--text);
+}
 
 .loading {
   display: inline-flex;

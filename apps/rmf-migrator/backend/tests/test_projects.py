@@ -196,3 +196,97 @@ def test_delete_project_purges_metadata_and_all_s3_versions(deps):
     )
     assert versions.get("Versions", []) == []
     assert versions.get("DeleteMarkers", []) == []
+
+
+# ---- delete authorization (owner-gated destructive ops) --------------------
+
+
+def _jwt_event(username, *, path=None, body=None, groups=None):
+    claims = {"cognito:username": username}
+    if groups is not None:
+        claims["cognito:groups"] = groups
+    return {
+        "body": json.dumps(body) if body is not None else None,
+        "pathParameters": path or {},
+        "headers": {},
+        "requestContext": {"authorizer": {"jwt": {"claims": claims}}},
+    }
+
+
+def _owned_project(deps, owner="alice"):
+    project = Project(name="Sys", created_by=owner)
+    deps.repo.put_project(project)
+    return project
+
+
+def test_delete_project_allows_the_owner(deps):
+    project = _owned_project(deps, owner="alice")
+    resp = _delete_project(
+        _jwt_event(
+            "alice",
+            path={"project_id": project.project_id},
+            body={"confirm_project_name": "Sys"},
+        ),
+        deps,
+    )
+    assert resp["statusCode"] == 200
+
+
+def test_delete_project_403_for_a_non_owner(deps):
+    project = _owned_project(deps, owner="alice")
+    with pytest.raises(HttpError) as err:
+        _delete_project(
+            _jwt_event(
+                "mallory",
+                path={"project_id": project.project_id},
+                body={"confirm_project_name": "Sys"},
+            ),
+            deps,
+        )
+    assert err.value.status == 403
+    # Nothing was purged.
+    assert deps.repo.get_project(project.project_id) is not None
+
+
+def test_delete_project_allows_an_admins_group_member(deps):
+    project = _owned_project(deps, owner="alice")
+    resp = _delete_project(
+        _jwt_event(
+            "ops-admin",
+            groups='["admins"]',  # HTTP API flattens the claim to a string
+            path={"project_id": project.project_id},
+            body={"confirm_project_name": "Sys"},
+        ),
+        deps,
+    )
+    assert resp["statusCode"] == 200
+
+
+def test_delete_project_allows_bracket_space_group_claim(deps):
+    project = _owned_project(deps, owner="alice")
+    resp = _delete_project(
+        _jwt_event(
+            "ops-admin",
+            groups="[admins users]",  # the other HTTP API serialization
+            path={"project_id": project.project_id},
+            body={"confirm_project_name": "Sys"},
+        ),
+        deps,
+    )
+    assert resp["statusCode"] == 200
+
+
+def test_delete_project_keeps_working_for_anonymous_owned_projects(deps):
+    """Projects created before auth (or in auth_mode none) carry
+    created_by="anonymous"; the gate cannot bind them to anyone, so any
+    authenticated caller may still delete them."""
+    project = _owned_project(deps, owner="anonymous")
+    resp = _delete_project(
+        _jwt_event(
+            "bob",
+            path={"project_id": project.project_id},
+            body={"confirm_project_name": "Sys"},
+        ),
+        deps,
+    )
+    assert resp["statusCode"] == 200

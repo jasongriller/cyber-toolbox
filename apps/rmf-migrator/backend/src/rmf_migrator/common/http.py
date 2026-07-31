@@ -98,3 +98,33 @@ def resolve_identity(event: dict[str, Any], identity_header: str | None) -> str:
             return identity
 
     return "anonymous"
+
+
+def resolve_groups(event: dict[str, Any]) -> set[str]:
+    """Group memberships from the verified JWT's cognito:groups claim.
+
+    Only the JWT authorizer path is trusted — there is no header fallback,
+    because group names drive authorization decisions and a client-supplied
+    header could mint itself into any group. HTTP API JWT authorizers flatten
+    the claim to a single string, historically in two shapes: a JSON array
+    ('["admins","users"]') or bracket-space form ('[admins users]'); a plain
+    list also appears in tests and future-proofs a fixed serialization.
+    """
+    authorizer = (event.get("requestContext") or {}).get("authorizer") or {}
+    claims = (authorizer.get("jwt") or {}).get("claims") or {}
+    raw = claims.get("cognito:groups")
+    if raw is None:
+        return set()
+    if isinstance(raw, list):
+        return {str(group) for group in raw}
+    text = str(raw).strip()
+    if text.startswith("[") and text.endswith("]"):
+        try:
+            parsed = json.loads(text)
+            if isinstance(parsed, list):
+                return {str(group) for group in parsed}
+        except ValueError:
+            pass
+        inner = text[1:-1].replace(",", " ")
+        return {token.strip().strip('"') for token in inner.split() if token.strip()}
+    return {text} if text else set()

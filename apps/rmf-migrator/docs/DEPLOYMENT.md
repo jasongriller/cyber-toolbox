@@ -127,6 +127,18 @@ A third posture, distinct from both plain `public` above and `private` below:
   the browser-facing endpoint itself to be network-private, expose only your
   internal signing proxy and block direct client use of the output API URL.
 
+## Authorization model (within a deployment)
+
+A deployment is a team boundary: every authenticated user can see and work on
+every project — the tool assumes the people in your Cognito pool (or behind
+your signing proxy) are one A&A team. The exception is destruction:
+`DELETE /projects/{id}` requires the caller to be the project's creator
+(`created_by`) or a member of the Cognito group named `admins`. Projects
+created as `anonymous` (before auth existed, or under `auth_mode = "none"`,
+where identity is unverifiable anyway) stay deletable by anyone — under an
+unauthenticated posture any stricter check would be theater. If you need
+per-project isolation between multiple teams, run one deployment per team.
+
 ## Encryption
 
 All data at rest (S3, DynamoDB, SQS, Lambda env, CloudWatch Logs) is encrypted with a customer-managed KMS key. By default the module creates and rotates one; pass `kms_key_arn` to use your own.

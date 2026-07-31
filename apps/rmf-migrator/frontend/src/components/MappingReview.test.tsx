@@ -82,7 +82,10 @@ describe("MappingReview", () => {
       await screen.findByRole("button", { name: /approve mapping & continue/i }),
     );
 
-    expect(await screen.findByText(/approval failed/i)).toBeInTheDocument();
+    // role="alert" so assistive tech announces the failure — matching the
+    // convention Login.tsx establishes for every error banner.
+    const banner = await screen.findByRole("alert");
+    expect(banner).toHaveTextContent(/approval failed/i);
     expect(onContinue).not.toHaveBeenCalled();
   });
 });

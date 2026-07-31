@@ -89,7 +89,7 @@ export default function ExportPanel({ client, projectId, documentId, onDone }: P
         <h2>Export</h2>
         <span className={exported ? "pill pill--ok" : "pill"}>{status ?? "loading…"}</span>
       </div>
-      {error && <p className="banner banner--error">{error}</p>}
+      {error && <p role="alert" className="banner banner--error">{error}</p>}
 
       <div className="toolbar">
         <button className="btn btn--accent" disabled={busy || !canExport} onClick={() => void generate()}>

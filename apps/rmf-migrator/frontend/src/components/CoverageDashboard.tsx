@@ -113,7 +113,7 @@ export default function CoverageDashboard({ client, projectId }: Props) {
       </div>
 
       {error && (
-        <p className="banner banner--error" style={{ marginTop: "1rem" }}>
+        <p role="alert" className="banner banner--error" style={{ marginTop: "1rem" }}>
           {error}
         </p>
       )}

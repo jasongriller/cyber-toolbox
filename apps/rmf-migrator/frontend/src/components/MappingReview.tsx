@@ -126,7 +126,7 @@ export default function MappingReview({ client, projectId, documentId, onContinu
           ? "Mapping approved. Ready for Rev 5 drafting."
           : "Correct the proposed Rev 4 controls per section, then approve to start drafting."}
       </p>
-      {error && <p className="banner banner--error">{error}</p>}
+      {error && <p role="alert" className="banner banner--error">{error}</p>}
 
       <div className="table-wrap">
         <table className="data">

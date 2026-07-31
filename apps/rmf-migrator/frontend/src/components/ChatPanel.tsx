@@ -52,7 +52,7 @@ export default function ChatPanel({ client, projectId, documentId, sectionId }: 
           </div>
         ))}
       </div>
-      {error && <p className="banner banner--error">{error}</p>}
+      {error && <p role="alert" className="banner banner--error">{error}</p>}
       <div className="chat__input">
         <input
           className="field"

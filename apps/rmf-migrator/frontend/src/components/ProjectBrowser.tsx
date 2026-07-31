@@ -185,7 +185,7 @@ export default function ProjectBrowser({
 
   return (
     <section>
-      {error && <p className="banner banner--error">{error}</p>}
+      {error && <p role="alert" className="banner banner--error">{error}</p>}
 
       <div className="two-col">
         {/* ---- Projects ---- */}

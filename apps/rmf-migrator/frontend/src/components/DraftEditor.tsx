@@ -130,7 +130,7 @@ export default function DraftEditor({ client, projectId, documentId, onContinue 
           {approvedCount}/{drafts.length} approved
         </span>
       </div>
-      {error && <p className="banner banner--error">{error}</p>}
+      {error && <p role="alert" className="banner banner--error">{error}</p>}
 
       {drafts.map((d) => {
         const section = sectionById[d.section_id];

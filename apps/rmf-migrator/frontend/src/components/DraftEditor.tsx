@@ -184,7 +184,9 @@ export default function DraftEditor({ client, projectId, documentId, onContinue 
                 <summary>Suggestions ({d.suggestions.length})</summary>
                 <ul>
                   {d.suggestions.map((s, i) => (
-                    <li key={i}>{s}</li>
+                    // Static per-draft list; content+index keeps keys unique
+                    // even when two suggestions share wording.
+                    <li key={`${i}:${s}`}>{s}</li>
                   ))}
                 </ul>
               </details>

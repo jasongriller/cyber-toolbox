@@ -26,6 +26,11 @@ describe("ChatPanel", () => {
 
     expect(await screen.findByText(/AC-2 requires account reviews\./i)).toBeInTheDocument();
     expect(screen.getByText(/what does AC-2 need\?/i)).toBeInTheDocument();
+    // Local render ids must not leak into the API payload — the backend's
+    // ChatMessage schema is exactly {role, content}.
+    expect(client.chat).toHaveBeenCalledWith("proj_1", "doc_1", "s1", [
+      { role: "user", content: "what does AC-2 need?" },
+    ]);
   });
 
   it("announces a failed turn as an alert instead of failing silently", async () => {

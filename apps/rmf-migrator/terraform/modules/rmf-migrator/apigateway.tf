@@ -57,9 +57,9 @@ resource "aws_apigatewayv2_api" "this" {
   # XHR from the SPA origin(s).
   cors_configuration {
     allow_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
-    # Private-mode validation requires an explicit allowlist. The wildcard is
-    # reachable only in the deliberately unauthenticated public demo posture.
-    allow_origins = length(var.frame_ancestors) > 0 ? var.frame_ancestors : ["*"]
+    # Every posture requires an explicit allowlist (validate_cors_origins in
+    # main.tf); there is no wildcard fallback.
+    allow_origins = var.frame_ancestors
     allow_headers = [
       "content-type",
       "authorization",

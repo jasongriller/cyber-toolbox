@@ -78,11 +78,25 @@ run "public_cognito_requires_jwt_everywhere" {
     auth_mode            = "cognito"
     cognito_user_pool_id = "us-gov-west-1_MOCKPOOL"
     cognito_client_id    = "mockclientid"
+    frame_ancestors      = ["https://portal.example.test"]
   }
 
   assert {
     condition     = length(aws_apigatewayv2_authorizer.cognito) == 1
     error_message = "auth_mode = \"cognito\" must create exactly one JWT authorizer."
+  }
+
+  assert {
+    condition     = !contains(aws_apigatewayv2_api.this.cors_configuration[0].allow_origins, "*")
+    error_message = "API CORS must never fall back to the \"*\" origin — only the configured frame_ancestors."
+  }
+
+  assert {
+    condition = alltrue([
+      for rule in aws_s3_bucket_cors_configuration.documents.cors_rule :
+      !contains(rule.allowed_origins, "*")
+    ])
+    error_message = "S3 CORS must never fall back to the \"*\" origin — only the configured frame_ancestors."
   }
 
   assert {
@@ -156,10 +170,31 @@ run "public_without_auth_mode_fails_closed" {
 
   variables {
     network_mode = "public"
+    # Satisfy the separate CORS precondition so this run isolates the auth one.
+    frame_ancestors = ["https://portal.example.test"]
   }
 
   expect_failures = [
     terraform_data.validate_public_auth,
+  ]
+}
+
+# Public mode without a CORS allowlist must FAIL the plan: an empty
+# frame_ancestors used to silently widen both the API and S3 CORS configs to
+# ["*"], and the env tfvars examples shipped it commented out — so following
+# the example produced wildcard CORS in production.
+run "public_without_frame_ancestors_fails_closed" {
+  command = plan
+
+  variables {
+    network_mode         = "public"
+    auth_mode            = "cognito"
+    cognito_user_pool_id = "us-gov-west-1_MOCKPOOL"
+    cognito_client_id    = "mockclientid"
+  }
+
+  expect_failures = [
+    terraform_data.validate_cors_origins,
   ]
 }
 
@@ -169,8 +204,9 @@ run "public_with_explicit_none_stays_open" {
   command = plan
 
   variables {
-    network_mode = "public"
-    auth_mode    = "none"
+    network_mode    = "public"
+    auth_mode       = "none"
+    frame_ancestors = ["http://localhost:5173"]
   }
 
   assert {
@@ -197,9 +233,10 @@ run "created_kms_key_covers_every_log_group_path" {
   command = plan
 
   variables {
-    network_mode = "public"
-    auth_mode    = "none" # public now requires an explicit auth choice
-    kms_key_arn  = null
+    network_mode    = "public"
+    auth_mode       = "none" # public now requires an explicit auth choice
+    frame_ancestors = ["http://localhost:5173"]
+    kms_key_arn     = null
   }
 
   assert {

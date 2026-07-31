@@ -71,15 +71,15 @@ resource "aws_s3_bucket_versioning" "documents" {
   }
 }
 
-# CORS: allow only configured SPA origins to PUT via presigned URL. Private-mode
-# validation requires an explicit allowlist; the wildcard fallback is public
-# demo mode only. Methods and headers stay pinned to the presigned upload.
+# CORS: allow only configured SPA origins to PUT via presigned URL. Every
+# posture requires an explicit allowlist (validate_cors_origins); there is no
+# wildcard fallback. Methods and headers stay pinned to the presigned upload.
 resource "aws_s3_bucket_cors_configuration" "documents" {
   bucket = aws_s3_bucket.documents.id
 
   cors_rule {
     allowed_methods = ["PUT"]
-    allowed_origins = length(var.frame_ancestors) > 0 ? var.frame_ancestors : ["*"]
+    allowed_origins = var.frame_ancestors
     allowed_headers = [
       "content-type",
       "x-amz-server-side-encryption",

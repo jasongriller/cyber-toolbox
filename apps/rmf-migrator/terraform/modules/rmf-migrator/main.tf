@@ -58,10 +58,9 @@ resource "terraform_data" "validate_private_network" {
     precondition {
       condition = var.network_mode != "private" || (
         var.vpc_id != null &&
-        length(var.private_subnet_ids) > 0 &&
-        length(var.frame_ancestors) > 0
+        length(var.private_subnet_ids) > 0
       )
-      error_message = "network_mode = \"private\" requires vpc_id, at least one private_subnet_id, and at least one trusted browser origin in frame_ancestors."
+      error_message = "network_mode = \"private\" requires vpc_id and at least one private_subnet_id. (frame_ancestors is required in every posture — see validate_cors_origins.)"
     }
   }
 }
@@ -74,6 +73,18 @@ resource "terraform_data" "validate_public_auth" {
     precondition {
       condition     = var.network_mode != "public" || var.auth_mode != null
       error_message = "network_mode = \"public\" requires an explicit auth_mode: \"cognito\" (Cognito login), \"iam\" (SigV4), or \"none\" (deliberately unauthenticated — dev/demo only, never for CUI)."
+    }
+  }
+}
+
+# CORS must always be an explicit allowlist. An empty frame_ancestors used to
+# widen the API and S3 CORS configs to ["*"]; private mode already required an
+# allowlist, and public mode now does too — no posture gets wildcard CORS.
+resource "terraform_data" "validate_cors_origins" {
+  lifecycle {
+    precondition {
+      condition     = length(var.frame_ancestors) > 0
+      error_message = "frame_ancestors must list at least one trusted browser origin (e.g. your portal URL, or http://localhost:5173 for a dev sandbox); CORS never falls back to \"*\"."
     }
   }
 }

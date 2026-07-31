@@ -41,7 +41,7 @@ variable "private_subnet_ids" {
 }
 
 variable "frame_ancestors" {
-  description = "Trusted browser origins allowed by API and S3 CORS, e.g. your internal tool portal. Apply the same values to the SPA's CSP frame-ancestors directive. At least one is required in private mode."
+  description = "Trusted browser origins allowed by API and S3 CORS, e.g. your internal tool portal (or http://localhost:5173 for a dev sandbox). Apply the same values to the SPA's CSP frame-ancestors directive. At least one is required in every posture — CORS never falls back to \"*\"."
   type        = list(string)
   default     = []
 }

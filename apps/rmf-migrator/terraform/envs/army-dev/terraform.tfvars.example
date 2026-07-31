@@ -38,10 +38,10 @@ bedrock_model_id = ""
 # cognito_app_client_name = "stig-parser-web"
 
 # CORS allowlist for the API and for direct presigned S3 uploads (see
-# variables.tf). Empty (the default) falls back to a wildcard; set this to
-# the toolbox front door's origin — scheme + host, no path, no trailing
-# slash — once one exists.
-# frame_ancestors = ["https://your-front-door.example"]
+# variables.tf). REQUIRED — the plan fails if empty; CORS never falls back to
+# a wildcard. Set to the toolbox front door's origin — scheme + host, no
+# path, no trailing slash.
+frame_ancestors = ["https://your-front-door.example"]
 
 # Email notified when a background job exhausts its retries and dead-letters.
 # Strongly recommended for unattended deployments; confirm the subscription

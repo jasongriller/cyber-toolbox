@@ -29,6 +29,8 @@ import boto3
 from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
 
+from rmf_migrator.common.aws_clients import FAST_CONFIG
+
 from .models import (
     ControlMapping,
     Document,
@@ -53,7 +55,7 @@ def _doc_pk(document_id: str) -> str:
 
 class Repository:
     def __init__(self, table_name: str, *, dynamodb_resource: Any = None) -> None:
-        resource = dynamodb_resource or boto3.resource("dynamodb")
+        resource = dynamodb_resource or boto3.resource("dynamodb", config=FAST_CONFIG)
         self._table = resource.Table(table_name)
 
     # ---- Project -----------------------------------------------------------

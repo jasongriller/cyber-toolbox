@@ -12,6 +12,7 @@ from typing import Any
 
 import boto3
 
+from rmf_migrator.common.aws_clients import FAST_CONFIG
 from rmf_migrator.common.bedrock import BedrockClient
 from rmf_migrator.common.config import Config, get_config
 from rmf_migrator.common.repository import Repository
@@ -39,7 +40,7 @@ class Deps:
                 config=config,
                 repo=Repository(config.table_name),
                 store=DocumentStore(config.documents_bucket, config.kms_key_id),
-                sqs=boto3.client("sqs"),
+                sqs=boto3.client("sqs", config=FAST_CONFIG),
                 bedrock=BedrockClient.from_config(config),
             )
         return _built

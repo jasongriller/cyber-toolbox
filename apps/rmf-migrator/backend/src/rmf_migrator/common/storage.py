@@ -12,6 +12,7 @@ from typing import Any
 import boto3
 from botocore.config import Config
 
+from rmf_migrator.common.aws_clients import FAST_CONFIG
 from rmf_migrator.common.limits import MAX_DOCX_BYTES, ObjectTooLarge
 
 # Only .docx is accepted in v1.
@@ -62,8 +63,11 @@ class DocumentStore:
         self._kms_key_id = kms_key_id
         # SigV4 pinned: the default client in legacy-listed regions
         # (us-gov-west-1 included) presigns SigV2-form URLs, which buckets
-        # created after 2020-06 reject with 403.
-        self._s3 = s3_client or boto3.client("s3", config=Config(signature_version="s3v4"))
+        # created after 2020-06 reject with 403. Merged onto the shared
+        # fast-timeout base (merge: the argument's values win).
+        self._s3 = s3_client or boto3.client(
+            "s3", config=FAST_CONFIG.merge(Config(signature_version="s3v4"))
+        )
 
     def presigned_put_url(self, key: str) -> dict[str, Any]:
         """Return a presigned PUT URL and the headers the caller must send.

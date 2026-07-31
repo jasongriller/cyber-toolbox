@@ -131,6 +131,26 @@ A third posture, distinct from both plain `public` above and `private` below:
 
 All data at rest (S3, DynamoDB, SQS, Lambda env, CloudWatch Logs) is encrypted with a customer-managed KMS key. By default the module creates and rotates one; pass `kms_key_arn` to use your own.
 
+## Object-access auditing (hard prerequisite for CUI)
+
+The module deliberately does **not** create S3 server access logging or a
+CloudTrail trail for the documents bucket — adopters deploying into an existing
+boundary already run central logging with their own retention and access
+policies, and a second half-configured audit pipeline would be worse than none.
+That makes object-level auditing **your** deployment prerequisite, not an
+optional extra: an AU-2/AU-12-style control review will ask who read which CUI
+document, and nothing in this module records that.
+
+Before putting CUI through a deployment, wire up at least one of:
+
+- **CloudTrail S3 data events** (the usual requirement) scoped to the documents
+  bucket ARN, delivered to your central trail.
+- **S3 server access logging** via your own `aws_s3_bucket_logging` resource
+  pointed at your central logging bucket.
+
+The module's `documents_bucket` output (the bucket name) exists for exactly
+this wiring.
+
 ## Tear-down / data deletion
 
 ```bash

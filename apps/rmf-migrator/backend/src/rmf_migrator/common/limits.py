@@ -46,6 +46,39 @@ class DocxTooLarge(ValueError):
     """Raised when .docx bytes exceed a size or decompression-ratio limit."""
 
 
+class InvalidDocx(ValueError):
+    """Raised when the bytes are not a Word .docx at all (wrong format).
+
+    Distinct from DocxTooLarge so the recorded error names the actual problem:
+    a renamed legacy .doc, an HTML download page, or a PDF sends the operator
+    to "re-save the file", not to size limits.
+    """
+
+
+def sniff_docx_problem(data: bytes) -> str | None:
+    """Identify bytes that cannot be a .docx; return a human message or None.
+
+    A .docx is a zip, so anything not starting with the zip local-file-header
+    magic is wrong before decompression is even attempted. The common
+    real-world impostors get named specifically.
+    """
+    if not data:
+        return "file is empty"
+    if data[:4] == b"PK\x03\x04":
+        return None
+    if data[:8] == b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1":
+        return (
+            "this is a legacy Word .doc renamed to .docx — open it in Word "
+            "and use Save As to create a real .docx"
+        )
+    head = data[:512].lstrip()
+    if head[:1] == b"<" or head[:15].lower().startswith(b"<!doctype html"):
+        return "this is an HTML page saved with a .docx extension, not a Word document"
+    if data[:5] == b"%PDF-":
+        return "this is a PDF renamed to .docx, not a Word document"
+    return "document is not a readable .docx archive"
+
+
 class ParsedDocumentTooLarge(ValueError):
     """Raised when extracted policy text cannot safely traverse the application."""
 
@@ -67,6 +100,10 @@ def guard_docx_bytes(data: bytes) -> None:
     """
     if len(data) > MAX_DOCX_BYTES:
         raise DocxTooLarge(f"document exceeds {MAX_DOCX_BYTES} bytes")
+
+    problem = sniff_docx_problem(data)
+    if problem is not None:
+        raise InvalidDocx(problem)
 
     # Two independent ceilings, whichever is tighter: an absolute cap and a
     # compression-ratio cap relative to the bytes on the wire.
@@ -91,7 +128,8 @@ def guard_docx_bytes(data: bytes) -> None:
                                 "document decompresses past the allowed size/ratio limit"
                             )
     except zipfile.BadZipFile as exc:
-        raise DocxTooLarge("document is not a readable .docx archive") from exc
+        # Magic bytes said zip, but the archive is truncated or corrupt.
+        raise InvalidDocx("document is not a readable .docx archive") from exc
 
 
 def guard_parsed_sections(sections: list[object]) -> None:

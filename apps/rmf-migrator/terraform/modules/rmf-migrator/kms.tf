@@ -44,6 +44,19 @@ resource "aws_kms_key" "this" {
           }
         }
       },
+      {
+        # CloudWatch alarms publish to the CMK-encrypted SNS alert topic. KMS
+        # denies the publish without this and nothing surfaces the drop — the
+        # alarm looks healthy while no notification ever leaves the account.
+        Sid       = "AllowCloudWatchAlarms"
+        Effect    = "Allow"
+        Principal = { Service = "cloudwatch.amazonaws.com" }
+        Action = [
+          "kms:Decrypt",
+          "kms:GenerateDataKey*",
+        ]
+        Resource = "*"
+      },
     ]
   })
 }

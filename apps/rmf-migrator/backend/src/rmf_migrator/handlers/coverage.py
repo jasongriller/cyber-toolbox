@@ -23,6 +23,9 @@ from rmf_migrator.common.models import MappingStatus
 from rmf_migrator.handlers.deps import Deps
 from rmf_migrator.services.conversion_matrix import Contribution, build_rows, to_csv
 from rmf_migrator.services.coverage import build_coverage, resolve_baseline
+from rmf_migrator.services.emass_export import DraftSource
+from rmf_migrator.services.emass_export import build_rows as build_emass_rows
+from rmf_migrator.services.emass_export import to_csv as emass_to_csv
 from rmf_migrator.services.oscal_export import build_component_definition
 
 
@@ -122,6 +125,54 @@ def _conversion_matrix(event: dict[str, Any], deps: Deps) -> dict[str, Any]:
 def conversion_matrix(event: dict[str, Any], _context: Any = None) -> dict[str, Any]:
     try:
         return _conversion_matrix(event, Deps.build())
+    except HttpError as err:
+        return error_response(err)
+
+
+# ---- GET eMASS control-implementation CSV -----------------------------------
+
+
+def _emass_export(event: dict[str, Any], deps: Deps) -> dict[str, Any]:
+    """One row per Rev 5 control: approved narrative + artifact to attach.
+
+    Shaped for transcription into an eMASS system record under NIST 800-53
+    Rev 5 — see services/emass_export.py for the row contract.
+    """
+    project_id, _project = _require_project(deps, event)
+
+    sources: list[DraftSource] = []
+    for document in deps.repo.list_documents(project_id):
+        heading_by_section = {
+            s.section_id: s.heading for s in deps.repo.list_sections(document.document_id)
+        }
+        for draft in deps.repo.list_drafts(document.document_id):
+            sources.append(
+                DraftSource(
+                    draft=draft,
+                    filename=document.filename,
+                    heading=heading_by_section.get(draft.section_id, ""),
+                )
+            )
+
+    rows = build_emass_rows(sources)
+    log_event(
+        "emass_export.generated",
+        project_id=project_id,
+        control_count=len(rows),
+    )
+    return {
+        "statusCode": 200,
+        "headers": {
+            "Content-Type": "text/csv",
+            "Content-Disposition": f'attachment; filename="emass-controls-{project_id}.csv"',
+        },
+        "body": emass_to_csv(rows),
+    }
+
+
+def emass_export(event: dict[str, Any], _context: Any = None) -> dict[str, Any]:
+    try:
+        return _emass_export(event, Deps.build())
     except HttpError as err:
         return error_response(err)
 

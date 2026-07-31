@@ -36,6 +36,49 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Identify file bytes that cannot be a .docx; returns a human-readable
+ * problem or null when the bytes look like a real Word document (zip magic).
+ * Mirrors the backend's sniff in common/limits.py so both layers tell the
+ * same story.
+ */
+export function sniffDocxProblem(head: Uint8Array): string | null {
+  if (head.length === 0) return "file is empty";
+  if (head[0] === 0x50 && head[1] === 0x4b && head[2] === 0x03 && head[3] === 0x04) {
+    return null; // zip magic — plausible .docx
+  }
+  const ole2 = [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
+  if (ole2.every((b, i) => head[i] === b)) {
+    return (
+      "this is a legacy Word .doc renamed to .docx — open it in Word and " +
+      "use Save As to create a real .docx"
+    );
+  }
+  const text = new TextDecoder("utf-8", { fatal: false }).decode(head).trimStart();
+  if (text.startsWith("<")) {
+    return "this looks like an HTML page saved with a .docx extension, not a Word document";
+  }
+  if (text.startsWith("%PDF-")) {
+    return "this is a PDF renamed to .docx, not a Word document";
+  }
+  return "this file is not a valid .docx document";
+}
+
+/** First bytes of a file; FileReader fallback for environments (jsdom)
+ *  whose Blob lacks arrayBuffer(). */
+async function readFileHead(file: File, length = 512): Promise<Uint8Array> {
+  const blob = file.slice(0, length);
+  if (typeof blob.arrayBuffer === "function") {
+    return new Uint8Array(await blob.arrayBuffer());
+  }
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(new Uint8Array(reader.result as ArrayBuffer));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsArrayBuffer(blob);
+  });
+}
+
 /** Join a base URL and a path without doubling or dropping slashes. */
 export function joinUrl(base: string, path: string): string {
   const b = base.replace(/\/+$/, "");
@@ -105,11 +148,21 @@ export class ApiClient {
   /**
    * Register a document, PUT its bytes straight to S3, and kick off parsing.
    * Parsing auto-chains into control mapping on the backend.
+   *
+   * The file's magic bytes are checked first: a renamed legacy .doc, an HTML
+   * download page, or a PDF can never parse, so rejecting here gives an
+   * immediate, specific message instead of a failed document row minutes
+   * later — and the bad bytes never leave the browser.
    */
   async uploadDocument(
     projectId: string,
     file: File,
   ): Promise<{ document: DocumentRecord; job: ParseJob }> {
+    const head = await readFileHead(file);
+    const problem = sniffDocxProblem(head);
+    if (problem) {
+      throw new ApiError(400, problem);
+    }
     const { document, upload } = await this.registerDocument(projectId, file.name);
     await this.uploadBytes(upload, file);
     const { job } = await this.startParse(projectId, document.document_id);
@@ -258,6 +311,17 @@ export class ApiClient {
       joinUrl(this.baseUrl, `/projects/${projectId}/conversion-matrix.csv`),
       { headers: await this.authHeaders() },
     );
+    if (!res.ok) {
+      throw new ApiError(res.status, res.statusText);
+    }
+    return res.text();
+  }
+
+  /** Fetch the eMASS control-implementation CSV as text (not JSON). */
+  async getEmassCsv(projectId: string): Promise<string> {
+    const res = await fetch(joinUrl(this.baseUrl, `/projects/${projectId}/emass.csv`), {
+      headers: await this.authHeaders(),
+    });
     if (!res.ok) {
       throw new ApiError(res.status, res.statusText);
     }

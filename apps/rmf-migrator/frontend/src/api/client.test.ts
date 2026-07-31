@@ -192,7 +192,8 @@ describe("ApiClient", () => {
       );
 
     const client = new ApiClient("/api");
-    const file = new File(["x"], "ac-policy.docx");
+    // Real .docx magic: uploads are content-sniffed before any API call.
+    const file = new File([new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0x00])], "ac-policy.docx");
     const res = await client.uploadDocument("p1", file);
 
     expect(spy.mock.calls[0][0]).toBe("/api/projects/p1/documents");
@@ -201,6 +202,37 @@ describe("ApiClient", () => {
     expect(spy.mock.calls[1][1]?.method).toBe("PUT");
     expect(spy.mock.calls[2][0]).toBe("/api/projects/p1/documents/d1/parse");
     expect(res.job.job_id).toBe("job1");
+  });
+
+  it("uploadDocument rejects an HTML page saved as .docx before any API call", async () => {
+    const spy = vi.spyOn(globalThis, "fetch");
+    const client = new ApiClient("/api");
+    const file = new File(["<!DOCTYPE html><html><body>download page</body></html>"], "policy.docx");
+
+    await expect(client.uploadDocument("p1", file)).rejects.toThrow(/HTML page/i);
+    // Nothing was registered, uploaded, or enqueued — the bad file never
+    // leaves the browser, so no failed document row is created.
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it("uploadDocument tells the user to re-save a legacy .doc renamed to .docx", async () => {
+    const spy = vi.spyOn(globalThis, "fetch");
+    const client = new ApiClient("/api");
+    const ole2 = new Uint8Array([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1, 0, 0]);
+    const file = new File([ole2], "policy.docx");
+
+    await expect(client.uploadDocument("p1", file)).rejects.toThrow(/legacy Word|Save As/i);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it("uploadDocument rejects an empty file", async () => {
+    const spy = vi.spyOn(globalThis, "fetch");
+    const client = new ApiClient("/api");
+
+    await expect(client.uploadDocument("p1", new File([], "policy.docx"))).rejects.toThrow(
+      /empty/i,
+    );
+    expect(spy).not.toHaveBeenCalled();
   });
 
   it("getConversionMatrixCsv fetches CSV text", async () => {
@@ -213,6 +245,19 @@ describe("ApiClient", () => {
     const client = new ApiClient("/api");
     const csv = await client.getConversionMatrixCsv("p1");
     expect(csv).toContain("rev4_control");
+  });
+
+  it("getEmassCsv fetches the eMASS control-implementation CSV", async () => {
+    const spy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("control_id,control_title\nAC-2,Account Management\n", {
+        status: 200,
+        headers: { "Content-Type": "text/csv" },
+      }),
+    );
+    const client = new ApiClient("/api");
+    const csv = await client.getEmassCsv("p1");
+    expect(spy.mock.calls[0][0]).toBe("/api/projects/p1/emass.csv");
+    expect(csv).toContain("control_id");
   });
 
   it("getOscalJson fetches the component-definition JSON text", async () => {

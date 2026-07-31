@@ -55,6 +55,12 @@ variable "frame_ancestors" {
   default     = []
 }
 
+variable "alert_email" {
+  description = "Email notified when a background job dead-letters (optional)."
+  type        = string
+  default     = null
+}
+
 variable "tags" {
   description = "Extra tags."
   type        = map(string)

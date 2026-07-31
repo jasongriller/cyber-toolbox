@@ -44,6 +44,12 @@ mock_provider "aws" {
       execution_arn = "arn:aws-us-gov:execute-api:us-gov-west-1:aws:test"
     }
   }
+
+  mock_resource "aws_sns_topic" {
+    defaults = {
+      arn = "arn:aws-us-gov:sns:us-gov-west-1:aws:rmf-migrator-test-alerts"
+    }
+  }
 }
 
 # Shared across every run below; each run adds only what its scenario needs.

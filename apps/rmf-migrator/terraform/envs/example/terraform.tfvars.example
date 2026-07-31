@@ -43,6 +43,11 @@ bedrock_model_id = ""
 # slash — once one exists.
 # frame_ancestors = ["https://your-front-door.example"]
 
+# Email notified when a background job exhausts its retries and dead-letters.
+# Strongly recommended for unattended deployments; confirm the subscription
+# email AWS sends after apply.
+# alert_email = "ops@example.mil"
+
 # Your org's tagging standard goes here.
 tags = {
   System      = "rmf-migrator"

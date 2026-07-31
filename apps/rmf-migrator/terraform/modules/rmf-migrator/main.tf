@@ -19,10 +19,11 @@ locals {
 
   is_private = var.network_mode == "private"
 
-  # auth_mode = null (the default) reproduces the coupling that existed before
-  # this variable was introduced, so callers that set only network_mode keep
-  # planning identically: private -> iam, public -> none. An explicit
-  # auth_mode overrides that derivation, e.g. "cognito" on a public deployment.
+  # auth_mode = null (the default) derives "iam" in private mode, preserving the
+  # pre-auth_mode behavior for private callers. Public mode never derives: it
+  # fails closed in validate_public_auth below, so an internet-facing API is
+  # always an explicit choice. The "none" fallback here is unreachable for
+  # public callers that pass validation; it exists only to keep coalesce total.
   auth_mode = coalesce(var.auth_mode, local.is_private ? "iam" : "none")
 
   # When the module creates its own key, use that; otherwise the caller's.
@@ -61,6 +62,18 @@ resource "terraform_data" "validate_private_network" {
         length(var.frame_ancestors) > 0
       )
       error_message = "network_mode = \"private\" requires vpc_id, at least one private_subnet_id, and at least one trusted browser origin in frame_ancestors."
+    }
+  }
+}
+
+# Public mode must not silently deploy an unauthenticated API. Deriving "none"
+# from a networking toggle is how a CUI deployment ends up open by accident, so
+# the unauthenticated posture requires typing auth_mode = "none" yourself.
+resource "terraform_data" "validate_public_auth" {
+  lifecycle {
+    precondition {
+      condition     = var.network_mode != "public" || var.auth_mode != null
+      error_message = "network_mode = \"public\" requires an explicit auth_mode: \"cognito\" (Cognito login), \"iam\" (SigV4), or \"none\" (deliberately unauthenticated — dev/demo only, never for CUI)."
     }
   }
 }

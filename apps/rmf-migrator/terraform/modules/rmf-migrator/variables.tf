@@ -18,7 +18,7 @@ variable "tags" {
 # ---- Network -----------------------------------------------------------------
 
 variable "network_mode" {
-  description = "\"private\" (default) runs Lambdas in the supplied VPC. \"public\" runs them without one. Route authorization is a separate axis — see auth_mode — but auth_mode's default derives from this value for backward compatibility: private -> AWS_IAM, public -> unauthenticated. GovCloud production should stay \"private\"."
+  description = "\"private\" (default) runs Lambdas in the supplied VPC. \"public\" runs them without one. Route authorization is a separate axis — see auth_mode. Private mode defaults auth_mode to \"iam\"; public mode requires auth_mode to be set explicitly (the plan fails otherwise). GovCloud production should stay \"private\"."
   type        = string
   default     = "private"
 
@@ -54,7 +54,7 @@ variable "frame_ancestors" {
 # ---- Auth ----------------------------------------------------------------------
 
 variable "auth_mode" {
-  description = "API authorization mechanism: \"iam\" requires AWS_IAM (SigV4) on every route, \"none\" leaves every route unauthenticated, \"cognito\" puts a JWT authorizer backed by a Cognito user pool on every route. Defaults to null, which derives the value implied by network_mode before this variable existed, so existing callers that set only network_mode keep planning identically: network_mode = \"private\" -> \"iam\", network_mode = \"public\" -> \"none\". Set auth_mode = \"cognito\" explicitly (typically alongside network_mode = \"public\") to require a logged-in Cognito user on a VPC-free deployment instead of leaving it open."
+  description = "API authorization mechanism: \"iam\" requires AWS_IAM (SigV4) on every route, \"cognito\" puts a JWT authorizer backed by a Cognito user pool on every route, \"none\" leaves every route unauthenticated. Defaults to null: in private mode that resolves to \"iam\"; in public mode there is no default — the plan fails until you choose one, so an internet-facing unauthenticated API can only be created by explicitly setting \"none\" (dev/demo only, never for CUI)."
   type        = string
   default     = null
 

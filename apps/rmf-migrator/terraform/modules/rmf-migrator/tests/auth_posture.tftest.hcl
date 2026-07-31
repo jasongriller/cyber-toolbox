@@ -146,26 +146,43 @@ run "private_defaults_require_iam_and_no_authorizer" {
   }
 }
 
-# network_mode = "public" with auth_mode left unset: proves backward
-# compatibility — the existing example root sets only network_mode and must
-# keep planning to the same unauthenticated posture it always has.
-run "public_without_auth_mode_stays_open" {
+# network_mode = "public" with auth_mode left unset must FAIL the plan.
+# Deriving an unauthenticated default from a networking toggle is exactly how a
+# CUI deployment ends up open to the internet by accident; an internet-facing
+# API must be a deliberate, explicit choice (auth_mode = "none"), never a
+# fallback.
+run "public_without_auth_mode_fails_closed" {
   command = plan
 
   variables {
     network_mode = "public"
   }
 
+  expect_failures = [
+    terraform_data.validate_public_auth,
+  ]
+}
+
+# The explicit opt-out still works: an operator who consciously sets
+# auth_mode = "none" (dev sandboxes) gets the open posture they asked for.
+run "public_with_explicit_none_stays_open" {
+  command = plan
+
+  variables {
+    network_mode = "public"
+    auth_mode    = "none"
+  }
+
   assert {
     condition = alltrue([
       for r in aws_apigatewayv2_route.this : r.authorization_type == "NONE"
     ])
-    error_message = "network_mode = \"public\" with auth_mode unset must keep every route open (NONE) — this is the pre-existing behavior auth_mode's default derivation must reproduce."
+    error_message = "auth_mode = \"none\" set explicitly must leave every route open — the opt-out has to keep working once the implicit default is gone."
   }
 
   assert {
     condition     = length(aws_apigatewayv2_authorizer.cognito) == 0
-    error_message = "No JWT authorizer should exist when auth_mode resolves to \"none\"."
+    error_message = "No JWT authorizer should exist when auth_mode is \"none\"."
   }
 }
 
@@ -181,6 +198,7 @@ run "created_kms_key_covers_every_log_group_path" {
 
   variables {
     network_mode = "public"
+    auth_mode    = "none" # public now requires an explicit auth choice
     kms_key_arn  = null
   }
 

@@ -56,6 +56,7 @@ variables {
   lambda_zip_path  = "tests/lambda.fixture"
   kms_key_arn      = "arn:aws-us-gov:kms:us-gov-west-1:aws:key/test"
   network_mode     = "public"
+  auth_mode        = "none" # public requires an explicit auth choice; alerting is auth-agnostic
 }
 
 # Failure messages land in the parse DLQ after SQS retries are exhausted; the

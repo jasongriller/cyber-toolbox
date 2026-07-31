@@ -64,14 +64,16 @@ Before deploying, confirm in your account/region:
 
 ### `public` (dev / demo)
 
-The HTTP API is reachable directly. Quickest to stand up. Do not put CUI through a public deployment.
+The HTTP API is reachable directly. Quickest to stand up. Public mode has no
+default authorization — the plan fails until you set `auth_mode` explicitly.
+For an unauthenticated dev/demo API, set `auth_mode = "none"` yourself. Do not
+put CUI through an unauthenticated deployment.
 
 ### `public` + `auth_mode = "cognito"`
 
 A third posture, distinct from both plain `public` above and `private` below:
 `network_mode = "public"` (no VPC, same as plain `public`) combined with
-`auth_mode = "cognito"` instead of leaving auth at its `public`-derived
-default of `none`.
+`auth_mode = "cognito"` instead of the dev/demo-only `none`.
 
 - The HTTP API is network-reachable the same as plain `public` mode, but every
   route carries a JWT authorizer backed by a Cognito user pool — an

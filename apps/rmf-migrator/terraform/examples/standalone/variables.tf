@@ -11,13 +11,24 @@ variable "name_prefix" {
 }
 
 variable "network_mode" {
-  description = "\"private\" for production (default). \"public\" exposes an UNAUTHENTICATED API and is for dev/demo only — never for CUI."
+  description = "\"private\" for production (default). \"public\" skips the VPC and requires an explicit auth_mode."
   type        = string
   default     = "private"
 
   validation {
     condition     = contains(["public", "private"], var.network_mode)
     error_message = "network_mode must be \"public\" or \"private\"."
+  }
+}
+
+variable "auth_mode" {
+  description = "API authorization: \"iam\", \"cognito\", or \"none\". Leave null in private mode (resolves to \"iam\"). Public mode requires an explicit choice; \"none\" exposes an UNAUTHENTICATED API and is for dev/demo only — never for CUI."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.auth_mode == null || contains(["iam", "none", "cognito"], var.auth_mode)
+    error_message = "auth_mode must be \"iam\", \"none\", or \"cognito\"."
   }
 }
 

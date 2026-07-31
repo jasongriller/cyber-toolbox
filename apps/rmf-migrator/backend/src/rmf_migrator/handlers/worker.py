@@ -408,7 +408,12 @@ def process_event(event: dict[str, Any], deps: Deps) -> dict[str, Any]:
             else:
                 log_event("worker.unknown_kind", kind=str(kind)[:32])
                 raise ValueError("unknown worker message kind")
-        except Exception:  # noqa: BLE001
+        except Exception as exc:  # noqa: BLE001
+            # Job-level failures were already logged with project/document
+            # context by the run_* helpers; this also catches records those
+            # helpers never saw (malformed JSON, missing keys), which would
+            # otherwise dead-letter with zero CloudWatch evidence of why.
+            log_error("worker.record_failed", exc, message_id=record.get("messageId", ""))
             failures.append({"itemIdentifier": record.get("messageId", "")})
 
     return {"batchItemFailures": failures}

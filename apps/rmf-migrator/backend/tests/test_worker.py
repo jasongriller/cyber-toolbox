@@ -167,3 +167,28 @@ def test_map_message_dispatch_runs_mapping(deps):
         deps,
     )
     assert deps.repo.get_document(pid, did).status == DocumentStatus.MAPPED
+
+
+def test_malformed_record_is_failed_and_logged(deps, capsys):
+    """A record the dispatcher can't even parse must still leave a log trail.
+
+    Every other failure path logs via log_error; without this one, a malformed
+    message lands in the DLQ with zero CloudWatch evidence of why."""
+    result = process_event({"Records": [{"messageId": "m-bad", "body": "{not json"}]}, deps)
+
+    assert result["batchItemFailures"] == [{"itemIdentifier": "m-bad"}]
+    payload = json.loads(capsys.readouterr().err.strip().splitlines()[-1])
+    assert payload["event"] == "worker.record_failed"
+    assert payload["message_id"] == "m-bad"
+    assert payload["error_type"] == "JSONDecodeError"
+
+
+def test_missing_body_keys_are_failed_and_logged(deps, capsys):
+    """Valid JSON missing project_id/document_id/job_id must fail loudly too."""
+    result = process_event(sqs_event({"kind": "map"}), deps)
+
+    assert result["batchItemFailures"] == [{"itemIdentifier": "m0"}]
+    payload = json.loads(capsys.readouterr().err.strip().splitlines()[-1])
+    assert payload["event"] == "worker.record_failed"
+    assert payload["message_id"] == "m0"
+    assert payload["error_type"] == "KeyError"

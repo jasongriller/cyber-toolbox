@@ -30,11 +30,25 @@ class Deps:
 
     @staticmethod
     def build() -> Deps:
-        config = get_config()
-        return Deps(
-            config=config,
-            repo=Repository(config.table_name),
-            store=DocumentStore(config.documents_bucket, config.kms_key_id),
-            sqs=boto3.client("sqs"),
-            bedrock=BedrockClient.from_config(config),
-        )
+        # Cached per warm Lambda container, like get_config: rebuilding boto3
+        # clients on every invocation defeats connection-pool reuse.
+        global _built
+        if _built is None:
+            config = get_config()
+            _built = Deps(
+                config=config,
+                repo=Repository(config.table_name),
+                store=DocumentStore(config.documents_bucket, config.kms_key_id),
+                sqs=boto3.client("sqs"),
+                bedrock=BedrockClient.from_config(config),
+            )
+        return _built
+
+    @staticmethod
+    def reset_cache() -> None:
+        """Drop the cached bundle (tests; pairs with get_config.cache_clear)."""
+        global _built
+        _built = None
+
+
+_built: Deps | None = None

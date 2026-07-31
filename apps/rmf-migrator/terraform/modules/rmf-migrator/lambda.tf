@@ -42,8 +42,8 @@ locals {
     } : {},
   )
 
-  # name -> { handler, role? }. role defaults to "api"; "worker" grants Bedrock
-  # (the chat handler invokes the model from an API request).
+  # name -> { handler, role? }. role defaults to "api"; "chat" is the narrow
+  # read+Bedrock role for the one API handler that invokes the model.
   api_functions = {
     create-project    = { handler = "rmf_migrator.handlers.create_project.handler" }
     list-projects     = { handler = "rmf_migrator.handlers.projects.list_projects" }
@@ -60,7 +60,7 @@ locals {
     get-drafts        = { handler = "rmf_migrator.handlers.drafts.get_drafts" }
     update-draft      = { handler = "rmf_migrator.handlers.drafts.update_draft" }
     approve-draft     = { handler = "rmf_migrator.handlers.drafts.approve_draft" }
-    chat              = { handler = "rmf_migrator.handlers.chat.handler", role = "worker" }
+    chat              = { handler = "rmf_migrator.handlers.chat.handler", role = "chat" }
     start-export      = { handler = "rmf_migrator.handlers.export.enqueue_export" }
     get-export-job    = { handler = "rmf_migrator.handlers.export.get_export_job" }
     download-export   = { handler = "rmf_migrator.handlers.export.download_export" }
@@ -72,8 +72,8 @@ locals {
   }
 
   api_role_arns = {
-    api    = aws_iam_role.api.arn
-    worker = aws_iam_role.worker.arn
+    api  = aws_iam_role.api.arn
+    chat = aws_iam_role.chat.arn
   }
 }
 

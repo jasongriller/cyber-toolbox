@@ -38,6 +38,10 @@ def _request_upload(event: dict[str, Any], deps: Deps) -> dict[str, Any]:
         raise HttpError(400, "'filename' is required")
     if len(filename) > _MAX_FILENAME:
         raise HttpError(400, "'filename' too long")
+    # Quotes, backslashes, and control characters would break out of the
+    # Content-Disposition header the download path builds from this name.
+    if '"' in filename or "\\" in filename or any(not c.isprintable() for c in filename):
+        raise HttpError(400, "'filename' contains unsupported characters")
     if not filename.lower().endswith(".docx"):
         raise HttpError(400, "only .docx files are supported in v1")
 

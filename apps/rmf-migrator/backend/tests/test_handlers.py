@@ -343,3 +343,11 @@ def test_get_job_404(deps):
     with pytest.raises(HttpError) as exc:
         _get_job(_event(path={"project_id": project["project_id"], "job_id": "job_x"}), deps)
     assert exc.value.status == 404
+
+
+def test_request_upload_rejects_filenames_with_header_breaking_characters(deps):
+    pid = json.loads(_create(_event(body={"name": "S"}), deps)["body"])["project_id"]
+    for bad in ['ac"policy.docx', "ac\policy.docx", "ac\rpolicy.docx", "ac\npolicy.docx"]:
+        with pytest.raises(HttpError) as err:
+            _request_upload(_event(body={"filename": bad}, path={"project_id": pid}), deps)
+        assert err.value.status == 400

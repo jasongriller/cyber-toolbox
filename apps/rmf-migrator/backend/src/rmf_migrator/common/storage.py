@@ -21,6 +21,25 @@ DOCX_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessin
 _UPLOAD_URL_TTL_SECONDS = 300
 
 
+def content_disposition(download_name: str) -> str:
+    """Build a safe ``attachment`` Content-Disposition value.
+
+    Upload validation rejects header-breaking filenames, but stored names may
+    predate that check, so this is enforced again at the only place the value
+    reaches a header: control characters, quotes, and backslashes are stripped
+    (they terminate or escape the quoted parameter), and non-ASCII names get an
+    ASCII fallback plus an RFC 5987 ``filename*`` carrying the real name.
+    """
+    from urllib.parse import quote
+
+    cleaned = "".join(c for c in download_name if c.isprintable() and c not in '"\\')
+    fallback = cleaned.encode("ascii", "replace").decode("ascii").replace("?", "_")
+    disposition = f'attachment; filename="{fallback}"'
+    if cleaned != fallback:
+        disposition += f"; filename*=UTF-8''{quote(cleaned, safe='')}"
+    return disposition
+
+
 def build_document_key(project_id: str, document_id: str, filename: str) -> str:
     """Deterministic S3 key. Filename is stored in metadata, not the key, to
     avoid leaking potentially sensitive names into access logs / URLs."""
@@ -114,7 +133,7 @@ class DocumentStore:
         """Presigned GET URL so the browser downloads the export directly from S3."""
         params: dict[str, Any] = {"Bucket": self._bucket, "Key": key}
         if download_name:
-            params["ResponseContentDisposition"] = f'attachment; filename="{download_name}"'
+            params["ResponseContentDisposition"] = content_disposition(download_name)
         url = self._s3.generate_presigned_url(
             "get_object", Params=params, ExpiresIn=_UPLOAD_URL_TTL_SECONDS
         )

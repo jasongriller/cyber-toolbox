@@ -20,7 +20,7 @@ from docx import Document as DocxDocument
 
 from rmf_migrator.common.limits import guard_docx_bytes
 
-from .parser import heading_level, iter_docx_blocks
+from .parser import docx_heading_level, docx_paragraph_text, iter_docx_blocks
 
 
 def _style_name(paragraph) -> str | None:  # noqa: ANN001 (python-docx type)
@@ -28,7 +28,14 @@ def _style_name(paragraph) -> str | None:  # noqa: ANN001 (python-docx type)
 
 
 def _is_heading(paragraph) -> bool:  # noqa: ANN001
-    return heading_level(_style_name(paragraph)) is not None
+    """A section-opening heading, exactly as the parser counts them.
+
+    Blank heading-styled paragraphs are vertical spacing; the parser skips
+    them, so they must not open (or shift) a section here either.
+    """
+    return docx_heading_level(paragraph) is not None and bool(
+        docx_paragraph_text(paragraph).strip()
+    )
 
 
 def _walk_sections(document) -> list[dict]:  # noqa: ANN001
@@ -44,7 +51,12 @@ def _walk_sections(document) -> list[dict]:  # noqa: ANN001
     current_body: list | None = None
 
     for paragraph in iter_docx_blocks(document):
-        if _is_heading(paragraph):
+        if docx_heading_level(paragraph) is not None:
+            if not docx_paragraph_text(paragraph).strip():
+                # Spacing-only heading: not a section, and not body either —
+                # writing draft text into it would restyle the draft as a
+                # heading. Leave it physically untouched.
+                continue
             body: list = []
             headings.append((paragraph, body))
             current_body = body
@@ -55,7 +67,9 @@ def _walk_sections(document) -> list[dict]:  # noqa: ANN001
 
     sections: list[dict] = []
     order = 0
-    if any(p.text.strip() for p in preamble):
+    # Same effective-text rule as the parser (revision- and wrapper-aware), so
+    # a preamble whose only text sits in a pending insertion still counts.
+    if any(docx_paragraph_text(p).strip() for p in preamble):
         sections.append({"order": 0, "anchor": None, "body": preamble})
         order = 1
     for heading_paragraph, body in headings:

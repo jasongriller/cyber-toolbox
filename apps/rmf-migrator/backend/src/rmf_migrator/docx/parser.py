@@ -236,6 +236,22 @@ def _outline_level(para) -> int | None:  # noqa: ANN001
     return None
 
 
+def docx_paragraph_text(para) -> str:  # noqa: ANN001 (python-docx type)
+    """Effective text of a docx paragraph, revision- and wrapper-aware."""
+    return _element_text(para._p)  # noqa: SLF001
+
+
+def docx_heading_level(para) -> int | None:  # noqa: ANN001 (python-docx type)
+    """Heading depth for a docx paragraph: style name first, then w:outlineLvl.
+
+    This is the exact detection ``parse_paragraph_stream`` applies to the
+    adapted stream. The exporter must use it too, or its section orders drift
+    from the parser's and drafts land in the wrong section.
+    """
+    level = heading_level(para.style.name if para.style is not None else None)
+    return level if level is not None else _outline_level(para)
+
+
 def iter_docx_paragraphs(document) -> Iterator[Paragraph]:  # noqa: ANN001 (python-docx type)
     """Adapt a DOCX, including table cells, into a paragraph stream."""
     for para in iter_docx_blocks(document):

@@ -1,9 +1,10 @@
-"""POST /projects/{project_id}/documents — register a document and get an upload URL.
+"""POST /projects/{project_id}/documents — register a document and get an upload target.
 
-Creates the Document record (status=uploaded is set only after the client PUTs;
-here it starts as uploaded-pending via the returned presigned URL) and returns a
-presigned S3 PUT URL. Bytes go browser -> S3 directly; no document content
-touches this Lambda.
+Creates the Document record (status=uploaded is set only after the client
+uploads; here it starts as uploaded-pending) and returns a presigned S3 POST
+target whose policy pins CMK encryption and a content-length-range size
+ceiling. Bytes go browser -> S3 directly; no document content touches this
+Lambda.
 """
 
 from __future__ import annotations
@@ -56,7 +57,7 @@ def _request_upload(event: dict[str, Any], deps: Deps) -> dict[str, Any]:
     deps.repo.put_document(document)
     deps.repo.increment_document_count(project_id)
 
-    upload = deps.store.presigned_put_url(document.s3_key)
+    upload = deps.store.presigned_post(document.s3_key)
 
     log_event(
         "document.registered",

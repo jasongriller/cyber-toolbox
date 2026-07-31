@@ -37,6 +37,36 @@ describe("ApiClient", () => {
     );
   }
 
+  it("uploadBytes POSTs multipart form data with the policy fields before the file", async () => {
+    // Presigned POST target: S3 requires every policy field first and the
+    // file as the last form part, or it rejects the upload.
+    const spy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(new Response(null, { status: 204 }));
+    const client = new ApiClient("/api");
+    const file = new Blob(["docx-bytes"]);
+
+    await client.uploadBytes(
+      {
+        url: "https://bucket.s3.test",
+        method: "POST",
+        fields: { key: "projects/p/documents/d.docx", policy: "abc", "x-amz-signature": "sig" },
+        expires_in: 300,
+      },
+      file,
+    );
+
+    const [url, init] = spy.mock.calls[0];
+    expect(url).toBe("https://bucket.s3.test");
+    expect(init?.method).toBe("POST");
+    const form = init?.body as FormData;
+    expect(form).toBeInstanceOf(FormData);
+    expect(form.get("key")).toBe("projects/p/documents/d.docx");
+    expect(form.get("policy")).toBe("abc");
+    const entries = Array.from(form.keys());
+    expect(entries[entries.length - 1]).toBe("file");
+  });
+
   it("updateMapping PUTs control ids to the section URL", async () => {
     const spy = mockFetch(200, { section_id: "sec_1", final_control_ids: ["AC-2"] });
     const client = new ApiClient("/api");
@@ -168,21 +198,26 @@ describe("ApiClient", () => {
     expect(spy.mock.calls[0][0]).toBe("/api/projects/p1/documents");
   });
 
-  it("uploadDocument registers, PUTs to S3, then starts parsing", async () => {
+  it("uploadDocument registers, POSTs to S3, then starts parsing", async () => {
     const spy = vi
       .spyOn(globalThis, "fetch")
-      // 1. register document -> presigned target
+      // 1. register document -> presigned POST target
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
             document: { document_id: "d1" },
-            upload: { url: "https://s3.example/put", method: "PUT", headers: {}, expires_in: 300 },
+            upload: {
+              url: "https://s3.example/post",
+              method: "POST",
+              fields: { key: "k", policy: "abc" },
+              expires_in: 300,
+            },
           }),
           { status: 201, headers: { "Content-Type": "application/json" } },
         ),
       )
-      // 2. the S3 PUT itself
-      .mockResolvedValueOnce(new Response(null, { status: 200 }))
+      // 2. the S3 POST itself
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
       // 3. start parse
       .mockResolvedValueOnce(
         new Response(JSON.stringify({ job: { job_id: "job1" } }), {
@@ -198,8 +233,8 @@ describe("ApiClient", () => {
 
     expect(spy.mock.calls[0][0]).toBe("/api/projects/p1/documents");
     // Bytes go straight to S3, never through our API.
-    expect(spy.mock.calls[1][0]).toBe("https://s3.example/put");
-    expect(spy.mock.calls[1][1]?.method).toBe("PUT");
+    expect(spy.mock.calls[1][0]).toBe("https://s3.example/post");
+    expect(spy.mock.calls[1][1]?.method).toBe("POST");
     expect(spy.mock.calls[2][0]).toBe("/api/projects/p1/documents/d1/parse");
     expect(res.job.job_id).toBe("job1");
   });

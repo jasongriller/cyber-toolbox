@@ -78,7 +78,10 @@ resource "aws_s3_bucket_cors_configuration" "documents" {
   bucket = aws_s3_bucket.documents.id
 
   cors_rule {
-    allowed_methods = ["PUT"]
+    # POST: presigned-POST uploads (policy carries the size ceiling). PUT is
+    # kept through the transition for browsers still running the previous
+    # SPA build; drop it once every deployment is past the POST switch.
+    allowed_methods = ["POST", "PUT"]
     allowed_origins = var.frame_ancestors
     allowed_headers = [
       "content-type",

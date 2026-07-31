@@ -3,8 +3,9 @@
 A .docx is a zip of XML. python-docx decompresses every member into memory with
 no ceiling, so a small upload can expand to hundreds of megabytes and OOM the
 parse/export worker — cheap to send, expensive to absorb, and amplified by SQS
-retries. Nothing constrains the size of a presigned PUT either, so these checks
-are the only thing standing between an uploaded blob and the worker's memory.
+retries. The upload POST policy's content-length-range bounds the raw upload
+size at S3, but the decompressed size is only knowable here — these checks are
+what stands between an uploaded blob and the worker's memory.
 
 The limits are deliberately generous: a real policy document, even a long one
 with embedded images, lands far below them.

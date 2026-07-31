@@ -57,8 +57,10 @@ export interface DocumentRecord {
 
 export interface UploadTarget {
   url: string;
-  method: "PUT";
-  headers: Record<string, string>;
+  // Presigned POST: the policy fields carry CMK encryption and the S3-side
+  // content-length-range size ceiling a presigned PUT could not express.
+  method: "POST";
+  fields: Record<string, string>;
   expires_in: number;
 }
 

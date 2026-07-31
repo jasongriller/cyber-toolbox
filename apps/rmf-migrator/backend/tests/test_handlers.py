@@ -93,9 +93,11 @@ def test_request_upload_returns_presigned_url(deps):
     )
     assert resp["statusCode"] == 201
     payload = json.loads(resp["body"])
-    assert payload["upload"]["method"] == "PUT"
+    # Presigned POST (not PUT): only a POST policy can carry the S3-side
+    # content-length-range size ceiling.
+    assert payload["upload"]["method"] == "POST"
     assert "url" in payload["upload"]
-    assert payload["upload"]["headers"]["x-amz-server-side-encryption"] == "aws:kms"
+    assert payload["upload"]["fields"]["x-amz-server-side-encryption"] == "aws:kms"
     assert payload["document"]["status"] == DocumentStatus.UPLOAD_PENDING.value
 
 

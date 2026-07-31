@@ -17,11 +17,12 @@ def test_presigned_urls_are_sigv4(monkeypatch):
     monkeypatch.setenv("AWS_DEFAULT_REGION", "us-gov-west-1")
     store = DocumentStore("test-bucket", "test-kms-key")
 
-    put = store.presigned_put_url("projects/p/documents/d.docx")["url"]
     get = store.presigned_get_url("projects/p/documents/d.docx")["url"]
-    for url in (put, get):
-        assert "X-Amz-Algorithm=AWS4-HMAC-SHA256" in url
-        assert "AWSAccessKeyId=" not in url
+    assert "X-Amz-Algorithm=AWS4-HMAC-SHA256" in get
+    assert "AWSAccessKeyId=" not in get
+    # Upload target: the POST policy's x-amz-algorithm field is the SigV4 marker.
+    post = store.presigned_post("projects/p/documents/d.docx")
+    assert post["fields"]["x-amz-algorithm"] == "AWS4-HMAC-SHA256"
 
 
 def _disposition_from(url: str) -> str:
@@ -61,3 +62,31 @@ def test_non_ascii_download_name_gets_rfc5987_fallback(monkeypatch):
     assert disposition.startswith('attachment; filename="')
     assert "filename*=UTF-8''" in disposition
     assert "ü" not in disposition.split("filename*")[0]
+
+
+def test_presigned_post_pins_size_ceiling_and_encryption(monkeypatch):
+    """Presigned PUT cannot carry an S3-side size limit; only a POST policy's
+    content-length-range can stop an oversized object from ever landing.
+    The policy must also keep pinning CMK encryption, like the PUT did."""
+    import base64
+    import json as jsonlib
+
+    monkeypatch.setenv("AWS_ACCESS_KEY_ID", "testing")
+    monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "testing")
+    monkeypatch.setenv("AWS_DEFAULT_REGION", "us-gov-west-1")
+    from rmf_migrator.common.limits import MAX_DOCX_BYTES
+
+    store = DocumentStore("test-bucket", "test-kms-key")
+    target = store.presigned_post("projects/p/documents/d.docx")
+
+    assert target["method"] == "POST"
+    assert target["fields"]["Content-Type"].startswith("application/vnd.openxmlformats")
+    assert target["fields"]["x-amz-server-side-encryption"] == "aws:kms"
+    assert target["fields"]["x-amz-server-side-encryption-aws-kms-key-id"] == "test-kms-key"
+    # SigV4, like every other presigned request in this app.
+    assert target["fields"]["x-amz-algorithm"] == "AWS4-HMAC-SHA256"
+
+    policy = jsonlib.loads(base64.b64decode(target["fields"]["policy"]))
+    assert ["content-length-range", 1, MAX_DOCX_BYTES] in [
+        list(c) if isinstance(c, list) else c for c in policy["conditions"]
+    ]

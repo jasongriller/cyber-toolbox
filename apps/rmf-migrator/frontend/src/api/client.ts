@@ -176,12 +176,17 @@ export class ApiClient {
     return this.request("POST", `/projects/${projectId}/documents`, { filename });
   }
 
-  /** Upload the file bytes directly to S3 using the presigned target. */
+  /** Upload the file bytes directly to S3 using the presigned POST target.
+   *  S3 requires every policy field before the file part, and the file last. */
   async uploadBytes(target: UploadTarget, file: Blob): Promise<void> {
+    const form = new FormData();
+    for (const [name, value] of Object.entries(target.fields)) {
+      form.append(name, value);
+    }
+    form.append("file", file);
     const res = await fetch(target.url, {
       method: target.method,
-      headers: target.headers,
-      body: file,
+      body: form,
     });
     if (!res.ok) {
       throw new ApiError(res.status, `upload failed: ${res.statusText}`);

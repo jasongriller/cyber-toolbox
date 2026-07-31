@@ -1,6 +1,6 @@
 """S3 document storage helpers.
 
-Uploads use presigned PUT URLs so document bytes flow browser -> S3 directly and
+Uploads use presigned POST targets so document bytes flow browser -> S3 directly and
 never transit a Lambda. Server-side encryption uses the project's KMS CMK; the
 presigned URL pins the SSE headers so an upload that omits them is rejected.
 """
@@ -69,30 +69,35 @@ class DocumentStore:
             "s3", config=FAST_CONFIG.merge(Config(signature_version="s3v4"))
         )
 
-    def presigned_put_url(self, key: str) -> dict[str, Any]:
-        """Return a presigned PUT URL and the headers the caller must send.
+    def presigned_post(self, key: str) -> dict[str, Any]:
+        """Return a presigned POST target with an S3-side size ceiling.
 
-        The SSE headers are part of the signed request, enforcing CMK
-        encryption on upload.
+        Presigned PUT cannot express a size limit, so an oversized object
+        could land in the bucket before the app-side check rejected it (a
+        storage-cost/DoS vector). A POST policy's content-length-range makes
+        S3 itself refuse anything over MAX_DOCX_BYTES, and the pinned fields
+        keep enforcing CMK encryption exactly as the PUT headers did.
         """
-        params = {
-            "Bucket": self._bucket,
-            "Key": key,
-            "ContentType": DOCX_CONTENT_TYPE,
-            "ServerSideEncryption": "aws:kms",
-            "SSEKMSKeyId": self._kms_key_id,
-        }
-        url = self._s3.generate_presigned_url(
-            "put_object", Params=params, ExpiresIn=_UPLOAD_URL_TTL_SECONDS
-        )
-        return {
-            "url": url,
-            "method": "PUT",
-            "headers": {
+        post = self._s3.generate_presigned_post(
+            Bucket=self._bucket,
+            Key=key,
+            Fields={
                 "Content-Type": DOCX_CONTENT_TYPE,
                 "x-amz-server-side-encryption": "aws:kms",
                 "x-amz-server-side-encryption-aws-kms-key-id": self._kms_key_id,
             },
+            Conditions=[
+                {"Content-Type": DOCX_CONTENT_TYPE},
+                {"x-amz-server-side-encryption": "aws:kms"},
+                {"x-amz-server-side-encryption-aws-kms-key-id": self._kms_key_id},
+                ["content-length-range", 1, MAX_DOCX_BYTES],
+            ],
+            ExpiresIn=_UPLOAD_URL_TTL_SECONDS,
+        )
+        return {
+            "url": post["url"],
+            "method": "POST",
+            "fields": post["fields"],
             "expires_in": _UPLOAD_URL_TTL_SECONDS,
         }
 
@@ -104,8 +109,9 @@ class DocumentStore:
         """Download an object, refusing anything over ``max_bytes``.
 
         The size is checked with HeadObject first so an oversized object is
-        never pulled into the Lambda's memory at all. Nothing constrains the
-        size of a presigned PUT, so this is where an oversized upload is caught.
+        never pulled into the Lambda's memory at all. The upload POST policy's
+        content-length-range already bounds new uploads; this guards objects
+        that predate it (or arrive by any other path).
         """
         if max_bytes is not None:
             head = self._s3.head_object(Bucket=self._bucket, Key=key)

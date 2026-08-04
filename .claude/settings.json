@@ -36,7 +36,23 @@
       "Bash(sudo:*)",
       "Bash(chmod 777:*)",
       "Bash(ssh:*)",
-      "Bash(* > /dev/*)"
+      "Bash(scp:*)",
+      "Bash(nc:*)",
+      "Bash(curl * | bash:*)",
+      "Bash(* > /dev/*)",
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Read(**/.env*)",
+      "Write(~/.ssh/**)",
+      "Write(~/.aws/**)",
+      "Write(**/.env*)",
+      "Edit(~/.ssh/**)",
+      "Edit(~/.aws/**)",
+      "Edit(**/.env*)",
+      "Edit(**/.git/**)",
+      "Write(**/.git/**)",
+      "Edit(**/*.tfstate*)",
+      "Write(**/*.tfstate*)"
     ]
   },
   "hooks": {

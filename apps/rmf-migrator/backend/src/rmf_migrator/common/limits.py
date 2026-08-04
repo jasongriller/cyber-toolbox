@@ -158,9 +158,7 @@ def guard_docx_bytes(data: bytes) -> None:
         raise UnsupportedDocumentFormat("document is not a readable .docx archive") from exc
 
     if _WML_MAIN_CONTENT_TYPE not in bytes(content_types):
-        raise UnsupportedDocumentFormat(
-            "zip package without a Word main document declaration"
-        )
+        raise UnsupportedDocumentFormat("zip package without a Word main document declaration")
 
 
 def guard_parsed_sections(sections: list[object]) -> None:

@@ -6,6 +6,38 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **Suite navigation and flow pass.** A toolbox bar on every screen links home to
+  the Cyber Toolbox portal and across to the STIG parser; the login challenge
+  screens gained a "Back to sign in" escape; approving the control mapping
+  advances straight to the editor; a fully approved draft set offers "Continue to
+  export"; the export panel closes back to the project list with the project
+  still selected; and the coverage dashboard keeps the document stepper when
+  opened mid-document. Render crashes now land on a reload screen instead of a
+  blank page.
+
+### Changed
+
+- **Header cleanup.** The studio name is gone from the top of the app; the header
+  is just the tool name and mark.
+
+### Removed
+
+- **Bundled PDF manual.** The stale `docs/USER_MANUAL.pdf` copy is removed;
+  [docs/USER_MANUAL.md](docs/USER_MANUAL.md) is the manual.
+
+### Fixed
+
+- **Wrong-format uploads now say so.** A legacy binary `.doc` renamed to
+  `.docx` used to die in parsing as a bare `failed` with a misleading
+  "too large" error type. The file picker now checks the real file signature
+  before uploading and explains the fix ("open in Word, Save As .docx"); the
+  parser reports `UnsupportedDocumentFormat` for anything that is not a Word
+  document — legacy `.doc`, renamed spreadsheets, plain zips; failed documents
+  show a plain-language reason in the project browser; and format failures no
+  longer burn queue retries before settling.
+
 ## [1.1.0] - 2026-07-20
 
 Feature release: OSCAL and richer crosswalk exports, project purge, authenticated

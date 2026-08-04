@@ -141,6 +141,25 @@ describe("ProjectBrowser failed-document handling", () => {
     expect(client.deleteProject).not.toHaveBeenCalled();
   });
 
+  it("offers no retry on deterministic wrong-format failures", async () => {
+    // Same bytes, same verdict on every run — the remedy is a corrected
+    // re-upload, and the reason row already says so.
+    const client = makeClient([
+      failedDoc({ failure_stage: "parse", parse_error: "UnsupportedDocumentFormat" }),
+    ]);
+    render(
+      <ProjectBrowser
+        client={client}
+        initialProjectId="proj_1"
+        onOpenDocument={vi.fn()}
+        onOpenCoverage={vi.fn()}
+      />,
+    );
+
+    await screen.findByText("ac-policy.docx");
+    expect(screen.queryByRole("button", { name: /retry/i })).not.toBeInTheDocument();
+  });
+
   it("offers no retry action on documents that have not failed", async () => {
     const client = makeClient([failedDoc({ status: "mapped", failure_stage: null })]);
     render(

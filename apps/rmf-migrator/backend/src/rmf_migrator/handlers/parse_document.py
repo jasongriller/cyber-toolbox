@@ -16,11 +16,26 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+from rmf_migrator.common.limits import (
+    DocxTooLarge,
+    ObjectTooLarge,
+    ParsedDocumentTooLarge,
+    UnsupportedDocumentFormat,
+)
 from rmf_migrator.common.logging import length_of, log_error, log_event
 from rmf_migrator.common.models import DocumentStatus, JobStatus
 from rmf_migrator.common.sections import externalize_large_section_texts
 from rmf_migrator.docx.parser import parse_docx_bytes
 from rmf_migrator.handlers.deps import Deps
+
+# Deterministic verdicts on the stored bytes: identical on every redelivery,
+# so an SQS retry can only burn the redrive budget and land in the DLQ.
+_PERMANENT_PARSE_ERRORS = (
+    DocxTooLarge,
+    ObjectTooLarge,
+    ParsedDocumentTooLarge,
+    UnsupportedDocumentFormat,
+)
 
 
 def run_parse_job(project_id: str, document_id: str, job_id: str, deps: Deps) -> bool:
@@ -114,4 +129,7 @@ def run_parse_job(project_id: str, document_id: str, job_id: str, deps: Deps) ->
         deps.repo.put_job(job)
 
         log_error("document.parse_failed", exc, project_id=project_id, document_id=document_id)
-        raise  # let SQS/Lambda apply its retry + DLQ policy
+        if isinstance(exc, _PERMANENT_PARSE_ERRORS):
+            # Fully recorded above; end the message so it is not redelivered.
+            return False
+        raise  # transient (S3/KMS/DynamoDB) — let SQS/Lambda retry

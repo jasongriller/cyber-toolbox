@@ -14,6 +14,7 @@ from rmf_migrator.common.limits import (
     MAX_UNCOMPRESSED_BYTES,
     DocxTooLarge,
     ObjectTooLarge,
+    UnsupportedDocumentFormat,
     guard_docx_bytes,
 )
 from rmf_migrator.docx.export_docx import export_rev5_docx
@@ -80,42 +81,126 @@ def test_zip_bomb_is_rejected_on_compression_ratio():
 
 
 def test_oversized_bytes_are_rejected():
+    # Zip-signature-prefixed so the format sniff passes and the size ceiling
+    # is what fires.
     with pytest.raises(DocxTooLarge):
-        guard_docx_bytes(b"x" * (MAX_DOCX_BYTES + 1))
+        guard_docx_bytes(b"PK\x03\x04" + b"x" * (MAX_DOCX_BYTES + 1))
 
 
-def test_non_zip_bytes_are_rejected_as_invalid_not_too_large():
+def _ole2_doc() -> bytes:
+    """Bytes shaped like a legacy Word 97-2003 binary .doc (OLE2 container)."""
+    return b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1" + b"\x00" * 512
+
+
+_WML_MAIN = "application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"
+
+
+def _fake_xlsx() -> bytes:
+    """A valid OOXML zip that declares itself a spreadsheet, not a Word document."""
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr(
+            "[Content_Types].xml",
+            '<Types><Override PartName="/xl/workbook.xml" ContentType='
+            '"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/></Types>',
+        )
+        archive.writestr("xl/workbook.xml", "<workbook/>")
+    return buf.getvalue()
+
+
+def _docx_like(main_part: str) -> bytes:
+    """A minimal package declaring a WordprocessingML main document part."""
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr(
+            "[Content_Types].xml",
+            f'<Types><Override PartName="/{main_part}" ContentType="{_WML_MAIN}"/></Types>',
+        )
+        archive.writestr(main_part, "<document/>")
+    return buf.getvalue()
+
+
+def test_nonstandard_main_part_name_still_passes_the_guard():
+    # python-docx finds the main part by relationship, not by name — Word
+    # occasionally emits word/document2.xml, and those files parse fine. The
+    # guard must accept what the parser accepts.
+    guard_docx_bytes(_docx_like("word/document2.xml"))  # must not raise
+
+
+def test_legacy_doc_bytes_are_rejected_as_unsupported_format():
+    # A renamed .doc opens fine in Word, so the rejection has to say what it
+    # actually is — not "too large".
+    with pytest.raises(UnsupportedDocumentFormat):
+        guard_docx_bytes(_ole2_doc())
+
+
+def test_renamed_spreadsheet_is_rejected_as_unsupported_format():
+    # Any zip passes a PK check; only a zip carrying word/document.xml is a
+    # Word document. A renamed .xlsx must not reach python-docx and surface
+    # as a raw ValueError.
+    with pytest.raises(UnsupportedDocumentFormat):
+        guard_docx_bytes(_fake_xlsx())
+
+
+def test_plain_zip_is_rejected_as_unsupported_format():
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as archive:
+        archive.writestr("readme.txt", "hello")
+    with pytest.raises(UnsupportedDocumentFormat):
+        guard_docx_bytes(buf.getvalue())
+
+
+def test_oversized_legacy_doc_reports_format_not_size():
+    # The remedy for a huge legacy .doc is converting it, not shrinking it —
+    # the format verdict must win over the size verdict.
+    data = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1" + b"\x00" * MAX_DOCX_BYTES
+    with pytest.raises(UnsupportedDocumentFormat):
+        guard_docx_bytes(data)
+
+
+def test_empty_bytes_are_rejected_as_unsupported_format():
+    # A zero-byte object (interrupted PUT) is not a Word document either.
+    with pytest.raises(UnsupportedDocumentFormat):
+        guard_docx_bytes(b"")
+
+
+def test_non_zip_bytes_are_rejected_as_wrong_format_not_size():
     """Garbage bytes are a *format* problem, not a size problem — reporting
     DocxTooLarge for them sends the operator chasing the wrong cause."""
-    from rmf_migrator.common.limits import InvalidDocx
-
-    with pytest.raises(InvalidDocx):
+    with pytest.raises(UnsupportedDocumentFormat):
         guard_docx_bytes(b"this is not a docx")
 
 
 def test_legacy_doc_is_named_in_the_rejection():
     """A binary .doc renamed to .docx is the classic real-world failure; the
     error must say re-save as .docx, not talk about size limits."""
-    from rmf_migrator.common.limits import InvalidDocx
-
     ole2 = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1" + b"\x00" * 64
-    with pytest.raises(InvalidDocx, match="legacy Word"):
+    with pytest.raises(UnsupportedDocumentFormat, match="legacy Word"):
         guard_docx_bytes(ole2)
 
 
 def test_html_saved_as_docx_is_named_in_the_rejection():
-    from rmf_migrator.common.limits import InvalidDocx
-
     html = b"<!DOCTYPE html><html><body>Download page</body></html>"
-    with pytest.raises(InvalidDocx, match="HTML"):
+    with pytest.raises(UnsupportedDocumentFormat, match="HTML"):
         guard_docx_bytes(html)
 
 
 def test_pdf_renamed_to_docx_is_named_in_the_rejection():
-    from rmf_migrator.common.limits import InvalidDocx
-
-    with pytest.raises(InvalidDocx, match="PDF"):
+    with pytest.raises(UnsupportedDocumentFormat, match="PDF"):
         guard_docx_bytes(b"%PDF-1.7 garbage")
+
+
+def test_truncated_zip_is_reported_as_wrong_format():
+    # Starts with the zip signature but is unreadable — zipfile's own
+    # consistency check fires, and unreadable is a format verdict, not a
+    # size verdict.
+    with pytest.raises(UnsupportedDocumentFormat):
+        guard_docx_bytes(b"PK\x03\x04" + b"\x00" * 32)
+
+
+def test_parser_rejects_legacy_doc_bytes():
+    with pytest.raises(UnsupportedDocumentFormat):
+        parse_docx_bytes(_ole2_doc(), document_id="d", project_id="p")
 
 
 def test_ratio_constant_is_sane_for_real_documents():
@@ -140,17 +225,14 @@ def test_guard_rejects_a_zip_that_underdeclares_member_sizes():
 
     # Rejection is what matters: the forged sizes either cross the actual-
     # decompression ceiling (DocxTooLarge) or trip zipfile's own consistency
-    # checks (InvalidDocx) — both stop the bomb before it reaches the parser.
-    from rmf_migrator.common.limits import InvalidDocx
-
-    with pytest.raises((DocxTooLarge, InvalidDocx)):
+    # checks (UnsupportedDocumentFormat) — both stop the bomb before it
+    # reaches the parser.
+    with pytest.raises((DocxTooLarge, UnsupportedDocumentFormat)):
         guard_docx_bytes(data)
 
 
 def test_parser_rejects_a_lying_zip_bomb():
-    from rmf_migrator.common.limits import InvalidDocx
-
-    with pytest.raises((DocxTooLarge, InvalidDocx)):
+    with pytest.raises((DocxTooLarge, UnsupportedDocumentFormat)):
         parse_docx_bytes(_lying_zip_bomb(), document_id="d", project_id="p")
 
 

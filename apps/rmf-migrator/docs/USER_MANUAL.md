@@ -55,7 +55,10 @@ prompts/responses are never written to logs.
   and every API route requires that login's token.
 - **Input format.** Policy documents must be `.docx`. The parser reads paragraphs
   **and table cells** in reading order, so requirements stated inside tables are
-  captured.
+  captured. A legacy binary `.doc` renamed to `.docx` is not a `.docx` — the file
+  picker detects one by its content and rejects it before upload. The remedy is a
+  real conversion: open the file in Word and use **Save As** with the `.docx`
+  format, then upload that file.
 - **CUI handling.** Uploaded content is encrypted at rest with your customer-managed
   KMS key and is never logged. Deleting a project (§8) permanently purges every
   document, export, section, and audit record, including all prior S3 versions.
@@ -80,7 +83,8 @@ Upload registers the document, sends the bytes straight to encrypted storage, an
 automatically starts parsing. Parsing then chains into control mapping on its own.
 The status pill advances `upload_pending → parsing → mapped`; the list refreshes
 itself while work is in progress. When a document reaches **mapped**, select
-**Open**.
+**Open**. If a document instead shows **failed**, the reason appears directly
+under its filename in the document list, along with what to do about it.
 
 ### 4.2 Step 1 — Mapping review (the human checkpoint)
 

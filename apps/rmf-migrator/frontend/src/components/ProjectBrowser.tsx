@@ -46,6 +46,30 @@ const BUSY: DocumentStatus[] = [
 
 const POLL_MS = 2500;
 
+const OLE2_MAGIC = [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
+
+// FileReader rather than Blob.arrayBuffer: identical support in every real
+// browser, and it also exists in the jsdom test environment.
+function readHeadBytes(file: File): Promise<Uint8Array> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(new Uint8Array(reader.result as ArrayBuffer));
+    reader.onerror = () => reject(reader.error ?? new Error("could not read the file"));
+    reader.onabort = () => reject(new Error("file read aborted"));
+    reader.readAsArrayBuffer(file.slice(0, 8));
+  });
+}
+
+// The same check the backend's parse guard runs, moved to the moment of file
+// selection: a renamed legacy .doc opens fine in Word (Word sniffs content,
+// not extensions), so the person uploading cannot tell — the first 8 bytes can.
+async function sniffWordFormat(file: File): Promise<"docx" | "legacy-doc" | "unknown"> {
+  const head = await readHeadBytes(file);
+  if (OLE2_MAGIC.every((b, i) => head[i] === b)) return "legacy-doc";
+  if (head[0] === 0x50 && head[1] === 0x4b) return "docx";
+  return "unknown";
+}
+
 export default function ProjectBrowser({
   client,
   initialProjectId,
@@ -151,12 +175,23 @@ export default function ProjectBrowser({
     if (!selected) return;
     setBusy(true);
     try {
+      const format = await sniffWordFormat(file);
+      if (format !== "docx") {
+        setError(
+          format === "legacy-doc"
+            ? "This is an older binary .doc file — open it in Word, use Save As to make a real .docx, and upload that instead."
+            : "That file is not a .docx Word document.",
+        );
+        return;
+      }
       await client.uploadDocument(selected.project_id, file);
       await loadDocuments(selected.project_id);
-      if (fileInput.current) fileInput.current.value = "";
     } catch (e) {
       fail(e);
     } finally {
+      // Always reset the picker — success, block, or failure — so choosing
+      // the same file again re-fires onChange.
+      if (fileInput.current) fileInput.current.value = "";
       setBusy(false);
     }
   };
@@ -295,7 +330,14 @@ export default function ProjectBrowser({
                     <tbody>
                       {documents.map((d) => (
                         <tr key={d.document_id}>
-                          <td>{d.filename}</td>
+                          <td>
+                            {d.filename}
+                            {d.status === "failed" && (
+                              <p className="muted" style={{ margin: "4px 0 0", fontSize: 12 }}>
+                                {failureReason(d)}
+                              </p>
+                            )}
+                          </td>
                           <td>
                             <StatusBadge
                               status={d.status}
@@ -305,7 +347,7 @@ export default function ProjectBrowser({
                           </td>
                           <td className="num">{d.section_count > 0 ? d.section_count : ""}</td>
                           <td>
-                            {d.status === "failed" && (
+                            {d.status === "failed" && !permanentFailure(d) && (
                               <button
                                 className="btn btn--sm"
                                 disabled={busy}
@@ -317,7 +359,10 @@ export default function ProjectBrowser({
                             <button
                               className="btn btn--sm"
                               onClick={() => onOpenDocument(selected.project_id, d.document_id)}
-                              disabled={BUSY.includes(d.status) && d.status !== "parsed"}
+                              disabled={
+                                (BUSY.includes(d.status) && d.status !== "parsed") ||
+                                (d.status === "failed" && d.failure_stage === "parse")
+                              }
                             >
                               Open
                             </button>
@@ -405,6 +450,36 @@ export default function ProjectBrowser({
       </div>
     </section>
   );
+}
+
+// Mirrors the backend's _PERMANENT_PARSE_ERRORS: deterministic verdicts on
+// the stored bytes, identical on every retry — the remedy is a corrected
+// re-upload, so no Retry is offered and the reason row says what to fix.
+const PERMANENT_PARSE_ERRORS = [
+  "UnsupportedDocumentFormat",
+  "DocxTooLarge",
+  "ParsedDocumentTooLarge",
+];
+
+function permanentFailure(d: DocumentRecord): boolean {
+  return d.failure_stage === "parse" && PERMANENT_PARSE_ERRORS.includes(d.parse_error ?? "");
+}
+
+// The backend records failures as an error type only (never content); this is
+// where those types become words an operator can act on.
+function failureReason(d: DocumentRecord): string {
+  switch (d.parse_error) {
+    case "UnsupportedDocumentFormat":
+      return "This is an older binary .doc file — open it in Word, use Save As to make a real .docx, and re-upload.";
+    case "DocxTooLarge":
+      return "Too large, too complex, or unreadable as a .docx (25 MB limit).";
+    case "ParsedDocumentTooLarge":
+      return "The parsed text exceeds the size limit.";
+    default:
+      return d.parse_error
+        ? `Processing failed (${d.parse_error}). Retry to run it again.`
+        : "Processing failed. Retry to run it again.";
+  }
 }
 
 function StatusBadge({

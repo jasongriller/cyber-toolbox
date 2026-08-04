@@ -1,4 +1,4 @@
-/* Binary Systems design system for the RMF Rev 5 Migrator.
+/* Design system for the RMF Rev 5 Migrator.
  *
  * Industrial-minimalist: three-tier surface system, 1px borders (no heavy
  * shadows), sharp corners (2px max), surgical accent use. Dark is the primary
@@ -137,16 +137,6 @@ h2 {
 h3 {
   font-weight: 500;
   font-size: 16px;
-}
-
-.eyebrow {
-  font-family: var(--font-body);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--durasteel);
-  margin: 0;
 }
 
 .mono {

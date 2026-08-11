@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Installation-level LibreOffice policy for the converter image.
+
+  Dropped into share/registry so it applies to every user and every profile:
+  HOME is /tmp, which Lambda wipes between sandboxes, so anything written into
+  a per-user profile would not survive to the invocation that needs it.
+
+  What it is for: a linked graphic in a .doc makes LibreOffice fetch the URL
+  while converting. Measured in this image on 7.4.7.2 — OPTIONS, HEAD and GET
+  against the URL the document named, with the conversion still succeeding.
+  That is a callback out of the CUI boundary, an SSRF primitive, and (pointed
+  at a host that accepts and never answers) a way to hold a converter slot for
+  the whole timeout. See the plan's Gate 1 section for the recorded runs.
+
+  BlockUntrustedRefererLinks stops the content fetch; it does not stop the
+  existence probe, so the Dockerfile also removes the UCB providers that speak
+  HTTP at all. Both are needed, and neither is the network control — a VPC
+  with no NAT or internet gateway is Task 12's half.
+
+  oor:finalized locks each value: a document, a macro, or a stray profile
+  cannot set it back.
+
+  Every oor:name here exists in this build's schema, and the Dockerfile asserts
+  that rather than trusting it. The version probe alone does not: measured on
+  this build, configmgr throws (soffice aborts, no version printed) only for
+  malformed XML or a wrong oor:type on a real property. A property name or a
+  node name it does not recognise is discarded in silence — soffice prints its
+  version, the build goes green, and the image ships with these settings
+  quietly dropped. So the Dockerfile reads every oor:name out of this file and
+  requires each to appear in share/registry/main.xcd. Renaming anything here
+  fails the build unless the new spelling is one the schema knows.
+-->
+<oor:data xmlns:oor="http://openoffice.org/2001/registry"
+          xmlns:xs="http://www.w3.org/2001/XMLSchema"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+ <dependency file="main"/>
+ <oor:component-data oor:name="Common" oor:package="org.openoffice.Office">
+  <node oor:name="Security">
+   <node oor:name="Scripting">
+    <!-- Refuse links loaded from a document that is not in a trusted
+         location. Nothing is a trusted location here, so this is every
+         document this function ever sees. -->
+    <prop oor:name="BlockUntrustedRefererLinks" oor:type="xs:boolean" oor:finalized="true">
+     <value>true</value>
+    </prop>
+    <!-- A headless convert does not run macros, and the handler strips the
+         VBA part from the output. These two say so in the one place a future
+         change to either could not silently override. -->
+    <prop oor:name="DisableMacrosExecution" oor:type="xs:boolean" oor:finalized="true">
+     <value>true</value>
+    </prop>
+    <prop oor:name="MacroSecurityLevel" oor:type="xs:int" oor:finalized="true">
+     <value>3</value>
+    </prop>
+   </node>
+  </node>
+ </oor:component-data>
+</oor:data>

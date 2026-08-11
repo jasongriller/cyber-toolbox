@@ -10,15 +10,21 @@ from docx import Document as DocxDocument
 
 from rmf_migrator.common.limits import (
     MAX_COMPRESSION_RATIO,
+    MAX_DOC_BYTES,
     MAX_DOCX_BYTES,
     MAX_UNCOMPRESSED_BYTES,
     DocxTooLarge,
     ObjectTooLarge,
     UnsupportedDocumentFormat,
     guard_docx_bytes,
+    sniff_document_format,
+    sniff_docx_problem,
 )
 from rmf_migrator.docx.export_docx import export_rev5_docx
 from rmf_migrator.docx.parser import parse_docx_bytes
+from tests.conftest import ole2_container, ole2_directory
+
+OLE2_MAGIC = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
 
 
 def _real_docx() -> bytes:
@@ -256,3 +262,127 @@ def test_storage_download_enforces_the_streaming_byte_limit(deps):
 
     with pytest.raises(ObjectTooLarge, match="exceeds"):
         deps.store.get_bytes(key, max_bytes=3)
+
+
+def test_sniff_document_format_identifies_docx():
+    assert sniff_document_format(_real_docx()) == "docx"
+
+
+def test_sniff_document_format_identifies_legacy_doc():
+    assert sniff_document_format(ole2_container("WordDocument", "1Table")) == "doc"
+
+
+def test_sniff_document_format_finds_a_word_stream_past_the_first_directory_sector():
+    # Word writes the root entry first, so `WordDocument` routinely lands in the
+    # second directory sector; the chain has to be followed, not just sampled.
+    container = ole2_container("Data", "1Table", "\x05SummaryInformation", "WordDocument")
+    assert sniff_document_format(container) == "doc"
+
+
+def _ole2_container_addressed_through_a_difat_sector() -> bytes:
+    """A container whose directory sits past the reach of the header's DIFAT.
+
+    The header names only the first 109 FAT sectors, which covers roughly the
+    first 7 MB of a 512-byte-sector file; past that the FAT's own location has
+    to be read from a DIFAT sector. MAX_DOC_BYTES allows 15 MB, so a real policy
+    document with images reaches this layout — and a sniff that stopped at the
+    header would reject it as "not a Word document".
+
+    `WordDocument` is placed in the *second* directory sector, because that is
+    what forces the FAT to be consulted at all.
+    """
+    sector = 512
+    first_dir = 109 * (sector // 4)  # first sector no header DIFAT slot can address
+    data = bytearray((first_dir + 3) * sector)
+    data[0:8] = OLE2_MAGIC
+    data[26:28] = (3).to_bytes(2, "little")  # major version
+    data[28:30] = b"\xfe\xff"  # little-endian byte order
+    data[30:32] = (9).to_bytes(2, "little")  # 512-byte sectors
+    data[32:34] = (6).to_bytes(2, "little")  # 64-byte mini sectors
+    data[48:52] = first_dir.to_bytes(4, "little")
+    data[68:72] = (0).to_bytes(4, "little")  # DIFAT chain starts at sector 0
+    data[72:76] = (1).to_bytes(4, "little")  # one DIFAT sector
+    data[76:512] = b"\xff" * 436  # every header DIFAT slot free
+
+    # Sector 0 is the DIFAT sector; its first slot names the 110th FAT sector.
+    difat = 1 * sector
+    data[difat : difat + sector] = b"\xff" * sector
+    data[difat : difat + 4] = (1).to_bytes(4, "little")
+    data[difat + sector - 4 : difat + sector] = (0xFFFFFFFE).to_bytes(4, "little")
+
+    # Sector 1 is that FAT sector, holding the links for both directory sectors.
+    fat = 2 * sector
+    data[fat : fat + sector] = b"\xff" * sector
+    data[fat : fat + 4] = (first_dir + 1).to_bytes(4, "little")
+    data[fat + 4 : fat + 8] = (0xFFFFFFFE).to_bytes(4, "little")  # ENDOFCHAIN
+
+    directory = ole2_directory("Data", "1Table", "\x05SummaryInformation", "WordDocument")
+    at = (first_dir + 1) * sector
+    data[at : at + len(directory)] = directory
+    return bytes(data)
+
+
+def test_sniff_document_format_reads_a_directory_addressed_through_a_difat_sector():
+    assert sniff_document_format(_ole2_container_addressed_through_a_difat_sector()) == "doc"
+
+
+def test_sniff_document_format_rejects_ole2_that_is_not_a_word_document():
+    # The CFBF signature is the container's, not Word's: .xls, .ppt and .msi all
+    # carry it, so only a WordDocument stream routes to the converter. This
+    # stops honest non-Word files; a forged entry is the converter's
+    # `--infilter` to catch, not this check's.
+    assert sniff_document_format(ole2_container("Workbook")) is None
+    assert sniff_document_format(ole2_container("PowerPoint Document")) is None
+    # The name is compared by length as well as bytes, so a longer name that
+    # merely starts with Word's does not match.
+    assert sniff_document_format(ole2_container("WordDocumentSummary")) is None
+    # ...and a name of exactly Word's length gets past the length check, so the
+    # byte comparison is what has to reject it.
+    assert sniff_document_format(ole2_container("Workbook0123")) is None
+    # A storage (object type 1) named `WordDocument` is a directory node, not
+    # the stream Word writes.
+    assert sniff_document_format(ole2_container(("WordDocument", 1))) is None
+    assert sniff_document_format(OLE2_MAGIC + b"rest of an OLE2 file") is None
+
+
+def test_sniff_document_format_survives_an_illegal_cfbf_sector_size():
+    # Sector shift is read straight out of untrusted bytes and then used as a
+    # slice stride and a divisor. Anything but 9 or 12 has to be rejected at the
+    # header, before the directory walk turns it into an IndexError (a 1-byte
+    # "sector" indexed at offset 66) or a ZeroDivisionError (sector_size // 4
+    # == 0). A malformed upload must classify as None, not crash the worker.
+    for shift in (0, 1, 13):
+        data = bytearray(4096)
+        data[0:8] = OLE2_MAGIC
+        data[30:32] = shift.to_bytes(2, "little")
+        assert sniff_document_format(bytes(data)) is None
+
+
+def test_sniff_document_format_rejects_impostors():
+    assert sniff_document_format(b"%PDF-1.7 ...") is None
+    assert sniff_document_format(b"<!doctype html><html></html>") is None
+    assert sniff_document_format(b"") is None
+
+
+def test_doc_ceiling_is_tighter_than_docx():
+    assert MAX_DOC_BYTES < MAX_DOCX_BYTES
+
+
+def test_sniff_docx_problem_still_names_a_renamed_legacy_doc():
+    problem = sniff_docx_problem(OLE2_MAGIC + b"rest")
+    assert problem is not None
+    assert "legacy Word .doc" in problem
+
+
+def test_sniff_docx_problem_never_sends_the_user_to_word():
+    """These bytes were refused sight unseen — the shape a hostile document
+    takes — so the OLE2 branch must not bless opening them in a local Word
+    install. Mirrors test_doc_convert.py's assertion for
+    CONVERSION_DISABLED_MESSAGE and client.test.ts's for sniffDocxProblem.
+    """
+    problem = sniff_docx_problem(OLE2_MAGIC + b"rest")
+    assert problem is not None
+    assert "Save As" not in problem
+    assert "open it in Word" not in problem
+    # The safe alternative the user manual §4.1 already names.
+    assert "re-save" in problem

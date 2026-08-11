@@ -317,7 +317,9 @@ def run_export_job(project_id: str, document_id: str, job_id: str, deps: Deps) -
     prior_status = job.previous_document_status
 
     try:
-        original = deps.store.get_bytes(document.s3_key)
+        # parse_key, not s3_key: surgery edits the bytes the parser produced
+        # sections from, which for a converted upload is the generated .docx.
+        original = deps.store.get_bytes(document.parse_key())
         drafts = deps.repo.list_drafts(document_id)
         if not drafts or any(d.status != DraftStatus.APPROVED for d in drafts):
             raise ValueError("every generated draft must be approved before export")

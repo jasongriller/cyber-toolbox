@@ -16,8 +16,11 @@ from __future__ import annotations
 import enum
 import uuid
 from datetime import UTC, datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field
+
+from rmf_migrator.common.limits import ConversionMissing
 
 
 def _new_id(prefix: str) -> str:
@@ -126,6 +129,30 @@ class Document(BaseModel):
     failure_stage: str | None = None
     active_job_id: str | None = None
     export_key: str | None = None  # S3 key of the generated Rev 5 .docx, once exported
+
+    # Provenance for a converted upload. source_format is what the user sent;
+    # converted_s3_key points at the .docx everything downstream actually reads.
+    source_format: Literal["docx", "doc"] = "docx"
+    converted_s3_key: str | None = None
+
+    def parse_key(self) -> str:
+        """The S3 key holding parseable .docx bytes for this document.
+
+        A legacy upload with no converted object means the conversion never
+        landed, and there is no parseable key to hand back. Refusing keeps the
+        original OLE2 bytes out of the .docx pipeline; falling back to s3_key
+        would feed them straight to the parser on every retry.
+
+        This covers documents whose provenance was recorded correctly. It is
+        not a content check: source_format is metadata, so a document that
+        claims "docx" while holding other bytes passes here. Rejecting on
+        content stays guard_docx_bytes' job, in the parser.
+        """
+        if self.converted_s3_key:
+            return self.converted_s3_key
+        if self.source_format != "docx":
+            raise ConversionMissing("converted .docx is missing for a legacy .doc upload")
+        return self.s3_key
 
 
 class ParseJob(BaseModel):

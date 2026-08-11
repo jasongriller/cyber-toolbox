@@ -22,6 +22,7 @@ from rmf_migrator.common.http import (
 from rmf_migrator.common.logging import log_event
 from rmf_migrator.common.models import Document
 from rmf_migrator.common.storage import build_document_key
+from rmf_migrator.doc_convert import CONVERSION_DISABLED_MESSAGE
 from rmf_migrator.handlers.deps import Deps
 
 _MAX_FILENAME = 260
@@ -43,8 +44,21 @@ def _request_upload(event: dict[str, Any], deps: Deps) -> dict[str, Any]:
     # Content-Disposition header the download path builds from this name.
     if '"' in filename or "\\" in filename or any(not c.isprintable() for c in filename):
         raise HttpError(400, "'filename' contains unsupported characters")
-    if not filename.lower().endswith(".docx"):
-        raise HttpError(400, "only .docx files are supported in v1")
+    lowered = filename.lower()
+    if lowered.endswith(".doc"):
+        # An honestly named .doc is turned away here, before it can occupy a
+        # .doc key or reach a converter that this environment does not have.
+        # That is an extension gate, not a content guarantee: registration
+        # never sees bytes, so a renamed .doc still lands in the bucket under
+        # a .docx key. Rejecting on content stays guard_docx_bytes' job in the
+        # parser, the same split parse_key documents for the mirror case.
+        if not deps.config.conversion_enabled:
+            raise HttpError(400, CONVERSION_DISABLED_MESSAGE)
+        source_format = "doc"
+    elif lowered.endswith(".docx"):
+        source_format = "docx"
+    else:
+        raise HttpError(400, "only .docx and .doc files are supported")
 
     identity = resolve_identity(event, deps.config.identity_header)
     document = Document(
@@ -52,18 +66,24 @@ def _request_upload(event: dict[str, Any], deps: Deps) -> dict[str, Any]:
         filename=filename,
         s3_key="",  # set below once we have the id
         uploaded_by=identity,
+        source_format=source_format,
     )
     document.s3_key = build_document_key(project_id, document.document_id, filename)
     deps.repo.put_document(document)
     deps.repo.increment_document_count(project_id)
 
-    upload = deps.store.presigned_post(document.s3_key)
+    upload = deps.store.presigned_post(document.s3_key, source_format=source_format)
 
+    # source_format rides the audit event because the Document row holding it is
+    # application state that dies with the project. Without it a legacy
+    # registration is indistinguishable from a .docx one in the log, and no
+    # metric filter can count the converter path or alarm on a rate spike.
     log_event(
         "document.registered",
         project_id=project_id,
         document_id=document.document_id,
         uploaded_by=identity,
+        source_format=source_format,
     )
     return json_response(
         201,

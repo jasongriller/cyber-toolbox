@@ -150,6 +150,65 @@ data "aws_iam_policy_document" "worker" {
       resources = ["arn:${local.partition}:bedrock:${local.bedrock_region}:${local.account_id}:guardrail/${var.bedrock_guardrail_id}"]
     }
   }
+
+  dynamic "statement" {
+    for_each = var.enable_doc_conversion ? [1] : []
+    content {
+      sid       = "InvokeConverter"
+      effect    = "Allow"
+      actions   = ["lambda:InvokeFunction"]
+      resources = [aws_lambda_function.converter[0].arn]
+    }
+  }
+
+  # Separate statements rather than widening ReadWriteDocuments above, because
+  # the prefix scoping is the security-relevant half. delete_prefix lists object
+  # versions and deletes them by VersionId, and ReadWriteDocuments grants only
+  # s3:DeleteObject / s3:ListBucket on the whole bucket — so without these the
+  # scratch purge AccessDenies on every conversion (the failure is best-effort
+  # and swallowed) and full CUI copies pile up outside every purge path.
+  #
+  # Granting them bucket-wide instead would be the wrong trade. The worker is
+  # the highest-exposure component here — it pulls attacker-supplied documents,
+  # hands OLE2 bytes to a converter, runs python-docx over crafted zips, and
+  # feeds document text to Bedrock — and versioning is the recovery control for
+  # that blast radius. Today a foothold holds only s3:DeleteObject, which leaves
+  # recoverable delete markers; bucket-wide s3:DeleteObjectVersion would let the
+  # same foothold permanently erase every version of every project's documents
+  # and exports. delete_prefix has exactly one caller in the worker, and it is
+  # always a convert-scratch/<uuid> prefix.
+  dynamic "statement" {
+    for_each = var.enable_doc_conversion ? [1] : []
+    content {
+      sid    = "ReadWriteConvertScratch"
+      effect = "Allow"
+      actions = [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject",
+        "s3:DeleteObjectVersion",
+      ]
+      resources = ["${aws_s3_bucket.documents.arn}/convert-scratch/*"]
+    }
+  }
+
+  # ListBucketVersions is a bucket-level action, so the resource has to be the
+  # bucket ARN; the s3:prefix condition is what keeps it from enumerating every
+  # version of every project's documents.
+  dynamic "statement" {
+    for_each = var.enable_doc_conversion ? [1] : []
+    content {
+      sid       = "ListConvertScratchVersions"
+      effect    = "Allow"
+      actions   = ["s3:ListBucketVersions"]
+      resources = [aws_s3_bucket.documents.arn]
+      condition {
+        test     = "StringLike"
+        variable = "s3:prefix"
+        values   = ["convert-scratch/*"]
+      }
+    }
+  }
 }
 
 resource "aws_iam_role_policy" "worker" {

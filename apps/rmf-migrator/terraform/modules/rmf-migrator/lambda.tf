@@ -34,6 +34,13 @@ locals {
       PARSE_QUEUE_URL  = aws_sqs_queue.parse.id
       BEDROCK_MODEL_ID = var.bedrock_model_id
       BEDROCK_REGION   = local.bedrock_region
+
+      # The upload API refuses .doc on "reject" before anything is written, and
+      # the worker builds a RejectingConverter. Empty rather than absent for the
+      # function name: config.from_env reads "" as None, and a variable that
+      # disappears between plans is a harder diff to read than one that empties.
+      DOC_CONVERSION_BACKEND      = var.enable_doc_conversion ? "lambda" : "reject"
+      DOC_CONVERTER_FUNCTION_NAME = var.enable_doc_conversion ? aws_lambda_function.converter[0].function_name : ""
     },
     var.identity_header != null ? { IDENTITY_HEADER = var.identity_header } : {},
     var.bedrock_guardrail_id != null ? {

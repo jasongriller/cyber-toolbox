@@ -141,8 +141,154 @@ variable "worker_timeout_seconds" {
   }
 }
 
+# ---- Legacy .doc conversion ---------------------------------------------------
+
+variable "enable_doc_conversion" {
+  description = <<-EOT
+    Deploy the LibreOffice converter Lambda so legacy binary .doc uploads are
+    converted server-side. Off by default: LibreOffice lands inside the
+    accreditation boundary and needs ISSO approval plus its own patch and scan
+    coverage. See docs/superpowers/specs/2026-08-07-doc-conversion-design.md.
+
+    Turning this on is a two-apply move. The first apply creates the ECR
+    repository; the converter image (backend/converter.Dockerfile) has to be
+    built and pushed to it before the Lambda can be created, because Lambda
+    resolves the image at create time.
+  EOT
+  type        = bool
+  default     = false
+}
+
+variable "converter_image_tag" {
+  description = <<-EOT
+    Tag of the converter image in the module-created ECR repository. Required
+    when enable_doc_conversion is true, and deliberately without a default: the
+    repository is created with IMMUTABLE tags, so a "latest" default would claim
+    that tag on the first push and then reject every rebuild, leaving the
+    function running an image nobody meant to keep. Name the build (a digest, a
+    date, a commit) and a new image becomes a visible plan diff.
+  EOT
+  type        = string
+  default     = null
+}
+
+variable "converter_image_digest" {
+  description = <<-EOT
+    Optional content digest (e.g. "sha256:...") of the converter image to
+    deploy, read from ECR after a push. IMMUTABLE tag mutability on the
+    module-created ECR repository blocks overwriting an EXISTING tag; it does
+    not block a delete-then-repush of that same tag
+    (ecr:BatchDeleteImage + ecr:PutImage), and converter_image_tag alone
+    produces no plan diff across that swap — the next apply for any unrelated
+    reason then silently deploys whatever image now sits under the tag. Set
+    this to pin the function to that exact image by content instead; when
+    set, it is used in place of the tag. Leave null to deploy by tag, which is
+    also the only option before the first image has ever been pushed (a
+    data.aws_ecr_image lookup would fail that first plan with "image not
+    found").
+  EOT
+  type        = string
+  default     = null
+}
+
+variable "converter_subnet_ids" {
+  description = <<-EOT
+    Subnets for the converter Lambda. Required when enable_doc_conversion is
+    true, and deliberately separate from private_subnet_ids: these must have no
+    route to a NAT gateway, internet gateway, egress-only gateway, or transit
+    gateway, and must reach S3 (gateway endpoint), KMS and CloudWatch Logs
+    (interface endpoints) that way instead. A .doc can name a URL for a linked
+    graphic and LibreOffice fetches it while converting — measured in the built
+    image — so a converter with egress is a callback out of the CUI boundary, an
+    SSRF primitive, and a way to pin a 2 GB function open against a host that
+    never answers. The route tables of these subnets are checked at plan time
+    (see converter.tf); whether the endpoints are actually reachable is not, and
+    stays the adopter's to confirm — a missing logs endpoint in particular
+    costs no conversions and loses every converter log line.
+  EOT
+  type        = list(string)
+  default     = []
+}
+
+variable "converter_endpoint_security_group_ids" {
+  description = <<-EOT
+    Security groups attached to the KMS and CloudWatch Logs interface endpoints
+    the converter uses. Named, the converter's 443 egress rule targets those
+    endpoints' ENIs and the S3 managed prefix list, and nothing else — the
+    tighter of two egress shapes. Left empty, the rule instead targets every
+    one of the VPC's associated IPv4 ranges, because interface-endpoint
+    addresses are assigned at endpoint creation and cannot be resolved from
+    here. That is reach into the whole of an existing shared network
+    (var.vpc_id is consumed, not created) on 443, held by the one process in
+    this system assumed to be reachable by a hostile document — so leaving
+    this empty also requires var.converter_accepts_whole_vpc_egress = true, a
+    deliberate opt-out rather than a silent default. Fill this in wherever the
+    VPC hosts anything but this module.
+
+    Reciprocal ingress: each named security group's own inbound rules must
+    admit 443 from the converter, which this module exposes as the
+    converter_security_group_id output once the flag is on.
+  EOT
+  type        = list(string)
+  default     = []
+}
+
+variable "converter_accepts_whole_vpc_egress" {
+  description = <<-EOT
+    Explicit opt-out for the loose egress form described on
+    converter_endpoint_security_group_ids. When that variable is left empty
+    and this is left false, enable_doc_conversion = true fails the plan: the
+    converter's fallback egress rule targets every CIDR associated with
+    var.vpc_id, which is reach into the whole of an existing, adopter-owned
+    network on 443 from the one process in this system assumed reachable by a
+    hostile document. Set this to true only as a deliberate, greppable
+    declaration in your tfvars that you accept that reach — never as the
+    silent default. Naming converter_endpoint_security_group_ids instead is
+    almost always the better fix.
+  EOT
+  type        = bool
+  default     = false
+}
+
+variable "converter_timeout_seconds" {
+  description = <<-EOT
+    Hard timeout for the LibreOffice converter Lambda. The worker invokes it
+    synchronously with CONVERT_CONFIG (backend/src/rmf_migrator/common/aws_clients.py),
+    whose read timeout is 150s; Lambda does not cancel a RequestResponse
+    invocation when the client gives up, so a function timeout at or above the
+    client read timeout means a second LibreOffice run writing to scratch keys
+    the caller has already purged.
+  EOT
+  type        = number
+  default     = 120
+
+  validation {
+    condition     = var.converter_timeout_seconds > 0 && var.converter_timeout_seconds < 150
+    error_message = "converter_timeout_seconds must stay below the 150s CONVERT_CONFIG read timeout; raise both together or not at all."
+  }
+}
+
+variable "converter_reserved_concurrency" {
+  description = <<-EOT
+    Reserved concurrent executions for the converter Lambda. Bounds the blast
+    radius of a legacy-.doc upload flood: each parse job holds a worker slot
+    while a 2 GB converter runs, and both draw from the same account-wide
+    concurrency pool as the synchronous API functions. Past the cap, invoke
+    raises TooManyRequestsException and — with the client pinned to a single
+    attempt — the job fails to SQS redelivery. That is the intended fail-closed
+    direction, not a surprise.
+  EOT
+  type        = number
+  default     = 5
+
+  validation {
+    condition     = var.converter_reserved_concurrency > 0
+    error_message = "converter_reserved_concurrency must be a positive cap; -1 (unreserved) removes the only bound on concurrent 2 GB LibreOffice executions and lets a .doc upload flood drain the account concurrency pool the synchronous API functions share."
+  }
+}
+
 variable "alert_email" {
-  description = "Email address subscribed to the module's SNS alert topic (dead-letter queue alarm). Leave null to create the topic with no subscription — the alarm still exists and other subscribers can be attached out-of-band. When supplying your own kms_key_arn, its key policy must allow cloudwatch.amazonaws.com to Decrypt/GenerateDataKey, or alarm notifications to the encrypted topic are silently dropped."
+  description = "Email address subscribed to the module's SNS alert topic (the dead-letter queue alarm, and the scratch-cleanup alarm when doc conversion is enabled). Leave null to create the topic with no subscription — the alarm still exists and other subscribers can be attached out-of-band. When supplying your own kms_key_arn, its key policy must allow cloudwatch.amazonaws.com to Decrypt/GenerateDataKey, or alarm notifications to the encrypted topic are silently dropped."
   type        = string
   default     = null
 

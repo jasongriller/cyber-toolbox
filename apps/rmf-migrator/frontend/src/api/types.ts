@@ -53,6 +53,10 @@ export interface DocumentRecord {
   parse_error: string | null;
   failure_stage?: string | null;
   active_job_id?: string | null;
+  // Provenance for a converted upload: source_format is what the operator sent,
+  // converted_s3_key points at the .docx everything downstream reads.
+  source_format?: "docx" | "doc";
+  converted_s3_key?: string | null;
 }
 
 export interface UploadTarget {

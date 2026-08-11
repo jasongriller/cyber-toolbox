@@ -5,6 +5,11 @@
 // register the document, PUT the bytes straight to S3 via a presigned URL, and
 // start parsing. The backend then auto-chains parse -> control mapping, so the
 // document lands in "mapped" ready for the human review checkpoint.
+//
+// A legacy .doc may be picked too. Whether conversion actually runs is the
+// backend's call — it refuses registration when conversion is off — so the
+// picker offers .doc unconditionally rather than gating on a copy of that
+// setting the frontend could get wrong.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowRight, Trash } from "@phosphor-icons/react";
@@ -332,6 +337,14 @@ export default function ProjectBrowser({
                         <tr key={d.document_id}>
                           <td>
                             {d.filename}
+                            {d.source_format === "doc" && (
+                              <span
+                                className="doc-converted-badge"
+                                title="Uploaded as a legacy .doc and converted to .docx; formatting comes from that conversion"
+                              >
+                                converted from .doc
+                              </span>
+                            )}
                             {d.status === "failed" && (
                               <p className="muted" style={{ margin: "4px 0 0", fontSize: 12 }}>
                                 {failureReason(d)}
@@ -378,9 +391,9 @@ export default function ProjectBrowser({
                 <input
                   ref={fileInput}
                   type="file"
-                  accept=".docx"
+                  accept=".docx,.doc"
                   disabled={busy}
-                  aria-label="upload a .docx policy document"
+                  aria-label="upload a .docx or .doc policy document"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) void upload(file);
@@ -392,7 +405,8 @@ export default function ProjectBrowser({
                   </span>
                 )}
                 <p className="muted" style={{ margin: "0.5rem 0 0" }}>
-                  .docx only. Upload starts parsing and control mapping automatically.
+                  .docx, or a legacy .doc where the server has conversion enabled. Upload
+                  starts parsing and control mapping automatically.
                 </p>
               </div>
 

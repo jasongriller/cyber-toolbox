@@ -792,6 +792,7 @@ resource "aws_api_gateway_deployment" "this" {
 }
 
 resource "aws_api_gateway_stage" "this" {
+  #checkov:skip=CKV2_AWS_29:A WAF in front of this stage is a cost/benefit call deferred to the org: every data route already requires a valid Cognito ID token via the COGNITO_USER_POOLS authorizer, the only open routes serve the static SPA shell and a config blob with no user data, and method_settings throttling caps request volume. Revisit if the ATO boundary requires AWS WAF explicitly.
   #checkov:skip=CKV2_AWS_51:Client-certificate auth is for the gateway proving its identity to a BACKEND. The backend here is Lambda, invoked over the AWS API with SigV4 — there is no origin to present a certificate to.
   #checkov:skip=CKV_AWS_120:Response caching is off deliberately. Job status is polled and must be fresh, and caching would put CUI in a gateway-managed cache.
   #checkov:skip=CKV_AWS_73:X-Ray is off by design — see the compute module.

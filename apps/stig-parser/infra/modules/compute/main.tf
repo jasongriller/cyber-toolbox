@@ -137,6 +137,7 @@ resource "aws_cloudwatch_log_group" "this" {
 # ---------------------------------------------------------------------------
 
 resource "aws_lambda_function" "this" {
+  #checkov:skip=CKV_AWS_117:Nothing these functions talk to lives in a VPC — every dependency (S3, DynamoDB, Step Functions, Bedrock) is an AWS service API reached over TLS with SigV4. Attaching them to a VPC adds ENI cold-start latency and per-AZ endpoint/NAT cost without shrinking exposure: a Lambda has no inbound listener to isolate.
   #checkov:skip=CKV_AWS_116:A DLQ only applies to ASYNC invocation. Every function here is invoked synchronously — by API Gateway or by Step Functions — and a failed stage is already captured by the state machine's Catch, which routes to the marker function and records the failure on the job.
   #checkov:skip=CKV_AWS_50:X-Ray is off by design (it needs an extra ~$8/mo interface endpoint). var.enable_x_ray in the network module turns it on.
   #checkov:skip=CKV_AWS_272:Code signing requires an org-owned signing profile; there is no CI signer for this repo yet. Flagged for the org to decide.

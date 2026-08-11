@@ -7,16 +7,30 @@ presigned URL pins the SSE headers so an upload that omits them is rejected.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 import boto3
 from botocore.config import Config
 
 from rmf_migrator.common.aws_clients import FAST_CONFIG
-from rmf_migrator.common.limits import MAX_DOCX_BYTES, ObjectTooLarge
+from rmf_migrator.common.limits import MAX_DOC_BYTES, MAX_DOCX_BYTES, ObjectTooLarge
 
 # Only .docx is accepted in v1.
 DOCX_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+# Legacy Word 97-2003 binary; accepted only as a conversion source, never parsed directly.
+DOC_CONTENT_TYPE = "application/msword"
+
+# What each accepted source format may be uploaded as: (content type, size ceiling).
+# One table rather than two parameters, because the pair is one decision — a
+# ceiling that can be chosen separately from the type is a ceiling that can be
+# chosen wrongly, and the loose one (MAX_DOCX_BYTES, sized for compressed XML)
+# is the fail-open direction for uncompressed OLE2. The upload policy is the
+# only place MAX_DOC_BYTES can be enforced before the bytes exist.
+_UPLOAD_POLICIES: dict[str, tuple[str, int]] = {
+    "docx": (DOCX_CONTENT_TYPE, MAX_DOCX_BYTES),
+    "doc": (DOC_CONTENT_TYPE, MAX_DOC_BYTES),
+}
 
 # Presigned upload URLs are short-lived.
 _UPLOAD_URL_TTL_SECONDS = 300
@@ -44,7 +58,17 @@ def content_disposition(download_name: str) -> str:
 def build_document_key(project_id: str, document_id: str, filename: str) -> str:
     """Deterministic S3 key. Filename is stored in metadata, not the key, to
     avoid leaking potentially sensitive names into access logs / URLs."""
-    return f"projects/{project_id}/documents/{document_id}.docx"
+    suffix = ".doc" if filename.lower().endswith(".doc") else ".docx"
+    return f"projects/{project_id}/documents/{document_id}{suffix}"
+
+
+def build_converted_document_key(project_id: str, document_id: str) -> str:
+    """S3 key for the .docx produced from an uploaded legacy .doc.
+
+    A separate key, never an overwrite: the original .doc is audit provenance
+    for the A&A package and must remain byte-identical to what was uploaded.
+    """
+    return f"projects/{project_id}/documents/{document_id}.converted.docx"
 
 
 def build_export_key(project_id: str, document_id: str) -> str:
@@ -69,28 +93,53 @@ class DocumentStore:
             "s3", config=FAST_CONFIG.merge(Config(signature_version="s3v4"))
         )
 
-    def presigned_post(self, key: str) -> dict[str, Any]:
+    def presigned_post(
+        self,
+        key: str,
+        *,
+        source_format: Literal["docx", "doc"] = "docx",
+    ) -> dict[str, Any]:
         """Return a presigned POST target with an S3-side size ceiling.
 
         Presigned PUT cannot express a size limit, so an oversized object
         could land in the bucket before the app-side check rejected it (a
         storage-cost/DoS vector). A POST policy's content-length-range makes
-        S3 itself refuse anything over MAX_DOCX_BYTES, and the pinned fields
-        keep enforcing CMK encryption exactly as the PUT headers did.
+        S3 itself refuse anything over the format's ceiling, and the pinned
+        fields keep enforcing CMK encryption exactly as the PUT headers did.
+
+        The format alone selects the content type and the ceiling together,
+        and the key must carry that format's extension — `build_document_key`
+        derives it, so a mismatch means the caller lost track of which
+        document this target is for. Refusing is the fail-closed answer: the
+        alternative is minting a 25 MB, docx-typed policy for a .doc key,
+        which admits OLE2 bytes the converter would later refuse but which
+        are by then already in the bucket.
+
+        The pin binds the declared type, not the bytes — content-based
+        rejection stays with the format sniff on download.
         """
+        policy = _UPLOAD_POLICIES.get(source_format)
+        if policy is None:
+            raise ValueError(f"no upload policy for source format {source_format!r}")
+        content_type, max_bytes = policy
+        # The format names are the extensions, and ".docx" does not end in
+        # ".doc", so this one check catches a mismatch in either direction.
+        if not key.endswith(f".{source_format}"):
+            raise ValueError(f"upload key {key!r} is not a .{source_format} key")
+
         post = self._s3.generate_presigned_post(
             Bucket=self._bucket,
             Key=key,
             Fields={
-                "Content-Type": DOCX_CONTENT_TYPE,
+                "Content-Type": content_type,
                 "x-amz-server-side-encryption": "aws:kms",
                 "x-amz-server-side-encryption-aws-kms-key-id": self._kms_key_id,
             },
             Conditions=[
-                {"Content-Type": DOCX_CONTENT_TYPE},
+                {"Content-Type": content_type},
                 {"x-amz-server-side-encryption": "aws:kms"},
                 {"x-amz-server-side-encryption-aws-kms-key-id": self._kms_key_id},
-                ["content-length-range", 1, MAX_DOCX_BYTES],
+                ["content-length-range", 1, max_bytes],
             ],
             ExpiresIn=_UPLOAD_URL_TTL_SECONDS,
         )

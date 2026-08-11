@@ -491,6 +491,23 @@ td.idx {
   width: 1%;
 }
 
+/* Provenance marker, not a status: dotless and quiet so it never reads as one
+   of the pills in the adjacent Status column. Kept on --text rather than
+   --text-mute — mute over --inset falls to 4.2:1 in the light theme. */
+.doc-converted-badge {
+  display: inline-block;
+  margin-left: calc(var(--step) * 2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  padding: calc(var(--step) * 0.5) calc(var(--step) * 1.75);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--inset);
+  color: var(--text);
+  white-space: nowrap;
+}
+
 /* ---- Form fields --------------------------------------------------------- */
 
 .field {

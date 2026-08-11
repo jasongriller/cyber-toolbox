@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiClient, ApiError, joinUrl, parseControlIds } from "./client";
+import { ApiClient, ApiError, joinUrl, parseControlIds, sniffUploadProblem } from "./client";
+
+const OLE2 = new Uint8Array([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]);
+const ZIP = new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0x00]);
 
 describe("joinUrl", () => {
   it("joins without doubling slashes", () => {
@@ -22,6 +25,49 @@ describe("parseControlIds", () => {
 
   it("returns empty for blank input", () => {
     expect(parseControlIds("   ")).toEqual([]);
+  });
+});
+
+describe("sniffUploadProblem", () => {
+  it("allows OLE2 bytes when the filename is honestly .doc", () => {
+    expect(sniffUploadProblem(OLE2, "policy.doc")).toBeNull();
+  });
+
+  // Uppercase names are common in legacy DoD document sets.
+  it("allows OLE2 bytes when the .doc extension is uppercase", () => {
+    expect(sniffUploadProblem(OLE2, "POLICY.DOC")).toBeNull();
+  });
+
+  it("still rejects OLE2 bytes wearing a .docx name", () => {
+    const problem = sniffUploadProblem(OLE2, "policy.docx");
+    expect(problem).toContain("legacy Word .doc");
+  });
+
+  // These bytes were classified as a Word 97-2003 container, and a hostile one
+  // is exactly what arrives under a .docx name. Sending the user to Word's
+  // Save As hands that container the macro surface, network access and
+  // credentials the converter sandbox exists to deny it, so the refusal must
+  // route to the sandbox (upload it as .doc) and never to a local open.
+  // USER_MANUAL.md §4.1 states the same doctrine; this pins the string to it.
+  it("never tells the user to open byte-refused OLE2 in Word", () => {
+    const problem = sniffUploadProblem(OLE2, "policy.docx") ?? "";
+    expect(problem.toLowerCase()).not.toContain("save as");
+    expect(problem.toLowerCase()).not.toContain("open it in word");
+    expect(problem.toLowerCase()).toContain("upload");
+  });
+
+  it("allows a real docx", () => {
+    expect(sniffUploadProblem(ZIP, "policy.docx")).toBeNull();
+  });
+
+  it("rejects a PDF regardless of extension", () => {
+    const pdf = new TextEncoder().encode("%PDF-1.7");
+    expect(sniffUploadProblem(pdf, "policy.doc")).toContain("PDF");
+    expect(sniffUploadProblem(pdf, "policy.docx")).toContain("PDF");
+  });
+
+  it("rejects an empty file", () => {
+    expect(sniffUploadProblem(new Uint8Array(), "policy.doc")).toBe("file is empty");
   });
 });
 
@@ -268,6 +314,38 @@ describe("ApiClient", () => {
       /empty/i,
     );
     expect(spy).not.toHaveBeenCalled();
+  });
+
+  it("uploadDocument lets an honest .doc reach the API", async () => {
+    // The browser does not decide whether conversion is enabled — the backend
+    // does, and answers 400 when it is not. So these bytes must be registered.
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            document: { document_id: "d1" },
+            upload: {
+              url: "https://s3.example/post",
+              method: "POST",
+              fields: { key: "k", policy: "abc" },
+              expires_in: 300,
+            },
+          }),
+          { status: 201, headers: { "Content-Type": "application/json" } },
+        ),
+      )
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ job: { job_id: "job1" } }), {
+          status: 202,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+
+    const client = new ApiClient("/api");
+    const file = new File([OLE2], "policy.doc");
+
+    await expect(client.uploadDocument("p1", file)).resolves.toBeDefined();
   });
 
   it("getConversionMatrixCsv fetches CSV text", async () => {

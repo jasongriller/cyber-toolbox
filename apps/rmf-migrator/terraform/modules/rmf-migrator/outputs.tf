@@ -43,9 +43,19 @@ output "worker_function_name" {
   value       = aws_lambda_function.worker.function_name
 }
 
+output "converter_ecr_repository_url" {
+  description = "Repository the converter image must be pushed to before the converter Lambda can be created (null when enable_doc_conversion is false). Build it from backend/converter.Dockerfile and tag it with var.converter_image_tag."
+  value       = var.enable_doc_conversion ? aws_ecr_repository.converter[0].repository_url : null
+}
+
 output "lambda_security_group_id" {
   description = "Security group ID for in-VPC Lambdas (private mode only; null otherwise)."
   value       = local.is_private ? aws_security_group.lambda[0].id : null
+}
+
+output "converter_security_group_id" {
+  description = "Security group ID for the doc-converter Lambda (null when enable_doc_conversion is false). Needed to wire reciprocal ingress: whatever security groups are named in converter_endpoint_security_group_ids must admit 443 from this one."
+  value       = var.enable_doc_conversion ? aws_security_group.converter[0].id : null
 }
 
 output "spa_csp_frame_ancestors" {

@@ -17,6 +17,7 @@ from rmf_migrator.common.bedrock import BedrockClient
 from rmf_migrator.common.config import Config, get_config
 from rmf_migrator.common.repository import Repository
 from rmf_migrator.common.storage import DocumentStore
+from rmf_migrator.doc_convert import build_converter
 
 
 @dataclass
@@ -28,6 +29,7 @@ class Deps:
     # Bedrock is only needed by the mapping/drafting workers; API handlers leave
     # it None. Tests inject a fake.
     bedrock: Any = None
+    converter: Any = None
 
     @staticmethod
     def build() -> Deps:
@@ -36,12 +38,14 @@ class Deps:
         global _built
         if _built is None:
             config = get_config()
+            store = DocumentStore(config.documents_bucket, config.kms_key_id)
             _built = Deps(
                 config=config,
                 repo=Repository(config.table_name),
-                store=DocumentStore(config.documents_bucket, config.kms_key_id),
+                store=store,
                 sqs=boto3.client("sqs", config=FAST_CONFIG),
                 bedrock=BedrockClient.from_config(config),
+                converter=build_converter(config, store=store),
             )
         return _built
 

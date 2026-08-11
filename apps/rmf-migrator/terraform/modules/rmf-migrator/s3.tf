@@ -40,6 +40,36 @@ resource "aws_s3_bucket_lifecycle_configuration" "documents" {
     }
   }
 
+  # Deliberately outside var.enable_doc_conversion, and deliberately a rule in
+  # this resource rather than a second aws_s3_bucket_lifecycle_configuration —
+  # that API replaces a bucket's entire lifecycle configuration, so two
+  # resources on one bucket would take turns deleting each other's rules.
+  #
+  # convert-scratch/ holds whole CUI documents: the staged .doc and the
+  # converted .docx. The converter purges the prefix itself, but a purge can
+  # fail (logged, non-fatal), a timed-out conversion can write its output after
+  # the caller gave up, and delete_project purges only projects/<id>/ — so
+  # without this rule an authorized project deletion reports success while a
+  # complete copy of the source document survives. This is the one mitigation
+  # that still holds when the grants or the alarm are misconfigured, which is
+  # why it exists whether or not conversion is switched on.
+  rule {
+    id     = "expire-convert-scratch"
+    status = "Enabled"
+
+    filter {
+      prefix = "convert-scratch/"
+    }
+
+    expiration {
+      days = 1
+    }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 1
+    }
+  }
+
   depends_on = [aws_s3_bucket_versioning.documents]
 }
 

@@ -49,9 +49,16 @@ export function sniffDocxProblem(head: Uint8Array): string | null {
   }
   const ole2 = [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
   if (ole2.every((b, i) => head[i] === b)) {
+    // Never send the user to Word here. These bytes were *classified* as a
+    // Word 97-2003 container, and one mailed in under a .docx name is the
+    // shape a hostile document takes; opening it locally hands it the macro
+    // surface, network and credentials the converter sandbox exists to deny.
+    // Re-uploading under the true .doc name routes it into that sandbox.
     return (
-      "this is a legacy Word .doc renamed to .docx — open it in Word and " +
-      "use Save As to create a real .docx"
+      "this is a legacy Word .doc under a .docx name — rename it to .doc and " +
+      "upload it again so the server converts it in its sandbox. Do not open " +
+      "it locally; if the .doc upload is refused too, this deployment cannot " +
+      "convert it (user manual §4.1)"
     );
   }
   const text = new TextDecoder("utf-8", { fatal: false }).decode(head).trimStart();
@@ -62,6 +69,27 @@ export function sniffDocxProblem(head: Uint8Array): string | null {
     return "this is a PDF renamed to .docx, not a Word document";
   }
   return "this file is not a valid .docx document";
+}
+
+/**
+ * Decide whether a chosen file may be uploaded, from its bytes and its name.
+ *
+ * OLE2 bytes are legitimate when the file is honestly named .doc — the backend
+ * converts those, and is the single source of truth for whether conversion is
+ * enabled in this environment. The same bytes under a .docx name are a renamed
+ * file, which is a real user error worth naming here rather than shipping to a
+ * server that will only reject it.
+ */
+export function sniffUploadProblem(head: Uint8Array, filename: string): string | null {
+  if (head.length === 0) return "file is empty";
+  if (filename.toLowerCase().endsWith(".doc")) {
+    const ole2 = [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
+    if (ole2.every((b, i) => head[i] === b)) return null;
+    if (head[0] === 0x50 && head[1] === 0x4b && head[2] === 0x03 && head[3] === 0x04) {
+      return null; // a .docx misnamed .doc; the backend routes on bytes anyway
+    }
+  }
+  return sniffDocxProblem(head);
 }
 
 /** First bytes of a file; FileReader fallback for environments (jsdom)
@@ -149,8 +177,8 @@ export class ApiClient {
    * Register a document, PUT its bytes straight to S3, and kick off parsing.
    * Parsing auto-chains into control mapping on the backend.
    *
-   * The file's magic bytes are checked first: a renamed legacy .doc, an HTML
-   * download page, or a PDF can never parse, so rejecting here gives an
+   * The file's magic bytes and name are checked first: a renamed legacy .doc,
+   * an HTML download page, or a PDF can never parse, so rejecting here gives an
    * immediate, specific message instead of a failed document row minutes
    * later — and the bad bytes never leave the browser.
    */
@@ -159,7 +187,7 @@ export class ApiClient {
     file: File,
   ): Promise<{ document: DocumentRecord; job: ParseJob }> {
     const head = await readFileHead(file);
-    const problem = sniffDocxProblem(head);
+    const problem = sniffUploadProblem(head, file.name);
     if (problem) {
       throw new ApiError(400, problem);
     }

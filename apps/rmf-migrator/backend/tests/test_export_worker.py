@@ -17,10 +17,10 @@ from rmf_migrator.common.models import (
     Project,
     Section,
 )
-from rmf_migrator.common.storage import build_export_key
+from rmf_migrator.common.storage import build_converted_document_key, build_export_key
 from rmf_migrator.docx.parser import parse_docx_bytes
 from rmf_migrator.handlers.worker import process_event, run_export_job
-from tests.conftest import sqs_event
+from tests.conftest import ole2_container, sqs_event
 
 
 def _docx_bytes() -> bytes:
@@ -129,6 +129,34 @@ def test_export_dispatch_via_process_event(deps):
     )
     assert result["batchItemFailures"] == []
     assert deps.repo.get_document(pid, did).status == DocumentStatus.EXPORTED
+
+
+def test_export_surgery_reads_the_converted_docx_for_a_legacy_doc(deps):
+    # Surgery must edit the same bytes the parser produced sections from. For a
+    # converted upload that is the .docx at converted_s3_key — s3_key still
+    # holds the untouched OLE2 original, which the exporter cannot open.
+    pid, did = _seed(deps)
+    document = deps.repo.get_document(pid, did)
+    converted_key = build_converted_document_key(pid, did)
+    deps.store._s3.put_object(  # noqa: SLF001
+        Bucket=deps.config.documents_bucket,
+        Key=document.s3_key,
+        Body=ole2_container("WordDocument", "1Table"),
+    )
+    deps.store.put_bytes(converted_key, _docx_bytes())
+    document.source_format = "doc"
+    document.converted_s3_key = converted_key
+    deps.repo.put_document(document)
+    job = ExportJob(project_id=pid, document_id=did)
+    deps.repo.put_export_job(job)
+
+    run_export_job(pid, did, job.job_id, deps)
+
+    document = deps.repo.get_document(pid, did)
+    assert document.status == DocumentStatus.EXPORTED
+    out_bytes = deps.store.get_bytes(document.export_key)
+    out = {s.order: s for s in parse_docx_bytes(out_bytes, document_id="d", project_id="p")}
+    assert out[1].text == "New Rev 5 AC policy text."
 
 
 def test_run_export_job_restores_status_on_failure(deps):

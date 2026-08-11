@@ -27,6 +27,7 @@ function failedDoc(overrides: Partial<DocumentRecord> = {}): DocumentRecord {
     parse_error: null,
     failure_stage: null,
     active_job_id: null,
+    source_format: "docx",
     ...overrides,
   };
 }
@@ -173,5 +174,55 @@ describe("ProjectBrowser failed-document handling", () => {
 
     await screen.findByText("ac-policy.docx");
     expect(screen.queryByRole("button", { name: /retry/i })).not.toBeInTheDocument();
+  });
+});
+
+describe("ProjectBrowser legacy .doc handling", () => {
+  it("file input accepts .doc alongside .docx", async () => {
+    const client = makeClient([]);
+    render(
+      <ProjectBrowser
+        client={client}
+        initialProjectId="proj_1"
+        onOpenDocument={vi.fn()}
+        onOpenCoverage={vi.fn()}
+      />,
+    );
+
+    const input = await screen.findByLabelText(/upload a \.docx or \.doc policy document/i);
+    expect(input.getAttribute("accept")).toBe(".docx,.doc");
+  });
+
+  // The badge marks how the document arrived, so a reviewer knows the
+  // formatting they are approving came out of a conversion.
+  it("shows a converted badge for a document that arrived as .doc", async () => {
+    const client = makeClient([
+      failedDoc({ status: "mapped", filename: "legacy.doc", source_format: "doc" }),
+    ]);
+    render(
+      <ProjectBrowser
+        client={client}
+        initialProjectId="proj_1"
+        onOpenDocument={vi.fn()}
+        onOpenCoverage={vi.fn()}
+      />,
+    );
+
+    expect(await screen.findByText(/converted from \.doc/i)).toBeInTheDocument();
+  });
+
+  it("shows no badge for a native .docx", async () => {
+    const client = makeClient([failedDoc({ status: "mapped", source_format: "docx" })]);
+    render(
+      <ProjectBrowser
+        client={client}
+        initialProjectId="proj_1"
+        onOpenDocument={vi.fn()}
+        onOpenCoverage={vi.fn()}
+      />,
+    );
+
+    await screen.findByText("ac-policy.docx");
+    expect(screen.queryByText(/converted from \.doc/i)).not.toBeInTheDocument();
   });
 });

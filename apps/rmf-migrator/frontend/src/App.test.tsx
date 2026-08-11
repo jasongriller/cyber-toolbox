@@ -221,7 +221,7 @@ describe("Wrong-format uploads", () => {
     render(<App />);
     await userEvent.click(await screen.findByRole("button", { name: /alpha/i }));
 
-    const input = await screen.findByLabelText(/upload a .docx policy document/i);
+    const input = await screen.findByLabelText(/upload a .docx or .doc policy document/i);
     const renamedDoc = new File(
       [new Uint8Array([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1])],
       "renamed.docx",
@@ -237,7 +237,7 @@ describe("Wrong-format uploads", () => {
     render(<App />);
     await userEvent.click(await screen.findByRole("button", { name: /alpha/i }));
 
-    const input = await screen.findByLabelText(/upload a .docx policy document/i);
+    const input = await screen.findByLabelText(/upload a .docx or .doc policy document/i);
     const realDocx = new File(
       [new Uint8Array([0x50, 0x4b, 0x03, 0x04, 1, 2, 3, 4])],
       "real.docx",
@@ -253,7 +253,7 @@ describe("Wrong-format uploads", () => {
     await userEvent.click(await screen.findByRole("button", { name: /alpha/i }));
 
     const input = await screen.findByLabelText<HTMLInputElement>(
-      /upload a .docx policy document/i,
+      /upload a .docx or .doc policy document/i,
     );
     await userEvent.upload(
       input,

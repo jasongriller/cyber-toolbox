@@ -10,6 +10,7 @@ from __future__ import annotations
 import pytest
 
 from rmf_migrator.common.config import get_config
+from rmf_migrator.doc_convert import RejectingConverter
 from rmf_migrator.handlers.deps import Deps
 
 _ENV = {
@@ -29,6 +30,8 @@ _ENV = {
 def build_env(monkeypatch, aws):
     for key, value in _ENV.items():
         monkeypatch.setenv(key, value)
+    monkeypatch.delenv("DOC_CONVERSION_BACKEND", raising=False)
+    monkeypatch.delenv("DOC_CONVERTER_FUNCTION_NAME", raising=False)
     get_config.cache_clear()
     Deps.reset_cache()
     yield
@@ -44,6 +47,13 @@ def test_build_returns_same_bundle_on_warm_invocations(build_env):
     assert first.repo is second.repo
     assert first.store is second.store
     assert first.bedrock is second.bedrock
+    assert first.converter is second.converter
+
+
+def test_build_wires_the_default_converter(build_env):
+    """converter defaults to None on the dataclass, so dropping the build()
+    wiring is invisible until a worker calls deps.converter.convert()."""
+    assert isinstance(Deps.build().converter, RejectingConverter)
 
 
 def test_reset_cache_forces_a_fresh_bundle(build_env):

@@ -64,14 +64,16 @@ Before deploying, confirm in your account/region:
 
 ### `public` (dev / demo)
 
-The HTTP API is reachable directly. Quickest to stand up. Do not put CUI through a public deployment.
+The HTTP API is reachable directly. Quickest to stand up. Public mode has no
+default authorization — the plan fails until you set `auth_mode` explicitly.
+For an unauthenticated dev/demo API, set `auth_mode = "none"` yourself. Do not
+put CUI through an unauthenticated deployment.
 
 ### `public` + `auth_mode = "cognito"`
 
 A third posture, distinct from both plain `public` above and `private` below:
 `network_mode = "public"` (no VPC, same as plain `public`) combined with
-`auth_mode = "cognito"` instead of leaving auth at its `public`-derived
-default of `none`.
+`auth_mode = "cognito"` instead of the dev/demo-only `none`.
 
 - The HTTP API is network-reachable the same as plain `public` mode, but every
   route carries a JWT authorizer backed by a Cognito user pool — an
@@ -125,9 +127,41 @@ default of `none`.
   the browser-facing endpoint itself to be network-private, expose only your
   internal signing proxy and block direct client use of the output API URL.
 
+## Authorization model (within a deployment)
+
+A deployment is a team boundary: every authenticated user can see and work on
+every project — the tool assumes the people in your Cognito pool (or behind
+your signing proxy) are one A&A team. The exception is destruction:
+`DELETE /projects/{id}` requires the caller to be the project's creator
+(`created_by`) or a member of the Cognito group named `admins`. Projects
+created as `anonymous` (before auth existed, or under `auth_mode = "none"`,
+where identity is unverifiable anyway) stay deletable by anyone — under an
+unauthenticated posture any stricter check would be theater. If you need
+per-project isolation between multiple teams, run one deployment per team.
+
 ## Encryption
 
 All data at rest (S3, DynamoDB, SQS, Lambda env, CloudWatch Logs) is encrypted with a customer-managed KMS key. By default the module creates and rotates one; pass `kms_key_arn` to use your own.
+
+## Object-access auditing (hard prerequisite for CUI)
+
+The module deliberately does **not** create S3 server access logging or a
+CloudTrail trail for the documents bucket — adopters deploying into an existing
+boundary already run central logging with their own retention and access
+policies, and a second half-configured audit pipeline would be worse than none.
+That makes object-level auditing **your** deployment prerequisite, not an
+optional extra: an AU-2/AU-12-style control review will ask who read which CUI
+document, and nothing in this module records that.
+
+Before putting CUI through a deployment, wire up at least one of:
+
+- **CloudTrail S3 data events** (the usual requirement) scoped to the documents
+  bucket ARN, delivered to your central trail.
+- **S3 server access logging** via your own `aws_s3_bucket_logging` resource
+  pointed at your central logging bucket.
+
+The module's `documents_bucket` output (the bucket name) exists for exactly
+this wiring.
 
 ## Tear-down / data deletion
 

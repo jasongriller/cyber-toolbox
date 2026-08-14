@@ -1,4 +1,4 @@
-/* Binary Systems design system for the RMF Rev 5 Migrator.
+/* Design system for the RMF Rev 5 Migrator.
  *
  * Industrial-minimalist: three-tier surface system, 1px borders (no heavy
  * shadows), sharp corners (2px max), surgical accent use. Dark is the primary
@@ -137,16 +137,6 @@ h2 {
 h3 {
   font-weight: 500;
   font-size: 16px;
-}
-
-.eyebrow {
-  font-family: var(--font-body);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--durasteel);
-  margin: 0;
 }
 
 .mono {
@@ -501,6 +491,23 @@ td.idx {
   width: 1%;
 }
 
+/* Provenance marker, not a status: dotless and quiet so it never reads as one
+   of the pills in the adjacent Status column. Kept on --text rather than
+   --text-mute — mute over --inset falls to 4.2:1 in the light theme. */
+.doc-converted-badge {
+  display: inline-block;
+  margin-left: calc(var(--step) * 2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  padding: calc(var(--step) * 0.5) calc(var(--step) * 1.75);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--inset);
+  color: var(--text);
+  white-space: nowrap;
+}
+
 /* ---- Form fields --------------------------------------------------------- */
 
 .field {
@@ -756,6 +763,10 @@ details.suggest li {
 }
 .banner--info {
   border-left-color: var(--blue);
+  color: var(--text);
+}
+.banner--danger {
+  border-left-color: var(--crit);
   color: var(--text);
 }
 

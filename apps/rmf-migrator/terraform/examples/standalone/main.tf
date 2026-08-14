@@ -9,8 +9,9 @@
 #     these services without egress to the internet.
 # See docs/DEPLOYMENT.md for the full private-mode checklist.
 #
-# network_mode = "private" requires AWS SigV4 on every route. Public mode stands
-# up an unauthenticated API for dev/demo only and must never carry CUI.
+# network_mode = "private" requires AWS SigV4 on every route. Public mode
+# requires choosing auth_mode explicitly; auth_mode = "none" stands up an
+# unauthenticated API for dev/demo only and must never carry CUI.
 
 terraform {
   required_version = ">= 1.6"
@@ -34,6 +35,7 @@ module "rmf_migrator" {
 
   name_prefix      = var.name_prefix
   network_mode     = var.network_mode
+  auth_mode        = var.auth_mode
   bedrock_model_id = var.bedrock_model_id
   lambda_zip_path  = var.lambda_zip_path
 
@@ -44,6 +46,9 @@ module "rmf_migrator" {
   # Optional integration + identity.
   identity_header = var.identity_header
   frame_ancestors = var.frame_ancestors
+
+  # Unattended-failure alerting: email notified when a job dead-letters.
+  alert_email = var.alert_email
 
   tags = var.tags
 }

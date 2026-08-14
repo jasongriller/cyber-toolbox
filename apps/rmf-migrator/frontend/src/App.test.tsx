@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
@@ -11,6 +11,7 @@ const stubs = vi.hoisted(() => ({
   listSections: vi.fn(),
   getMappings: vi.fn(),
   getCoverage: vi.fn(),
+  uploadDocument: vi.fn(),
 }));
 
 vi.mock("./api/client", () => ({
@@ -20,6 +21,7 @@ vi.mock("./api/client", () => ({
     listSections = stubs.listSections;
     getMappings = stubs.getMappings;
     getCoverage = stubs.getCoverage;
+    uploadDocument = stubs.uploadDocument;
   },
   parseControlIds: (raw: string) =>
     raw.split(",").map((s) => s.trim()).filter(Boolean),
@@ -136,6 +138,134 @@ describe("App coverage navigation", () => {
   });
 });
 
+describe("Failed document reasons", () => {
+  it("explains a legacy .doc rejection in plain words", async () => {
+    stubs.listDocuments.mockResolvedValue({
+      documents: [
+        { ...DOCUMENT, status: "failed", parse_error: "UnsupportedDocumentFormat", failure_stage: "parse" },
+      ],
+    });
+    render(<App />);
+    await userEvent.click(await screen.findByRole("button", { name: /alpha/i }));
+
+    expect(await screen.findByText(/older binary \.doc file/i)).toBeInTheDocument();
+    expect(screen.getByText(/save as/i)).toBeInTheDocument();
+  });
+
+  it("still says something useful when no reason was recorded", async () => {
+    stubs.listDocuments.mockResolvedValue({
+      documents: [{ ...DOCUMENT, status: "failed", parse_error: null }],
+    });
+    render(<App />);
+    await userEvent.click(await screen.findByRole("button", { name: /alpha/i }));
+
+    expect(await screen.findByText(/processing failed/i)).toBeInTheDocument();
+  });
+
+  it("covers damaged files in the size-limit wording", async () => {
+    // Historical rows carry DocxTooLarge even when the real cause was format,
+    // and PK-prefixed-but-corrupt files land here too — the copy must not
+    // promise that size is the only cause.
+    stubs.listDocuments.mockResolvedValue({
+      documents: [{ ...DOCUMENT, status: "failed", parse_error: "DocxTooLarge" }],
+    });
+    render(<App />);
+    await userEvent.click(await screen.findByRole("button", { name: /alpha/i }));
+
+    expect(await screen.findByText(/unreadable as a \.docx/i)).toBeInTheDocument();
+  });
+
+  it("disables Open when parsing failed — there is nothing behind it", async () => {
+    stubs.listDocuments.mockResolvedValue({
+      documents: [
+        {
+          ...DOCUMENT,
+          status: "failed",
+          parse_error: "UnsupportedDocumentFormat",
+          failure_stage: "parse",
+        },
+      ],
+    });
+    render(<App />);
+    await userEvent.click(await screen.findByRole("button", { name: /alpha/i }));
+
+    expect(await screen.findByRole("button", { name: /^open$/i })).toBeDisabled();
+  });
+
+  it("keeps Open available when a document failed after parsing", async () => {
+    // A drafting-stage failure still has parsed sections and mappings worth
+    // seeing; only parse-stage failures have nothing behind the button.
+    stubs.listDocuments.mockResolvedValue({
+      documents: [
+        { ...DOCUMENT, status: "failed", parse_error: null, failure_stage: "drafting" },
+      ],
+    });
+    render(<App />);
+    await userEvent.click(await screen.findByRole("button", { name: /alpha/i }));
+
+    expect(await screen.findByRole("button", { name: /^open$/i })).toBeEnabled();
+  });
+
+  it("shows no reason line on healthy documents", async () => {
+    render(<App />);
+    await userEvent.click(await screen.findByRole("button", { name: /alpha/i }));
+
+    await screen.findByText("policy.docx");
+    expect(screen.queryByText(/processing failed/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/older binary/i)).not.toBeInTheDocument();
+  });
+});
+
+describe("Wrong-format uploads", () => {
+  it("blocks a legacy .doc at selection, before any upload starts", async () => {
+    render(<App />);
+    await userEvent.click(await screen.findByRole("button", { name: /alpha/i }));
+
+    const input = await screen.findByLabelText(/upload a .docx or .doc policy document/i);
+    const renamedDoc = new File(
+      [new Uint8Array([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1])],
+      "renamed.docx",
+    );
+    await userEvent.upload(input, renamedDoc);
+
+    expect(await screen.findByText(/older binary \.doc file/i)).toBeInTheDocument();
+    expect(stubs.uploadDocument).not.toHaveBeenCalled();
+  });
+
+  it("lets zip-signature files through to the normal upload", async () => {
+    stubs.uploadDocument.mockResolvedValue({});
+    render(<App />);
+    await userEvent.click(await screen.findByRole("button", { name: /alpha/i }));
+
+    const input = await screen.findByLabelText(/upload a .docx or .doc policy document/i);
+    const realDocx = new File(
+      [new Uint8Array([0x50, 0x4b, 0x03, 0x04, 1, 2, 3, 4])],
+      "real.docx",
+    );
+    await userEvent.upload(input, realDocx);
+
+    await waitFor(() => expect(stubs.uploadDocument).toHaveBeenCalled());
+  });
+
+  it("clears the picker after a failed upload so the same file can retry", async () => {
+    stubs.uploadDocument.mockRejectedValue(new Error("network sad"));
+    render(<App />);
+    await userEvent.click(await screen.findByRole("button", { name: /alpha/i }));
+
+    const input = await screen.findByLabelText<HTMLInputElement>(
+      /upload a .docx or .doc policy document/i,
+    );
+    await userEvent.upload(
+      input,
+      new File([new Uint8Array([0x50, 0x4b, 0x03, 0x04])], "real.docx"),
+    );
+
+    expect(await screen.findByText(/network sad/i)).toBeInTheDocument();
+    // Re-choosing the identical file must re-fire onChange.
+    expect(input.value).toBe("");
+  });
+});
+
 describe("App project memory", () => {
   it("returns to the browser with the project still selected", async () => {
     await openTheDocument();
@@ -150,5 +280,18 @@ describe("App project memory", () => {
       "aria-current",
       "true",
     );
+  });
+});
+
+describe("App header", () => {
+  it("shows the tool name without any studio branding", async () => {
+    const { container } = render(<App />);
+    await screen.findByRole("button", { name: /alpha/i });
+
+    expect(screen.queryByText(/binary systems/i)).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /rmf rev 5 migrator/i }),
+    ).toBeInTheDocument();
+    expect(container.querySelector(".brand-mark")).toBeInTheDocument();
   });
 });

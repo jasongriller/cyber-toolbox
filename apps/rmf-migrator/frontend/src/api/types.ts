@@ -53,12 +53,18 @@ export interface DocumentRecord {
   parse_error: string | null;
   failure_stage?: string | null;
   active_job_id?: string | null;
+  // Provenance for a converted upload: source_format is what the operator sent,
+  // converted_s3_key points at the .docx everything downstream reads.
+  source_format?: "docx" | "doc";
+  converted_s3_key?: string | null;
 }
 
 export interface UploadTarget {
   url: string;
-  method: "PUT";
-  headers: Record<string, string>;
+  // Presigned POST: the policy fields carry CMK encryption and the S3-side
+  // content-length-range size ceiling a presigned PUT could not express.
+  method: "POST";
+  fields: Record<string, string>;
   expires_in: number;
 }
 

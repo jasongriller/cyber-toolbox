@@ -5,6 +5,11 @@
 // register the document, PUT the bytes straight to S3 via a presigned URL, and
 // start parsing. The backend then auto-chains parse -> control mapping, so the
 // document lands in "mapped" ready for the human review checkpoint.
+//
+// A legacy .doc may be picked too. Whether conversion actually runs is the
+// backend's call — it refuses registration when conversion is off — so the
+// picker offers .doc unconditionally rather than gating on a copy of that
+// setting the frontend could get wrong.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowRight, Trash } from "@phosphor-icons/react";
@@ -46,6 +51,30 @@ const BUSY: DocumentStatus[] = [
 
 const POLL_MS = 2500;
 
+const OLE2_MAGIC = [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
+
+// FileReader rather than Blob.arrayBuffer: identical support in every real
+// browser, and it also exists in the jsdom test environment.
+function readHeadBytes(file: File): Promise<Uint8Array> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(new Uint8Array(reader.result as ArrayBuffer));
+    reader.onerror = () => reject(reader.error ?? new Error("could not read the file"));
+    reader.onabort = () => reject(new Error("file read aborted"));
+    reader.readAsArrayBuffer(file.slice(0, 8));
+  });
+}
+
+// The same check the backend's parse guard runs, moved to the moment of file
+// selection: a renamed legacy .doc opens fine in Word (Word sniffs content,
+// not extensions), so the person uploading cannot tell — the first 8 bytes can.
+async function sniffWordFormat(file: File): Promise<"docx" | "legacy-doc" | "unknown"> {
+  const head = await readHeadBytes(file);
+  if (OLE2_MAGIC.every((b, i) => head[i] === b)) return "legacy-doc";
+  if (head[0] === 0x50 && head[1] === 0x4b) return "docx";
+  return "unknown";
+}
+
 export default function ProjectBrowser({
   client,
   initialProjectId,
@@ -63,24 +92,34 @@ export default function ProjectBrowser({
 
   const fail = (e: unknown) => setError(e instanceof Error ? e.message : String(e));
 
+  // Monotonic id per request: a response only lands if it is still the latest,
+  // so switching projects mid-flight can't paint the old project's documents
+  // and nothing writes state after unmount.
+  const projectsLoadId = useRef(0);
+  const documentsLoadId = useRef(0);
+
   const loadProjects = useCallback(async () => {
+    const id = ++projectsLoadId.current;
     try {
       const { projects } = await client.listProjects();
+      if (id !== projectsLoadId.current) return;
       setProjects(projects);
       setError(null);
     } catch (e) {
-      fail(e);
+      if (id === projectsLoadId.current) fail(e);
     }
   }, [client]);
 
   const loadDocuments = useCallback(
     async (projectId: string) => {
+      const id = ++documentsLoadId.current;
       try {
         const { documents } = await client.listDocuments(projectId);
+        if (id !== documentsLoadId.current) return;
         setDocuments(documents);
         setError(null);
       } catch (e) {
-        fail(e);
+        if (id === documentsLoadId.current) fail(e);
       }
     },
     [client],
@@ -88,6 +127,9 @@ export default function ProjectBrowser({
 
   useEffect(() => {
     void loadProjects();
+    return () => {
+      projectsLoadId.current += 1; // invalidate in-flight work on unmount
+    };
   }, [loadProjects]);
 
   // One-shot: applies once the project list holds the remembered project, and
@@ -105,6 +147,9 @@ export default function ProjectBrowser({
   useEffect(() => {
     if (!selected) return;
     void loadDocuments(selected.project_id);
+    return () => {
+      documentsLoadId.current += 1; // invalidate on project switch/unmount
+    };
   }, [selected, loadDocuments]);
 
   // Keep refreshing while anything is still parsing/mapping.
@@ -135,9 +180,36 @@ export default function ProjectBrowser({
     if (!selected) return;
     setBusy(true);
     try {
+      const format = await sniffWordFormat(file);
+      if (format !== "docx") {
+        setError(
+          format === "legacy-doc"
+            ? "This is an older binary .doc file — open it in Word, use Save As to make a real .docx, and upload that instead."
+            : "That file is not a .docx Word document.",
+        );
+        return;
+      }
       await client.uploadDocument(selected.project_id, file);
       await loadDocuments(selected.project_id);
+    } catch (e) {
+      fail(e);
+    } finally {
+      // Always reset the picker — success, block, or failure — so choosing
+      // the same file again re-fires onChange.
       if (fileInput.current) fileInput.current.value = "";
+      setBusy(false);
+    }
+  };
+
+  // Re-parse a failed document. The backend re-admits any FAILED document to
+  // the parse endpoint and re-parsing auto-chains mapping, so this one action
+  // restarts the whole pipeline regardless of which stage failed.
+  const retry = async (documentId: string) => {
+    if (!selected) return;
+    setBusy(true);
+    try {
+      await client.startParse(selected.project_id, documentId);
+      await loadDocuments(selected.project_id);
     } catch (e) {
       fail(e);
     } finally {
@@ -145,18 +217,22 @@ export default function ProjectBrowser({
     }
   };
 
+  // In-app type-to-confirm (not window.prompt): stylable, focus-managed, and
+  // testable like every other control here. Reset whenever the project
+  // selection changes so a half-typed confirmation never carries over.
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleteName, setDeleteName] = useState("");
+  useEffect(() => {
+    setConfirmingDelete(false);
+    setDeleteName("");
+  }, [selected?.project_id]);
+
   const purgeProject = async () => {
-    if (!selected) return;
-    const confirmation = window.prompt(
-      `This permanently deletes every document, export, and audit record in ${selected.name}. ` +
-        `Type the project name (${selected.name}) to continue.`,
-    );
-    const typedName = confirmation?.trim();
-    if (typedName !== selected.name) return;
+    if (!selected || deleteName.trim() !== selected.name) return;
 
     setBusy(true);
     try {
-      await client.deleteProject(selected.project_id, typedName);
+      await client.deleteProject(selected.project_id, deleteName.trim());
       setSelected(null);
       setDocuments([]);
       await loadProjects();
@@ -169,7 +245,7 @@ export default function ProjectBrowser({
 
   return (
     <section>
-      {error && <p className="banner banner--error">{error}</p>}
+      {error && <p role="alert" className="banner banner--error">{error}</p>}
 
       <div className="two-col">
         {/* ---- Projects ---- */}
@@ -259,16 +335,47 @@ export default function ProjectBrowser({
                     <tbody>
                       {documents.map((d) => (
                         <tr key={d.document_id}>
-                          <td>{d.filename}</td>
                           <td>
-                            <StatusBadge status={d.status} />
+                            {d.filename}
+                            {d.source_format === "doc" && (
+                              <span
+                                className="doc-converted-badge"
+                                title="Uploaded as a legacy .doc and converted to .docx; formatting comes from that conversion"
+                              >
+                                converted from .doc
+                              </span>
+                            )}
+                            {d.status === "failed" && (
+                              <p className="muted" style={{ margin: "4px 0 0", fontSize: 12 }}>
+                                {failureReason(d)}
+                              </p>
+                            )}
+                          </td>
+                          <td>
+                            <StatusBadge
+                              status={d.status}
+                              failureStage={d.failure_stage}
+                              parseError={d.parse_error}
+                            />
                           </td>
                           <td className="num">{d.section_count > 0 ? d.section_count : ""}</td>
                           <td>
+                            {d.status === "failed" && !permanentFailure(d) && (
+                              <button
+                                className="btn btn--sm"
+                                disabled={busy}
+                                onClick={() => void retry(d.document_id)}
+                              >
+                                Retry
+                              </button>
+                            )}
                             <button
                               className="btn btn--sm"
                               onClick={() => onOpenDocument(selected.project_id, d.document_id)}
-                              disabled={BUSY.includes(d.status) && d.status !== "parsed"}
+                              disabled={
+                                (BUSY.includes(d.status) && d.status !== "parsed") ||
+                                (d.status === "failed" && d.failure_stage === "parse")
+                              }
                             >
                               Open
                             </button>
@@ -284,9 +391,9 @@ export default function ProjectBrowser({
                 <input
                   ref={fileInput}
                   type="file"
-                  accept=".docx"
+                  accept=".docx,.doc"
                   disabled={busy}
-                  aria-label="upload a .docx policy document"
+                  aria-label="upload a .docx or .doc policy document"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) void upload(file);
@@ -298,7 +405,8 @@ export default function ProjectBrowser({
                   </span>
                 )}
                 <p className="muted" style={{ margin: "0.5rem 0 0" }}>
-                  .docx only. Upload starts parsing and control mapping automatically.
+                  .docx, or a legacy .doc where the server has conversion enabled. Upload
+                  starts parsing and control mapping automatically.
                 </p>
               </div>
 
@@ -308,12 +416,48 @@ export default function ProjectBrowser({
                 </button>
                 <button
                   className="btn btn--danger"
-                  disabled={busy}
-                  onClick={() => void purgeProject()}
+                  disabled={busy || confirmingDelete}
+                  onClick={() => setConfirmingDelete(true)}
                 >
                   <Trash size={14} /> Delete project
                 </button>
               </div>
+
+              {confirmingDelete && (
+                <div className="banner banner--danger" style={{ marginTop: "0.75rem" }}>
+                  <p style={{ marginTop: 0 }}>
+                    This permanently deletes every document, export, and audit record in{" "}
+                    <strong>{selected.name}</strong>.
+                  </p>
+                  <div className="toolbar">
+                    <input
+                      className="field"
+                      style={{ flex: "1 1 160px" }}
+                      value={deleteName}
+                      placeholder={selected.name}
+                      onChange={(e) => setDeleteName(e.target.value)}
+                      aria-label={`type the project name (${selected.name}) to confirm deletion`}
+                    />
+                    <button
+                      className="btn btn--danger"
+                      disabled={busy || deleteName.trim() !== selected.name}
+                      onClick={() => void purgeProject()}
+                    >
+                      <Trash size={14} /> Permanently delete
+                    </button>
+                    <button
+                      className="btn"
+                      disabled={busy}
+                      onClick={() => {
+                        setConfirmingDelete(false);
+                        setDeleteName("");
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -322,9 +466,56 @@ export default function ProjectBrowser({
   );
 }
 
-function StatusBadge({ status }: { status: DocumentStatus }) {
+// Mirrors the backend's _PERMANENT_PARSE_ERRORS: deterministic verdicts on
+// the stored bytes, identical on every retry — the remedy is a corrected
+// re-upload, so no Retry is offered and the reason row says what to fix.
+const PERMANENT_PARSE_ERRORS = [
+  "UnsupportedDocumentFormat",
+  "DocxTooLarge",
+  "ParsedDocumentTooLarge",
+];
+
+function permanentFailure(d: DocumentRecord): boolean {
+  return d.failure_stage === "parse" && PERMANENT_PARSE_ERRORS.includes(d.parse_error ?? "");
+}
+
+// The backend records failures as an error type only (never content); this is
+// where those types become words an operator can act on.
+function failureReason(d: DocumentRecord): string {
+  switch (d.parse_error) {
+    case "UnsupportedDocumentFormat":
+      return "This is an older binary .doc file — open it in Word, use Save As to make a real .docx, and re-upload.";
+    case "DocxTooLarge":
+      return "Too large, too complex, or unreadable as a .docx (25 MB limit).";
+    case "ParsedDocumentTooLarge":
+      return "The parsed text exceeds the size limit.";
+    default:
+      return d.parse_error
+        ? `Processing failed (${d.parse_error}). Retry to run it again.`
+        : "Processing failed. Retry to run it again.";
+  }
+}
+
+function StatusBadge({
+  status,
+  failureStage,
+  parseError,
+}: {
+  status: DocumentStatus;
+  failureStage?: string | null;
+  parseError?: string | null;
+}) {
   const working = BUSY.includes(status) && status !== "parsed";
   const failed = status === "failed";
   const cls = failed ? "pill pill--crit" : working ? "pill pill--work" : "pill pill--ok";
-  return <span className={cls}>{status}</span>;
+  // On failure, name the stage (parse/mapping/drafting) and the error type so
+  // the operator can tell a bad document from an infrastructure problem
+  // without console access.
+  let label: string = status;
+  if (failed && failureStage) {
+    label = parseError
+      ? `failed (${failureStage}: ${parseError})`
+      : `failed (${failureStage})`;
+  }
+  return <span className={cls}>{label}</span>;
 }

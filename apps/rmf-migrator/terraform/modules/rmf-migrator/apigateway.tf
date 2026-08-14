@@ -45,6 +45,7 @@ locals {
     "GET /projects/{project_id}/coverage"              = "coverage"
     "GET /projects/{project_id}/conversion-matrix.csv" = "conversion-matrix"
     "GET /projects/{project_id}/oscal.json"            = "oscal"
+    "GET /projects/{project_id}/emass.csv"             = "emass-export"
   }
 }
 
@@ -56,9 +57,9 @@ resource "aws_apigatewayv2_api" "this" {
   # XHR from the SPA origin(s).
   cors_configuration {
     allow_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
-    # Private-mode validation requires an explicit allowlist. The wildcard is
-    # reachable only in the deliberately unauthenticated public demo posture.
-    allow_origins = length(var.frame_ancestors) > 0 ? var.frame_ancestors : ["*"]
+    # Every posture requires an explicit allowlist (validate_cors_origins in
+    # main.tf); there is no wildcard fallback.
+    allow_origins = var.frame_ancestors
     allow_headers = [
       "content-type",
       "authorization",
@@ -114,8 +115,8 @@ resource "aws_apigatewayv2_route" "this" {
   # explicitly selected public dev/demo mode, which the module and deployment
   # guide prohibit for CUI.
   # Private mode requires SigV4 on every route (auth_mode "iam"). Public mode
-  # defaults to an unauthenticated dev/demo posture (auth_mode "none") but can
-  # instead require Cognito login (auth_mode "cognito") without adding a VPC.
+  # has no default — the operator must explicitly pick "cognito" (login without
+  # a VPC), "iam", or the dev/demo-only "none" (enforced in main.tf).
   api_id    = aws_apigatewayv2_api.this.id
   route_key = each.key
   target    = "integrations/${aws_apigatewayv2_integration.api[each.value].id}"

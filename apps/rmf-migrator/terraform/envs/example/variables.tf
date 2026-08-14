@@ -52,17 +52,21 @@ variable "cognito_app_client_name" {
 variable "frame_ancestors" {
   description = <<-EOT
     Browser origin(s) allowed to call this API and to receive presigned S3
-    uploads directly — the CORS allowlist for both. Empty (the default)
-    falls back to a CORS wildcard ("*"): the Cognito JWT authorizer still
-    gates every route regardless, so this isn't an auth gap, but a wildcard
-    should not ship once this deployment has a real caller. Set to the
-    toolbox front door's own origin — scheme + host only, no path, no
-    trailing slash (e.g. "https://abc123.execute-api.us-gov-west-1.amazonaws.com",
-    never ".../v1" or ".../v1/") — once R-C wires the front door's /rmf/api
-    proxy route.
+    uploads directly — the CORS allowlist for both. REQUIRED: the module
+    fails the plan when this is empty; CORS never falls back to a wildcard.
+    Set to the toolbox front door's own origin — scheme + host only, no
+    path, no trailing slash (e.g.
+    "https://abc123.execute-api.us-gov-west-1.amazonaws.com", never
+    ".../v1" or ".../v1/").
   EOT
   type        = list(string)
   default     = []
+}
+
+variable "alert_email" {
+  description = "Email address notified when a background job dead-letters (see the module's alert_email). Null disables the subscription; the alarm and SNS topic still exist."
+  type        = string
+  default     = null
 }
 
 # --- Tagging ---------------------------------------------------------------

@@ -4,6 +4,8 @@ requires = ["setuptools>=83.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
+# "stig-parser" collides with an unrelated package already on PyPI (pkeech/stig_parser) —
+# always install this one editable/local (`pip install -e .`), never `pip install stig-parser` by name.
 name = "stig-parser"
 version = "0.1.0"
 description = "Parse XCCDF compliance scan results and produce consolidated STIG findings in Excel"

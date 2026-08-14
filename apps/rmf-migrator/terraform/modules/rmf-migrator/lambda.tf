@@ -34,6 +34,13 @@ locals {
       PARSE_QUEUE_URL  = aws_sqs_queue.parse.id
       BEDROCK_MODEL_ID = var.bedrock_model_id
       BEDROCK_REGION   = local.bedrock_region
+
+      # The upload API refuses .doc on "reject" before anything is written, and
+      # the worker builds a RejectingConverter. Empty rather than absent for the
+      # function name: config.from_env reads "" as None, and a variable that
+      # disappears between plans is a harder diff to read than one that empties.
+      DOC_CONVERSION_BACKEND      = var.enable_doc_conversion ? "lambda" : "reject"
+      DOC_CONVERTER_FUNCTION_NAME = var.enable_doc_conversion ? aws_lambda_function.converter[0].function_name : ""
     },
     var.identity_header != null ? { IDENTITY_HEADER = var.identity_header } : {},
     var.bedrock_guardrail_id != null ? {
@@ -42,8 +49,8 @@ locals {
     } : {},
   )
 
-  # name -> { handler, role? }. role defaults to "api"; "worker" grants Bedrock
-  # (the chat handler invokes the model from an API request).
+  # name -> { handler, role? }. role defaults to "api"; "chat" is the narrow
+  # read+Bedrock role for the one API handler that invokes the model.
   api_functions = {
     create-project    = { handler = "rmf_migrator.handlers.create_project.handler" }
     list-projects     = { handler = "rmf_migrator.handlers.projects.list_projects" }
@@ -60,7 +67,7 @@ locals {
     get-drafts        = { handler = "rmf_migrator.handlers.drafts.get_drafts" }
     update-draft      = { handler = "rmf_migrator.handlers.drafts.update_draft" }
     approve-draft     = { handler = "rmf_migrator.handlers.drafts.approve_draft" }
-    chat              = { handler = "rmf_migrator.handlers.chat.handler", role = "worker" }
+    chat              = { handler = "rmf_migrator.handlers.chat.handler", role = "chat" }
     start-export      = { handler = "rmf_migrator.handlers.export.enqueue_export" }
     get-export-job    = { handler = "rmf_migrator.handlers.export.get_export_job" }
     download-export   = { handler = "rmf_migrator.handlers.export.download_export" }
@@ -68,11 +75,12 @@ locals {
     coverage          = { handler = "rmf_migrator.handlers.coverage.coverage" }
     conversion-matrix = { handler = "rmf_migrator.handlers.coverage.conversion_matrix" }
     oscal             = { handler = "rmf_migrator.handlers.coverage.oscal" }
+    emass-export      = { handler = "rmf_migrator.handlers.coverage.emass_export" }
   }
 
   api_role_arns = {
-    api    = aws_iam_role.api.arn
-    worker = aws_iam_role.worker.arn
+    api  = aws_iam_role.api.arn
+    chat = aws_iam_role.chat.arn
   }
 }
 

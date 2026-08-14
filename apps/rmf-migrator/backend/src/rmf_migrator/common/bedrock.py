@@ -73,7 +73,11 @@ class BedrockClient:
         else:
             import boto3
 
-            self._client = boto3.client("bedrock-runtime", region_name=region)
+            from rmf_migrator.common.aws_clients import BEDROCK_CONFIG
+
+            self._client = boto3.client(
+                "bedrock-runtime", region_name=region, config=BEDROCK_CONFIG
+            )
 
     @classmethod
     def from_config(cls, config: Config, *, client: Any = None) -> BedrockClient:

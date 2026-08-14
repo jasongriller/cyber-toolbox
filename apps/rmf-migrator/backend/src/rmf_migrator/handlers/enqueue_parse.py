@@ -36,9 +36,10 @@ def _enqueue(event: dict[str, Any], deps: Deps) -> dict[str, Any]:
         if existing is not None:
             return json_response(202, {"job": existing.model_dump()})
 
-    allowed = {DocumentStatus.UPLOAD_PENDING, DocumentStatus.UPLOADED}
-    if document.status == DocumentStatus.FAILED and document.failure_stage == "parse":
-        allowed.add(DocumentStatus.FAILED)
+    # Any FAILED document is re-admitted regardless of which stage failed:
+    # re-parsing rebuilds sections and auto-chains mapping, so this endpoint is
+    # the single self-service recovery path for the whole parse -> map pipeline.
+    allowed = {DocumentStatus.UPLOAD_PENDING, DocumentStatus.UPLOADED, DocumentStatus.FAILED}
     if document.status not in allowed:
         raise HttpError(409, f"document cannot be parsed from status {document.status}")
 

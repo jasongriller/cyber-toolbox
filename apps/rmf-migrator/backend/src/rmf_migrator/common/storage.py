@@ -1,30 +1,74 @@
 """S3 document storage helpers.
 
-Uploads use presigned PUT URLs so document bytes flow browser -> S3 directly and
+Uploads use presigned POST targets so document bytes flow browser -> S3 directly and
 never transit a Lambda. Server-side encryption uses the project's KMS CMK; the
 presigned URL pins the SSE headers so an upload that omits them is rejected.
 """
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 import boto3
 from botocore.config import Config
 
-from rmf_migrator.common.limits import MAX_DOCX_BYTES, ObjectTooLarge
+from rmf_migrator.common.aws_clients import FAST_CONFIG
+from rmf_migrator.common.limits import MAX_DOC_BYTES, MAX_DOCX_BYTES, ObjectTooLarge
 
 # Only .docx is accepted in v1.
 DOCX_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+# Legacy Word 97-2003 binary; accepted only as a conversion source, never parsed directly.
+DOC_CONTENT_TYPE = "application/msword"
+
+# What each accepted source format may be uploaded as: (content type, size ceiling).
+# One table rather than two parameters, because the pair is one decision — a
+# ceiling that can be chosen separately from the type is a ceiling that can be
+# chosen wrongly, and the loose one (MAX_DOCX_BYTES, sized for compressed XML)
+# is the fail-open direction for uncompressed OLE2. The upload policy is the
+# only place MAX_DOC_BYTES can be enforced before the bytes exist.
+_UPLOAD_POLICIES: dict[str, tuple[str, int]] = {
+    "docx": (DOCX_CONTENT_TYPE, MAX_DOCX_BYTES),
+    "doc": (DOC_CONTENT_TYPE, MAX_DOC_BYTES),
+}
 
 # Presigned upload URLs are short-lived.
 _UPLOAD_URL_TTL_SECONDS = 300
 
 
+def content_disposition(download_name: str) -> str:
+    """Build a safe ``attachment`` Content-Disposition value.
+
+    Upload validation rejects header-breaking filenames, but stored names may
+    predate that check, so this is enforced again at the only place the value
+    reaches a header: control characters, quotes, and backslashes are stripped
+    (they terminate or escape the quoted parameter), and non-ASCII names get an
+    ASCII fallback plus an RFC 5987 ``filename*`` carrying the real name.
+    """
+    from urllib.parse import quote
+
+    cleaned = "".join(c for c in download_name if c.isprintable() and c not in '"\\')
+    fallback = cleaned.encode("ascii", "replace").decode("ascii").replace("?", "_")
+    disposition = f'attachment; filename="{fallback}"'
+    if cleaned != fallback:
+        disposition += f"; filename*=UTF-8''{quote(cleaned, safe='')}"
+    return disposition
+
+
 def build_document_key(project_id: str, document_id: str, filename: str) -> str:
     """Deterministic S3 key. Filename is stored in metadata, not the key, to
     avoid leaking potentially sensitive names into access logs / URLs."""
-    return f"projects/{project_id}/documents/{document_id}.docx"
+    suffix = ".doc" if filename.lower().endswith(".doc") else ".docx"
+    return f"projects/{project_id}/documents/{document_id}{suffix}"
+
+
+def build_converted_document_key(project_id: str, document_id: str) -> str:
+    """S3 key for the .docx produced from an uploaded legacy .doc.
+
+    A separate key, never an overwrite: the original .doc is audit provenance
+    for the A&A package and must remain byte-identical to what was uploaded.
+    """
+    return f"projects/{project_id}/documents/{document_id}.converted.docx"
 
 
 def build_export_key(project_id: str, document_id: str) -> str:
@@ -43,35 +87,66 @@ class DocumentStore:
         self._kms_key_id = kms_key_id
         # SigV4 pinned: the default client in legacy-listed regions
         # (us-gov-west-1 included) presigns SigV2-form URLs, which buckets
-        # created after 2020-06 reject with 403.
+        # created after 2020-06 reject with 403. Merged onto the shared
+        # fast-timeout base (merge: the argument's values win).
         self._s3 = s3_client or boto3.client(
-            "s3", config=Config(signature_version="s3v4")
+            "s3", config=FAST_CONFIG.merge(Config(signature_version="s3v4"))
         )
 
-    def presigned_put_url(self, key: str) -> dict[str, Any]:
-        """Return a presigned PUT URL and the headers the caller must send.
+    def presigned_post(
+        self,
+        key: str,
+        *,
+        source_format: Literal["docx", "doc"] = "docx",
+    ) -> dict[str, Any]:
+        """Return a presigned POST target with an S3-side size ceiling.
 
-        The SSE headers are part of the signed request, enforcing CMK
-        encryption on upload.
+        Presigned PUT cannot express a size limit, so an oversized object
+        could land in the bucket before the app-side check rejected it (a
+        storage-cost/DoS vector). A POST policy's content-length-range makes
+        S3 itself refuse anything over the format's ceiling, and the pinned
+        fields keep enforcing CMK encryption exactly as the PUT headers did.
+
+        The format alone selects the content type and the ceiling together,
+        and the key must carry that format's extension — `build_document_key`
+        derives it, so a mismatch means the caller lost track of which
+        document this target is for. Refusing is the fail-closed answer: the
+        alternative is minting a 25 MB, docx-typed policy for a .doc key,
+        which admits OLE2 bytes the converter would later refuse but which
+        are by then already in the bucket.
+
+        The pin binds the declared type, not the bytes — content-based
+        rejection stays with the format sniff on download.
         """
-        params = {
-            "Bucket": self._bucket,
-            "Key": key,
-            "ContentType": DOCX_CONTENT_TYPE,
-            "ServerSideEncryption": "aws:kms",
-            "SSEKMSKeyId": self._kms_key_id,
-        }
-        url = self._s3.generate_presigned_url(
-            "put_object", Params=params, ExpiresIn=_UPLOAD_URL_TTL_SECONDS
-        )
-        return {
-            "url": url,
-            "method": "PUT",
-            "headers": {
-                "Content-Type": DOCX_CONTENT_TYPE,
+        policy = _UPLOAD_POLICIES.get(source_format)
+        if policy is None:
+            raise ValueError(f"no upload policy for source format {source_format!r}")
+        content_type, max_bytes = policy
+        # The format names are the extensions, and ".docx" does not end in
+        # ".doc", so this one check catches a mismatch in either direction.
+        if not key.endswith(f".{source_format}"):
+            raise ValueError(f"upload key {key!r} is not a .{source_format} key")
+
+        post = self._s3.generate_presigned_post(
+            Bucket=self._bucket,
+            Key=key,
+            Fields={
+                "Content-Type": content_type,
                 "x-amz-server-side-encryption": "aws:kms",
                 "x-amz-server-side-encryption-aws-kms-key-id": self._kms_key_id,
             },
+            Conditions=[
+                {"Content-Type": content_type},
+                {"x-amz-server-side-encryption": "aws:kms"},
+                {"x-amz-server-side-encryption-aws-kms-key-id": self._kms_key_id},
+                ["content-length-range", 1, max_bytes],
+            ],
+            ExpiresIn=_UPLOAD_URL_TTL_SECONDS,
+        )
+        return {
+            "url": post["url"],
+            "method": "POST",
+            "fields": post["fields"],
             "expires_in": _UPLOAD_URL_TTL_SECONDS,
         }
 
@@ -83,8 +158,9 @@ class DocumentStore:
         """Download an object, refusing anything over ``max_bytes``.
 
         The size is checked with HeadObject first so an oversized object is
-        never pulled into the Lambda's memory at all. Nothing constrains the
-        size of a presigned PUT, so this is where an oversized upload is caught.
+        never pulled into the Lambda's memory at all. The upload POST policy's
+        content-length-range already bounds new uploads; this guards objects
+        that predate it (or arrive by any other path).
         """
         if max_bytes is not None:
             head = self._s3.head_object(Bucket=self._bucket, Key=key)
@@ -116,7 +192,7 @@ class DocumentStore:
         """Presigned GET URL so the browser downloads the export directly from S3."""
         params: dict[str, Any] = {"Bucket": self._bucket, "Key": key}
         if download_name:
-            params["ResponseContentDisposition"] = f'attachment; filename="{download_name}"'
+            params["ResponseContentDisposition"] = content_disposition(download_name)
         url = self._s3.generate_presigned_url(
             "get_object", Params=params, ExpiresIn=_UPLOAD_URL_TTL_SECONDS
         )

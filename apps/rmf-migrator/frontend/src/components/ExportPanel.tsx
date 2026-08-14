@@ -2,7 +2,7 @@
 // plus download the per-control decision log (CSV). Export runs async on the
 // backend; this triggers it and polls the job to completion.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { DownloadSimple, FileDoc, FileCsv } from "@phosphor-icons/react";
 import { ApiClient } from "../api/client";
 import { waitForExportJob } from "../api/polling";
@@ -22,32 +22,51 @@ export default function ExportPanel({ client, projectId, documentId, onDone }: P
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Monotonic id per request: only the latest response lands, so nothing
+  // writes state after unmount or a document switch.
+  const refreshId = useRef(0);
+
   const refresh = useCallback(async () => {
+    const id = ++refreshId.current;
     try {
       const doc = await client.getDocument(projectId, documentId);
+      if (id !== refreshId.current) return;
       setStatus(doc.status);
       setFilename(doc.filename);
       setError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      if (id === refreshId.current) setError(e instanceof Error ? e.message : String(e));
     }
   }, [client, projectId, documentId]);
 
   useEffect(() => {
     void refresh();
+    return () => {
+      refreshId.current += 1; // invalidate in-flight work on dep change/unmount
+    };
   }, [refresh]);
+
+  // The export poll runs up to 5 minutes; abort it when the panel unmounts so
+  // it stops hitting the API from a screen nobody is looking at.
+  const pollAbort = useRef<AbortController | null>(null);
+  useEffect(() => {
+    return () => pollAbort.current?.abort();
+  }, []);
 
   const generate = async () => {
     setBusy(true);
     setError(null);
+    const controller = new AbortController();
+    pollAbort.current = controller;
     try {
       const { job } = await client.startExport(projectId, documentId);
-      await waitForExportJob(client, projectId, job.job_id);
+      await waitForExportJob(client, projectId, job.job_id, { signal: controller.signal });
       await refresh();
     } catch (e) {
+      if (controller.signal.aborted) return; // unmounted; nobody to tell
       setError(e instanceof Error ? e.message : String(e));
     } finally {
-      setBusy(false);
+      if (!controller.signal.aborted) setBusy(false);
     }
   };
 
@@ -89,7 +108,7 @@ export default function ExportPanel({ client, projectId, documentId, onDone }: P
         <h2>Export</h2>
         <span className={exported ? "pill pill--ok" : "pill"}>{status ?? "loading…"}</span>
       </div>
-      {error && <p className="banner banner--error">{error}</p>}
+      {error && <p role="alert" className="banner banner--error">{error}</p>}
 
       <div className="toolbar">
         <button className="btn btn--accent" disabled={busy || !canExport} onClick={() => void generate()}>

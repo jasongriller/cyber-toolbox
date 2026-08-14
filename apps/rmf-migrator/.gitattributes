@@ -15,5 +15,9 @@ Makefile text eol=lf
 *.ico   binary
 *.pdf   binary
 *.docx  binary
+# OLE2 compound files. `* text=auto` would rewrite CRLF byte pairs anywhere in
+# the stream, which for a legacy .doc shifts every offset the directory records
+# and leaves a file soffice will not open.
+*.doc   binary
 *.xlsx  binary
 *.zip   binary

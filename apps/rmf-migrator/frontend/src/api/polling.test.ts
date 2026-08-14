@@ -42,6 +42,27 @@ describe("waitForExportJob", () => {
     ).rejects.toThrow("DocumentError");
   });
 
+  it("stops polling as soon as the signal aborts", async () => {
+    // Without this, navigating away from the export panel left the 5-minute
+    // poll hammering the API from an unmounted component.
+    const controller = new AbortController();
+    const getExportJob = vi.fn().mockResolvedValue(job("running"));
+    const sleep = vi.fn().mockImplementation(() => {
+      controller.abort();
+      return Promise.resolve();
+    });
+
+    await expect(
+      waitForExportJob(
+        { getExportJob },
+        "p1",
+        "xjob_1",
+        { intervalMs: 1, maxAttempts: 50, sleep, signal: controller.signal },
+      ),
+    ).rejects.toMatchObject({ name: "AbortError" });
+    expect(getExportJob).toHaveBeenCalledTimes(1);
+  });
+
   it("stops polling after the configured bound", async () => {
     const getExportJob = vi.fn().mockResolvedValue(job("running"));
     const sleep = vi.fn().mockResolvedValue(undefined);

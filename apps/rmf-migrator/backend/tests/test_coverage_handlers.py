@@ -17,7 +17,7 @@ from rmf_migrator.common.models import (
     Project,
     Section,
 )
-from rmf_migrator.handlers.coverage import _conversion_matrix, _coverage, _oscal
+from rmf_migrator.handlers.coverage import _conversion_matrix, _coverage, _emass_export, _oscal
 
 
 def _event(path=None, query=None):
@@ -126,6 +126,43 @@ def _seed_project_with_approved_draft(deps):
         ]
     )
     return pid
+
+
+def test_emass_export_csv_lists_controls_with_narratives(deps):
+    pid = _seed_project_with_approved_draft(deps)
+    # Give the draft's section a heading so the row can cite its source.
+    document = deps.repo.list_documents(pid)[0]
+    deps.repo.put_sections(
+        [
+            Section(
+                section_id="sec-1",
+                document_id=document.document_id,
+                project_id=pid,
+                heading="1. Account Management",
+                text="",
+                order=0,
+                level=1,
+            )
+        ]
+    )
+
+    resp = _emass_export(_event(path={"project_id": pid}), deps)
+
+    assert resp["statusCode"] == 200
+    assert resp["headers"]["Content-Type"] == "text/csv"
+    assert "emass" in resp["headers"]["Content-Disposition"]
+    body = resp["body"]
+    assert body.startswith("control_id,control_title,implementation_narrative")
+    assert "AC-2" in body
+    assert "Approved Rev 5 language." in body
+    assert "ac-rev5.docx" in body  # artifact name from ac.docx
+    assert "1. Account Management" in body
+
+
+def test_emass_export_404_missing_project(deps):
+    with pytest.raises(HttpError) as exc:
+        _emass_export(_event(path={"project_id": "proj_missing"}), deps)
+    assert exc.value.status == 404
 
 
 def test_oscal_export_returns_component_definition(deps):

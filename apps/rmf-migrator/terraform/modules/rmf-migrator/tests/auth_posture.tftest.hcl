@@ -44,6 +44,12 @@ mock_provider "aws" {
       execution_arn = "arn:aws-us-gov:execute-api:us-gov-west-1:aws:test"
     }
   }
+
+  mock_resource "aws_sns_topic" {
+    defaults = {
+      arn = "arn:aws-us-gov:sns:us-gov-west-1:aws:rmf-migrator-test-alerts"
+    }
+  }
 }
 
 # Shared across every run below; each run adds only what its scenario needs.
@@ -72,11 +78,25 @@ run "public_cognito_requires_jwt_everywhere" {
     auth_mode            = "cognito"
     cognito_user_pool_id = "us-gov-west-1_MOCKPOOL"
     cognito_client_id    = "mockclientid"
+    frame_ancestors      = ["https://portal.example.test"]
   }
 
   assert {
     condition     = length(aws_apigatewayv2_authorizer.cognito) == 1
     error_message = "auth_mode = \"cognito\" must create exactly one JWT authorizer."
+  }
+
+  assert {
+    condition     = !contains(aws_apigatewayv2_api.this.cors_configuration[0].allow_origins, "*")
+    error_message = "API CORS must never fall back to the \"*\" origin — only the configured frame_ancestors."
+  }
+
+  assert {
+    condition = alltrue([
+      for rule in aws_s3_bucket_cors_configuration.documents.cors_rule :
+      !contains(rule.allowed_origins, "*")
+    ])
+    error_message = "S3 CORS must never fall back to the \"*\" origin — only the configured frame_ancestors."
   }
 
   assert {
@@ -140,26 +160,65 @@ run "private_defaults_require_iam_and_no_authorizer" {
   }
 }
 
-# network_mode = "public" with auth_mode left unset: proves backward
-# compatibility — the existing example root sets only network_mode and must
-# keep planning to the same unauthenticated posture it always has.
-run "public_without_auth_mode_stays_open" {
+# network_mode = "public" with auth_mode left unset must FAIL the plan.
+# Deriving an unauthenticated default from a networking toggle is exactly how a
+# CUI deployment ends up open to the internet by accident; an internet-facing
+# API must be a deliberate, explicit choice (auth_mode = "none"), never a
+# fallback.
+run "public_without_auth_mode_fails_closed" {
   command = plan
 
   variables {
     network_mode = "public"
+    # Satisfy the separate CORS precondition so this run isolates the auth one.
+    frame_ancestors = ["https://portal.example.test"]
+  }
+
+  expect_failures = [
+    terraform_data.validate_public_auth,
+  ]
+}
+
+# Public mode without a CORS allowlist must FAIL the plan: an empty
+# frame_ancestors used to silently widen both the API and S3 CORS configs to
+# ["*"], and the env tfvars examples shipped it commented out — so following
+# the example produced wildcard CORS in production.
+run "public_without_frame_ancestors_fails_closed" {
+  command = plan
+
+  variables {
+    network_mode         = "public"
+    auth_mode            = "cognito"
+    cognito_user_pool_id = "us-gov-west-1_MOCKPOOL"
+    cognito_client_id    = "mockclientid"
+  }
+
+  expect_failures = [
+    terraform_data.validate_cors_origins,
+  ]
+}
+
+# The explicit opt-out still works: an operator who consciously sets
+# auth_mode = "none" (dev sandboxes) gets the open posture they asked for.
+run "public_with_explicit_none_stays_open" {
+  command = plan
+
+  variables {
+    network_mode    = "public"
+    auth_mode       = "none"
+    frame_ancestors = ["http://localhost:5173"]
   }
 
   assert {
     condition = alltrue([
       for r in aws_apigatewayv2_route.this : r.authorization_type == "NONE"
     ])
-    error_message = "network_mode = \"public\" with auth_mode unset must keep every route open (NONE) — this is the pre-existing behavior auth_mode's default derivation must reproduce."
+    error_message = "auth_mode = \"none\" set explicitly must leave every route open — the opt-out has to keep working once the implicit default is gone."
   }
 
   assert {
     condition     = length(aws_apigatewayv2_authorizer.cognito) == 0
-    error_message = "No JWT authorizer should exist when auth_mode resolves to \"none\"."
+    error_message = "No JWT authorizer should exist when auth_mode is \"none\"."
   }
 }
 
@@ -174,8 +233,10 @@ run "created_kms_key_covers_every_log_group_path" {
   command = plan
 
   variables {
-    network_mode = "public"
-    kms_key_arn  = null
+    network_mode    = "public"
+    auth_mode       = "none" # public now requires an explicit auth choice
+    frame_ancestors = ["http://localhost:5173"]
+    kms_key_arn     = null
   }
 
   assert {

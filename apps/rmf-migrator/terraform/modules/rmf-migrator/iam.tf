@@ -150,6 +150,65 @@ data "aws_iam_policy_document" "worker" {
       resources = ["arn:${local.partition}:bedrock:${local.bedrock_region}:${local.account_id}:guardrail/${var.bedrock_guardrail_id}"]
     }
   }
+
+  dynamic "statement" {
+    for_each = var.enable_doc_conversion ? [1] : []
+    content {
+      sid       = "InvokeConverter"
+      effect    = "Allow"
+      actions   = ["lambda:InvokeFunction"]
+      resources = [aws_lambda_function.converter[0].arn]
+    }
+  }
+
+  # Separate statements rather than widening ReadWriteDocuments above, because
+  # the prefix scoping is the security-relevant half. delete_prefix lists object
+  # versions and deletes them by VersionId, and ReadWriteDocuments grants only
+  # s3:DeleteObject / s3:ListBucket on the whole bucket — so without these the
+  # scratch purge AccessDenies on every conversion (the failure is best-effort
+  # and swallowed) and full CUI copies pile up outside every purge path.
+  #
+  # Granting them bucket-wide instead would be the wrong trade. The worker is
+  # the highest-exposure component here — it pulls attacker-supplied documents,
+  # hands OLE2 bytes to a converter, runs python-docx over crafted zips, and
+  # feeds document text to Bedrock — and versioning is the recovery control for
+  # that blast radius. Today a foothold holds only s3:DeleteObject, which leaves
+  # recoverable delete markers; bucket-wide s3:DeleteObjectVersion would let the
+  # same foothold permanently erase every version of every project's documents
+  # and exports. delete_prefix has exactly one caller in the worker, and it is
+  # always a convert-scratch/<uuid> prefix.
+  dynamic "statement" {
+    for_each = var.enable_doc_conversion ? [1] : []
+    content {
+      sid    = "ReadWriteConvertScratch"
+      effect = "Allow"
+      actions = [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject",
+        "s3:DeleteObjectVersion",
+      ]
+      resources = ["${aws_s3_bucket.documents.arn}/convert-scratch/*"]
+    }
+  }
+
+  # ListBucketVersions is a bucket-level action, so the resource has to be the
+  # bucket ARN; the s3:prefix condition is what keeps it from enumerating every
+  # version of every project's documents.
+  dynamic "statement" {
+    for_each = var.enable_doc_conversion ? [1] : []
+    content {
+      sid       = "ListConvertScratchVersions"
+      effect    = "Allow"
+      actions   = ["s3:ListBucketVersions"]
+      resources = [aws_s3_bucket.documents.arn]
+      condition {
+        test     = "StringLike"
+        variable = "s3:prefix"
+        values   = ["convert-scratch/*"]
+      }
+    }
+  }
 }
 
 resource "aws_iam_role_policy" "worker" {
@@ -158,7 +217,66 @@ resource "aws_iam_role_policy" "worker" {
   policy = data.aws_iam_policy_document.worker.json
 }
 
-# ---- CloudWatch Logs + VPC access for both roles ---------------------------
+# ---- Chat role -------------------------------------------------------------
+# The chat handler is a synchronous API Lambda that reads documents/sections/
+# drafts and invokes Bedrock — nothing else. It previously wore the full
+# worker role, inheriting SQS consume/produce and broad S3 write/delete it
+# never uses. jsonencode (not a policy-document data source) so the module
+# tests can assert on the policy text under the mock provider.
+
+resource "aws_iam_role" "chat" {
+  name               = "${local.name}-chat"
+  assume_role_policy = data.aws_iam_policy_document.lambda_assume.json
+  tags               = local.common_tags
+}
+
+resource "aws_iam_role_policy" "chat" {
+  name = "${local.name}-chat"
+  role = aws_iam_role.chat.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = concat(
+      [
+        {
+          Sid      = "UseCMK"
+          Effect   = "Allow"
+          Action   = ["kms:Decrypt", "kms:GenerateDataKey", "kms:DescribeKey"]
+          Resource = local.kms_key_arn
+        },
+        {
+          Sid      = "TableRead"
+          Effect   = "Allow"
+          Action   = ["dynamodb:GetItem", "dynamodb:Query"]
+          Resource = aws_dynamodb_table.this.arn
+        },
+        {
+          # Oversized section bodies live under projects/*/sections/ (see
+          # build_section_text_key); chat reads nothing else from the bucket.
+          Sid      = "ReadSectionTexts"
+          Effect   = "Allow"
+          Action   = ["s3:GetObject"]
+          Resource = "${aws_s3_bucket.documents.arn}/projects/*/sections/*"
+        },
+        {
+          Sid      = "InvokeModel"
+          Effect   = "Allow"
+          Action   = ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"]
+          Resource = local.bedrock_model_arn
+        },
+      ],
+      var.bedrock_guardrail_id != null ? [
+        {
+          Sid      = "ApplyGuardrail"
+          Effect   = "Allow"
+          Action   = ["bedrock:ApplyGuardrail"]
+          Resource = "arn:${local.partition}:bedrock:${local.bedrock_region}:${local.account_id}:guardrail/${var.bedrock_guardrail_id}"
+        },
+      ] : [],
+    )
+  })
+}
+
+# ---- CloudWatch Logs + VPC access for all roles ----------------------------
 
 # Logs permission scoped to this app's log groups.
 data "aws_iam_policy_document" "logs" {
@@ -213,5 +331,11 @@ resource "aws_iam_role_policy" "api_ops" {
 resource "aws_iam_role_policy" "worker_ops" {
   name   = "${local.name}-worker-ops"
   role   = aws_iam_role.worker.id
+  policy = local.operational_policy
+}
+
+resource "aws_iam_role_policy" "chat_ops" {
+  name   = "${local.name}-chat-ops"
+  role   = aws_iam_role.chat.id
   policy = local.operational_policy
 }

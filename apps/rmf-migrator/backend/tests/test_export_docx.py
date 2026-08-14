@@ -118,6 +118,88 @@ def test_export_output_is_valid_docx():
     assert any("Purpose:" in p.text for p in doc.paragraphs)
 
 
+def test_export_skips_blank_heading_spacing_paragraphs():
+    """Blank heading-styled paragraphs are vertical spacing in real templates.
+    The parser skips them when assigning orders, so the exporter must too —
+    otherwise every draft after the blank heading lands one section early."""
+    doc = DocxDocument()
+    doc.add_heading("Access Control Policy", level=1)  # parser order 0
+    doc.add_paragraph("Old AC policy body.")
+    doc.add_heading("", level=2)  # spacing only; parser skips it
+    doc.add_heading("AC-2 Account Management", level=2)  # parser order 1
+    doc.add_paragraph("Old AC-2 body.")
+    buf = io.BytesIO()
+    doc.save(buf)
+    data = buf.getvalue()
+
+    original = _sections_by_order(data)
+    assert original[1].heading == "AC-2 Account Management"
+
+    new_bytes = export_rev5_docx(data, {1: "New AC-2 language."})
+    out = _sections_by_order(new_bytes)
+
+    assert out[1].heading == "AC-2 Account Management"
+    assert out[1].text == "New AC-2 language."
+    assert out[0].text == "Old AC policy body."
+
+
+def _style_with_outline_level(doc, name: str, level: int):
+    from docx.enum.style import WD_STYLE_TYPE
+    from docx.oxml.ns import qn
+
+    style = doc.styles.add_style(name, WD_STYLE_TYPE.PARAGRAPH)
+    style.base_style = doc.styles["Normal"]
+    ppr = style.element.get_or_add_pPr()
+    ppr.append(ppr.makeelement(qn("w:outlineLvl"), {qn("w:val"): str(level - 1)}))
+    return style
+
+
+def test_export_replaces_body_under_style_outline_level_heading():
+    """Headings whose style names don't match "Heading N" (localized Word, org
+    templates) are detected by the parser via w:outlineLvl on the style chain.
+    The exporter must see them as headings too, or drafts for those sections
+    silently target orders that don't exist in its walk."""
+    doc = DocxDocument()
+    _style_with_outline_level(doc, "PolicyHead 1", 1)
+    doc.add_paragraph("Kontenverwaltung", style="PolicyHead 1")
+    doc.add_paragraph("Konten werden vierteljährlich überprüft.")
+    buf = io.BytesIO()
+    doc.save(buf)
+    data = buf.getvalue()
+
+    original = _sections_by_order(data)
+    assert original[0].heading == "Kontenverwaltung"
+
+    new_bytes = export_rev5_docx(data, {0: "Neuer Rev-5-Text."})
+    out = _sections_by_order(new_bytes)
+
+    assert out[0].heading == "Kontenverwaltung"
+    assert out[0].text == "Neuer Rev-5-Text."
+
+
+def test_export_replaces_body_under_paragraph_outline_level_heading():
+    """Some converters put w:outlineLvl directly on the paragraph, style Normal."""
+    from docx.oxml.ns import qn
+
+    doc = DocxDocument()
+    para = doc.add_paragraph("Media Sanitization")
+    ppr = para._p.get_or_add_pPr()  # noqa: SLF001
+    ppr.append(ppr.makeelement(qn("w:outlineLvl"), {qn("w:val"): "0"}))
+    doc.add_paragraph("Media is sanitized prior to disposal.")
+    buf = io.BytesIO()
+    doc.save(buf)
+    data = buf.getvalue()
+
+    original = _sections_by_order(data)
+    assert original[0].heading == "Media Sanitization"
+
+    new_bytes = export_rev5_docx(data, {0: "Media is sanitized and verified."})
+    out = _sections_by_order(new_bytes)
+
+    assert out[0].heading == "Media Sanitization"
+    assert out[0].text == "Media is sanitized and verified."
+
+
 def test_export_replaces_section_body_inside_a_table_cell():
     doc = DocxDocument()
     doc.add_heading("Access Control Policy", level=1)

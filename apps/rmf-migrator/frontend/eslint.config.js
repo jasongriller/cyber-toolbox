@@ -17,6 +17,12 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
+      // New in eslint-plugin-react-hooks 7 (pulled in by the eslint 10
+      // security upgrade). It flags the fetch-on-mount pattern used across
+      // this app; the async loads set state after awaits, not synchronously,
+      // so the cascading-render concern doesn't apply. Revisit if these
+      // components are ever reworked.
+      "react-hooks/set-state-in-effect": "off",
     },
   },
 );

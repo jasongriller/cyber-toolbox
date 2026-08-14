@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiClient, ApiError, joinUrl, parseControlIds } from "./client";
+import { ApiClient, ApiError, joinUrl, parseControlIds, sniffUploadProblem } from "./client";
+
+const OLE2 = new Uint8Array([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]);
+const ZIP = new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0x00]);
 
 describe("joinUrl", () => {
   it("joins without doubling slashes", () => {
@@ -25,6 +28,49 @@ describe("parseControlIds", () => {
   });
 });
 
+describe("sniffUploadProblem", () => {
+  it("allows OLE2 bytes when the filename is honestly .doc", () => {
+    expect(sniffUploadProblem(OLE2, "policy.doc")).toBeNull();
+  });
+
+  // Uppercase names are common in legacy DoD document sets.
+  it("allows OLE2 bytes when the .doc extension is uppercase", () => {
+    expect(sniffUploadProblem(OLE2, "POLICY.DOC")).toBeNull();
+  });
+
+  it("still rejects OLE2 bytes wearing a .docx name", () => {
+    const problem = sniffUploadProblem(OLE2, "policy.docx");
+    expect(problem).toContain("legacy Word .doc");
+  });
+
+  // These bytes were classified as a Word 97-2003 container, and a hostile one
+  // is exactly what arrives under a .docx name. Sending the user to Word's
+  // Save As hands that container the macro surface, network access and
+  // credentials the converter sandbox exists to deny it, so the refusal must
+  // route to the sandbox (upload it as .doc) and never to a local open.
+  // USER_MANUAL.md §4.1 states the same doctrine; this pins the string to it.
+  it("never tells the user to open byte-refused OLE2 in Word", () => {
+    const problem = sniffUploadProblem(OLE2, "policy.docx") ?? "";
+    expect(problem.toLowerCase()).not.toContain("save as");
+    expect(problem.toLowerCase()).not.toContain("open it in word");
+    expect(problem.toLowerCase()).toContain("upload");
+  });
+
+  it("allows a real docx", () => {
+    expect(sniffUploadProblem(ZIP, "policy.docx")).toBeNull();
+  });
+
+  it("rejects a PDF regardless of extension", () => {
+    const pdf = new TextEncoder().encode("%PDF-1.7");
+    expect(sniffUploadProblem(pdf, "policy.doc")).toContain("PDF");
+    expect(sniffUploadProblem(pdf, "policy.docx")).toContain("PDF");
+  });
+
+  it("rejects an empty file", () => {
+    expect(sniffUploadProblem(new Uint8Array(), "policy.doc")).toBe("file is empty");
+  });
+});
+
 describe("ApiClient", () => {
   afterEach(() => vi.restoreAllMocks());
 
@@ -36,6 +82,36 @@ describe("ApiClient", () => {
       }),
     );
   }
+
+  it("uploadBytes POSTs multipart form data with the policy fields before the file", async () => {
+    // Presigned POST target: S3 requires every policy field first and the
+    // file as the last form part, or it rejects the upload.
+    const spy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(new Response(null, { status: 204 }));
+    const client = new ApiClient("/api");
+    const file = new Blob(["docx-bytes"]);
+
+    await client.uploadBytes(
+      {
+        url: "https://bucket.s3.test",
+        method: "POST",
+        fields: { key: "projects/p/documents/d.docx", policy: "abc", "x-amz-signature": "sig" },
+        expires_in: 300,
+      },
+      file,
+    );
+
+    const [url, init] = spy.mock.calls[0];
+    expect(url).toBe("https://bucket.s3.test");
+    expect(init?.method).toBe("POST");
+    const form = init?.body as FormData;
+    expect(form).toBeInstanceOf(FormData);
+    expect(form.get("key")).toBe("projects/p/documents/d.docx");
+    expect(form.get("policy")).toBe("abc");
+    const entries = Array.from(form.keys());
+    expect(entries[entries.length - 1]).toBe("file");
+  });
 
   it("updateMapping PUTs control ids to the section URL", async () => {
     const spy = mockFetch(200, { section_id: "sec_1", final_control_ids: ["AC-2"] });
@@ -168,21 +244,26 @@ describe("ApiClient", () => {
     expect(spy.mock.calls[0][0]).toBe("/api/projects/p1/documents");
   });
 
-  it("uploadDocument registers, PUTs to S3, then starts parsing", async () => {
+  it("uploadDocument registers, POSTs to S3, then starts parsing", async () => {
     const spy = vi
       .spyOn(globalThis, "fetch")
-      // 1. register document -> presigned target
+      // 1. register document -> presigned POST target
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
             document: { document_id: "d1" },
-            upload: { url: "https://s3.example/put", method: "PUT", headers: {}, expires_in: 300 },
+            upload: {
+              url: "https://s3.example/post",
+              method: "POST",
+              fields: { key: "k", policy: "abc" },
+              expires_in: 300,
+            },
           }),
           { status: 201, headers: { "Content-Type": "application/json" } },
         ),
       )
-      // 2. the S3 PUT itself
-      .mockResolvedValueOnce(new Response(null, { status: 200 }))
+      // 2. the S3 POST itself
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
       // 3. start parse
       .mockResolvedValueOnce(
         new Response(JSON.stringify({ job: { job_id: "job1" } }), {
@@ -192,15 +273,79 @@ describe("ApiClient", () => {
       );
 
     const client = new ApiClient("/api");
-    const file = new File(["x"], "ac-policy.docx");
+    // Real .docx magic: uploads are content-sniffed before any API call.
+    const file = new File([new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0x00])], "ac-policy.docx");
     const res = await client.uploadDocument("p1", file);
 
     expect(spy.mock.calls[0][0]).toBe("/api/projects/p1/documents");
     // Bytes go straight to S3, never through our API.
-    expect(spy.mock.calls[1][0]).toBe("https://s3.example/put");
-    expect(spy.mock.calls[1][1]?.method).toBe("PUT");
+    expect(spy.mock.calls[1][0]).toBe("https://s3.example/post");
+    expect(spy.mock.calls[1][1]?.method).toBe("POST");
     expect(spy.mock.calls[2][0]).toBe("/api/projects/p1/documents/d1/parse");
     expect(res.job.job_id).toBe("job1");
+  });
+
+  it("uploadDocument rejects an HTML page saved as .docx before any API call", async () => {
+    const spy = vi.spyOn(globalThis, "fetch");
+    const client = new ApiClient("/api");
+    const file = new File(["<!DOCTYPE html><html><body>download page</body></html>"], "policy.docx");
+
+    await expect(client.uploadDocument("p1", file)).rejects.toThrow(/HTML page/i);
+    // Nothing was registered, uploaded, or enqueued — the bad file never
+    // leaves the browser, so no failed document row is created.
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it("uploadDocument tells the user to re-save a legacy .doc renamed to .docx", async () => {
+    const spy = vi.spyOn(globalThis, "fetch");
+    const client = new ApiClient("/api");
+    const ole2 = new Uint8Array([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1, 0, 0]);
+    const file = new File([ole2], "policy.docx");
+
+    await expect(client.uploadDocument("p1", file)).rejects.toThrow(/legacy Word|Save As/i);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it("uploadDocument rejects an empty file", async () => {
+    const spy = vi.spyOn(globalThis, "fetch");
+    const client = new ApiClient("/api");
+
+    await expect(client.uploadDocument("p1", new File([], "policy.docx"))).rejects.toThrow(
+      /empty/i,
+    );
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it("uploadDocument lets an honest .doc reach the API", async () => {
+    // The browser does not decide whether conversion is enabled — the backend
+    // does, and answers 400 when it is not. So these bytes must be registered.
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            document: { document_id: "d1" },
+            upload: {
+              url: "https://s3.example/post",
+              method: "POST",
+              fields: { key: "k", policy: "abc" },
+              expires_in: 300,
+            },
+          }),
+          { status: 201, headers: { "Content-Type": "application/json" } },
+        ),
+      )
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ job: { job_id: "job1" } }), {
+          status: 202,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+
+    const client = new ApiClient("/api");
+    const file = new File([OLE2], "policy.doc");
+
+    await expect(client.uploadDocument("p1", file)).resolves.toBeDefined();
   });
 
   it("getConversionMatrixCsv fetches CSV text", async () => {
@@ -213,6 +358,19 @@ describe("ApiClient", () => {
     const client = new ApiClient("/api");
     const csv = await client.getConversionMatrixCsv("p1");
     expect(csv).toContain("rev4_control");
+  });
+
+  it("getEmassCsv fetches the eMASS control-implementation CSV", async () => {
+    const spy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("control_id,control_title\nAC-2,Account Management\n", {
+        status: 200,
+        headers: { "Content-Type": "text/csv" },
+      }),
+    );
+    const client = new ApiClient("/api");
+    const csv = await client.getEmassCsv("p1");
+    expect(spy.mock.calls[0][0]).toBe("/api/projects/p1/emass.csv");
+    expect(csv).toContain("control_id");
   });
 
   it("getOscalJson fetches the component-definition JSON text", async () => {

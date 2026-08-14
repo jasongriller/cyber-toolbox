@@ -93,9 +93,11 @@ def test_request_upload_returns_presigned_url(deps):
     )
     assert resp["statusCode"] == 201
     payload = json.loads(resp["body"])
-    assert payload["upload"]["method"] == "PUT"
+    # Presigned POST (not PUT): only a POST policy can carry the S3-side
+    # content-length-range size ceiling.
+    assert payload["upload"]["method"] == "POST"
     assert "url" in payload["upload"]
-    assert payload["upload"]["headers"]["x-amz-server-side-encryption"] == "aws:kms"
+    assert payload["upload"]["fields"]["x-amz-server-side-encryption"] == "aws:kms"
     assert payload["document"]["status"] == DocumentStatus.UPLOAD_PENDING.value
 
 
@@ -173,8 +175,9 @@ def test_enqueue_parse_failure_keeps_failed_document_retryable(deps):
     job = json.loads(_enqueue(_event(path={"project_id": pid, "document_id": did}), deps)["body"])[
         "job"
     ]
-    with pytest.raises(Exception, match="docx"):
-        run_parse_job(pid, did, job["job_id"], deps)
+    # A deterministic format failure records FAILED and ends without raising —
+    # retrying identical bytes could only fail identically.
+    assert run_parse_job(pid, did, job["job_id"], deps) is False
     document = deps.repo.get_document(pid, did)
     assert document.status == DocumentStatus.FAILED
     assert document.failure_stage == "parse"
@@ -199,6 +202,44 @@ def test_enqueue_parse_failure_keeps_failed_document_retryable(deps):
     )
     resp = _enqueue(_event(path={"project_id": pid, "document_id": did}), deps)
     assert resp["statusCode"] == 202
+
+
+def test_enqueue_parse_readmits_document_failed_past_parse_stage(deps):
+    """A document that failed in a later stage (e.g. mapping) must be re-parseable.
+
+    Re-parsing restarts the whole parse -> map pipeline, so it is the recovery
+    path for *any* failed document — without it, a mapping-stage failure is a
+    permanent dead end (no API re-enqueues mapping directly).
+    """
+    project = json.loads(_create(_event(body={"name": "S"}), deps)["body"])
+    pid = project["project_id"]
+    up = json.loads(
+        _request_upload(_event(body={"filename": "a.docx"}, path={"project_id": pid}), deps)["body"]
+    )
+    did = up["document"]["document_id"]
+    deps.store._s3.put_object(  # noqa: SLF001
+        Bucket=deps.config.documents_bucket,
+        Key=up["document"]["s3_key"],
+        Body=_make_docx_bytes(),
+    )
+
+    # Simulate a worker crash during mapping: document FAILED, stage=mapping.
+    document = deps.repo.get_document(pid, did)
+    document.status = DocumentStatus.FAILED
+    document.failure_stage = "mapping"
+    deps.repo.put_document(document)
+
+    resp = _enqueue(_event(path={"project_id": pid, "document_id": did}), deps)
+    assert resp["statusCode"] == 202
+
+    document = deps.repo.get_document(pid, did)
+    assert document.status == DocumentStatus.PARSING
+    assert document.failure_stage is None
+
+    # And the restarted pipeline runs to completion.
+    job = json.loads(resp["body"])["job"]
+    assert run_parse_job(pid, did, job["job_id"], deps) is True
+    assert deps.repo.get_document(pid, did).status == DocumentStatus.PARSED
 
 
 def test_enqueue_parse_404_missing_document(deps):
@@ -267,13 +308,46 @@ def test_run_parse_job_marks_failed_on_bad_bytes(deps):
         "job"
     ]
 
-    with pytest.raises(Exception):  # noqa: B017 — re-raised for SQS retry semantics
-        run_parse_job(pid, did, job["job_id"], deps)
+    # Deterministic verdict on the bytes: recorded once, no re-raise, so SQS
+    # does not redeliver a job that can only fail the same way again.
+    assert run_parse_job(pid, did, job["job_id"], deps) is False
 
-    assert deps.repo.get_document(pid, did).status == DocumentStatus.FAILED
+    document = deps.repo.get_document(pid, did)
+    assert document.status == DocumentStatus.FAILED
+    assert document.parse_error == "UnsupportedDocumentFormat"
     failed_job = deps.repo.get_job(pid, job["job_id"])
     assert failed_job.status == JobStatus.FAILED
-    assert failed_job.error_type is not None
+    assert failed_job.error_type == "UnsupportedDocumentFormat"
+
+
+def test_run_parse_job_reraises_transient_errors_for_retry(deps):
+    import dataclasses
+
+    project = json.loads(_create(_event(body={"name": "S"}), deps)["body"])
+    pid = project["project_id"]
+    up = json.loads(
+        _request_upload(_event(body={"filename": "a.docx"}, path={"project_id": pid}), deps)["body"]
+    )
+    did = up["document"]["document_id"]
+    deps.store._s3.put_object(  # noqa: SLF001
+        Bucket=deps.config.documents_bucket,
+        Key=up["document"]["s3_key"],
+        Body=_make_docx_bytes(),
+    )
+    job = json.loads(_enqueue(_event(path={"project_id": pid, "document_id": did}), deps)["body"])[
+        "job"
+    ]
+
+    class _BoomStore:
+        def get_bytes(self, *_args, **_kwargs):
+            raise RuntimeError("s3 unavailable")
+
+    broken = dataclasses.replace(deps, store=_BoomStore())
+    with pytest.raises(RuntimeError):
+        run_parse_job(pid, did, job["job_id"], broken)
+
+    # Still recorded as failed, but the raise lets SQS redeliver.
+    assert deps.repo.get_document(pid, did).status == DocumentStatus.FAILED
 
 
 # ---- get_job ---------------------------------------------------------------
@@ -305,3 +379,11 @@ def test_get_job_404(deps):
     with pytest.raises(HttpError) as exc:
         _get_job(_event(path={"project_id": project["project_id"], "job_id": "job_x"}), deps)
     assert exc.value.status == 404
+
+
+def test_request_upload_rejects_filenames_with_header_breaking_characters(deps):
+    pid = json.loads(_create(_event(body={"name": "S"}), deps)["body"])["project_id"]
+    for bad in ['ac"policy.docx', "ac\policy.docx", "ac\rpolicy.docx", "ac\npolicy.docx"]:
+        with pytest.raises(HttpError) as err:
+            _request_upload(_event(body={"filename": bad}, path={"project_id": pid}), deps)
+        assert err.value.status == 400

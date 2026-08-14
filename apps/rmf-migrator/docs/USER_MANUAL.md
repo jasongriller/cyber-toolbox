@@ -55,7 +55,16 @@ prompts/responses are never written to logs.
   and every API route requires that login's token.
 - **Input format.** Policy documents must be `.docx`. The parser reads paragraphs
   **and table cells** in reading order, so requirements stated inside tables are
-  captured.
+  captured. Legacy Word 97-2003 `.doc` files, uploaded honestly as `.doc`, are
+  accepted **only if your deployment enables conversion** (§4.1); otherwise the
+  upload is refused with a message pointing you at the two safe remedies — ask
+  the document's author to re-save a `.docx` from their own copy, or ask your
+  operator whether conversion should be enabled here. A legacy binary `.doc`
+  **renamed** to `.docx` is a different case and is always rejected, regardless
+  of the conversion setting: the file picker detects it by content, not
+  extension, before upload. The refusal never asks you to open the file
+  yourself (§4.1 explains why) — rename it back to `.doc` and re-upload if
+  conversion is enabled, or use Save As from the author's own copy otherwise.
 - **CUI handling.** Uploaded content is encrypted at rest with your customer-managed
   KMS key and is never logged. Deleting a project (§8) permanently purges every
   document, export, section, and audit record, including all prior S3 versions.
@@ -74,13 +83,66 @@ On the landing screen:
 1. Under **Projects**, type a project name, pick the **baseline** the system is
    authorized at, and select **Create**.
 2. With the project selected, use the file picker under **Documents** to upload a
-   Rev 4 `.docx`.
+   Rev 4 `.docx` (or a legacy `.doc`, where conversion is enabled — see below).
 
 Upload registers the document, sends the bytes straight to encrypted storage, and
 automatically starts parsing. Parsing then chains into control mapping on its own.
 The status pill advances `upload_pending → parsing → mapped`; the list refreshes
 itself while work is in progress. When a document reaches **mapped**, select
-**Open**.
+**Open**. If a document instead shows **failed**, the reason appears directly
+under its filename in the document list, along with what to do about it.
+
+**Legacy `.doc` uploads.** If your deployment enables conversion (the
+`enable_doc_conversion` Terraform flag — off by default, because it puts
+LibreOffice inside the accreditation boundary), a Word 97-2003 `.doc` is
+converted to `.docx` server-side before parsing, and the document list shows a
+**converted from .doc** marker next to the filename. Two things follow from this,
+both of which matter for an audit trail:
+
+- The **converted copy** is what gets parsed, mapped, drafted from, and exported.
+  Section text and headings you review are read out of it, not out of the original.
+- The **original `.doc` is retained** unchanged in encrypted storage alongside the
+  converted copy, so the file you uploaded remains the provenance record. Deleting
+  the project (§8) purges both.
+
+Conversion preserves heading structure, which is what the mapping review depends
+on. It is not a full-fidelity round trip — treat the converted copy the way you
+would treat any Save As, and check the Mapping review screen (§4.2) reflects the
+sections you expect.
+
+**If conversion fails, do not convert the file by hand.** The document lands at
+`failed` and the status badge names the stage and the error type. The two error
+types you can see there do not mean the same thing:
+
+- **`failed (convert: ConversionUnavailable)`** is a statement about the
+  *deployment*, not about the file. Conversion is switched off here (it is off
+  by default), so the sandbox never saw the document and passed no judgement on
+  it; the usual case is an ordinary legacy document someone renamed `.docx`
+  years ago. Ask your operator whether conversion is meant to be enabled in this
+  environment. Once they enable it, select **Retry** on the document you already
+  uploaded — the pipeline re-runs from the conversion step, so you do not need to
+  upload it again. For a deployment that will not enable conversion, the author
+  of a known-good document can re-save a `.docx` from *their* copy.
+- **`failed (convert: ConversionFailed)`** covers a refusal the sandbox issued on
+  the document's content *and* ordinary operational failures that present
+  identically: a timeout, output that breached the size ceiling, a throttled or
+  erroring backend. Select **Retry** on the failed document once — re-uploading
+  makes a second document record and a second retained original, a duplicate CUI
+  copy for no gain. If it fails the same way again, ask your
+  operator to confirm from the converter's own CloudWatch logs which of the two
+  it was — a transport error is not a security event, and reporting every one of
+  them trains the response channel to ignore the real thing.
+
+**When the converter did refuse the document itself**, retain it, do not forward
+it, and report it to your security team. Do not open it in Word to Save As a
+`.docx`: conversion runs in a network-denied, macro-disabled sandbox precisely so
+that a file built to look like a `.doc` is never opened on a workstation, and
+doing it by hand gives that file the macro surface, network access, and
+credentials the sandbox exists to deny it. The same rule covers a file the upload
+screen refuses **on its bytes** — that check reads the file's magic number, not
+its name, so it has already classified the content. Where this deployment
+converts `.doc`, re-upload those bytes under their true `.doc` name and let the
+sandbox handle them; otherwise treat the file as above rather than opening it.
 
 ### 4.2 Step 1 — Mapping review (the human checkpoint)
 
@@ -193,7 +255,7 @@ The status pill on a document reflects where it is in the pipeline:
 | `drafting` / `drafted` | Generating Rev 5 language / **ready for the editor**. |
 | `review_approved` | Every draft approved; **ready to export**. |
 | `exporting` / `exported` | Building the Rev 5 `.docx` / **ready to download**. |
-| `failed` | A step failed. Re-trigger it (re-upload, re-open, or re-run export); the tool records which stage failed. |
+| `failed` | A step failed. Select **Retry** to re-run from the failed stage without re-uploading — the tool records which stage failed. Re-uploading a document already in encrypted storage creates a second document record and a second retained original, so only fall back to a fresh upload if the document record itself needs replacing. For a `.doc` that failed at the conversion step specifically, see §4.1 and the troubleshooting rows in §11. |
 
 ---
 
@@ -235,11 +297,14 @@ CSV exports are formula-injection safe.
 
 | Symptom | What to do |
 |---------|-----------|
-| Document stuck at `failed` | Re-open it, or re-upload. The failed stage is recorded; re-triggering resumes from there. |
+| Document stuck at `failed` | Select **Retry** to re-run from the failed stage without re-uploading; the failed stage is recorded. Re-uploading a document already in encrypted storage creates a second document record and a second retained original, so only fall back to a fresh upload if the document record itself needs replacing. If the failed stage was conversion of a `.doc`, see §4.1 and the two rows below. |
 | A section maps to the wrong control | Correct it in Mapping review before approving; you cannot edit the mapping after approval. |
 | Export button disabled | Every draft must be **approved** first. Check the `n/total approved` counter in the editor. |
 | Coverage looks too high or too low | Confirm the baseline matches the level the system is authorized at (§5). |
 | Draft text looks generic or empty | Edit it directly, or use **Ask assistant**. Empty drafts are skipped at export so the original text is preserved. |
+| A `.doc` upload is refused | Three possible causes. (1) Conversion is not enabled in this deployment (§4.1) — the refusal is about the deployment and says nothing about the file, so ask the document's author to re-save a `.docx` from their own copy, or ask your operator whether conversion should be enabled here. If the upload screen refused these bytes earlier, cause (2) applies as well and opening the file yourself is **not** safe. (2) The upload screen read the file's bytes and they are not the format the name claims — do **not** open it locally; if it reports legacy `.doc` bytes under a `.docx` name, rename it to `.doc` and upload it again so the sandbox converts it. See §4.1. (3) The file is over the size cap (15 MB for `.doc`, 25 MB for `.docx`). |
+| A `.doc` document reached `failed` at the conversion step | Read the error type on the badge. `ConversionUnavailable` means conversion is switched off in this deployment (§4.1) and says nothing about the file; once your operator enables it, select **Retry** on the same document rather than uploading it again. `ConversionFailed` covers a refusal on the document's content but also timeouts, the 15 MB ceiling, and backend errors — select **Retry** once, and have your operator check the converter's CloudWatch logs before anyone escalates it. Either way, do not convert it by hand in Word (§4.1). |
+| A converted `.doc` produced one long section | The original's headings were direct formatting rather than heading styles, so nothing marked the sections. Apply heading styles in Word, save as `.docx`, and re-upload. |
 
 ---
 

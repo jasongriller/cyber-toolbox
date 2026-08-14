@@ -51,3 +51,22 @@ def test_section_item_round_trip():
     )
     restored = Section(**_strip_keys(_to_item(section)))
     assert restored == section
+
+
+def test_parse_key_prefers_the_converted_docx():
+    doc = Document(
+        project_id="proj_1",
+        filename="policy.doc",
+        s3_key="projects/p/documents/d.doc",
+        source_format="doc",
+        converted_s3_key="projects/p/documents/d.converted.docx",
+    )
+    assert doc.parse_key() == "projects/p/documents/d.converted.docx"
+
+
+def test_parse_key_is_the_upload_when_nothing_was_converted():
+    doc = Document(
+        project_id="proj_1", filename="policy.docx", s3_key="projects/p/documents/d.docx"
+    )
+    assert doc.converted_s3_key is None
+    assert doc.parse_key() == "projects/p/documents/d.docx"

@@ -17,6 +17,7 @@ from rmf_migrator.common.http import (
     json_response,
     parse_body,
     path_param,
+    resolve_groups,
     resolve_identity,
 )
 from rmf_migrator.common.logging import log_event
@@ -62,12 +63,39 @@ def list_documents(event: dict[str, Any], _context: Any = None) -> dict[str, Any
 
 # ---- DELETE /projects/{project_id} -----------------------------------------
 
+# Members of this Cognito group may delete any project, not just their own.
+_ADMIN_GROUP = "admins"
+
+
+def _require_can_delete(event: dict[str, Any], deps: Deps, project) -> str:  # noqa: ANN001
+    """Owner-gated destructive ops: reads stay open to the whole team, but a
+    hard delete is bound to the project's creator or an "admins" group member.
+
+    Projects whose created_by is "anonymous" (made before auth, or under
+    auth_mode = "none", where identity is unverifiable anyway) cannot be bound
+    to anyone, so they stay deletable by any caller — documented behavior, not
+    a bypass: a spoofable identity would make any stricter check theater.
+    """
+    identity = resolve_identity(event, deps.config.identity_header)
+    owner = project.created_by
+    if owner in ("", "anonymous") or identity == owner:
+        return identity
+    if _ADMIN_GROUP in resolve_groups(event):
+        return identity
+    raise HttpError(
+        403,
+        f"only the project's creator ({owner!r}) or an {_ADMIN_GROUP!r} "
+        "group member can delete this project",
+    )
+
 
 def _delete_project(event: dict[str, Any], deps: Deps) -> dict[str, Any]:
     project_id = path_param(event, "project_id")
     project = deps.repo.get_project(project_id)
     if project is None:
         raise HttpError(404, "project not found")
+
+    deleted_by = _require_can_delete(event, deps, project)
 
     body = parse_body(event)
     confirm_name = body.get("confirm_project_name")
@@ -80,7 +108,6 @@ def _delete_project(event: dict[str, Any], deps: Deps) -> dict[str, Any]:
 
     deleted_objects = deps.store.delete_prefix(f"projects/{project_id}/")
     deleted_records = deps.repo.delete_project(project_id)
-    deleted_by = resolve_identity(event, deps.config.identity_header)
     log_event(
         "project.purged",
         project_id=project_id,

@@ -106,6 +106,30 @@ repository (stamped with a legacy notice dated 2026-06-23), which
 validates every id against the bundled Rev 5 catalog and fails if FedRAMP
 republishes the baselines in a shape it does not recognize.
 
+## Configuration
+
+Everything is configured through the Terraform module's variables — see
+[`terraform/modules/rmf-migrator/variables.tf`](terraform/modules/rmf-migrator/variables.tf)
+for the full set and [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the deploy sequence.
+
+| Variable | Default | What it does |
+|----------|---------|--------------|
+| `bedrock_model_id` | — | Which Bedrock model does the mapping and drafting. |
+| `network_mode` | `private` | `private` (VPC + SigV4) or `public` (optionally + Cognito). |
+| `enable_doc_conversion` | `false` | Accept legacy Word 97-2003 `.doc` uploads and convert them to `.docx` server-side. |
+
+`enable_doc_conversion` is off deliberately, and turning it on is an accreditation
+decision, not a convenience toggle: it deploys a LibreOffice container inside the
+boundary, which is a large C++ parser fed attacker-controlled bytes and needs ISSO
+approval plus its own patch and scan coverage. It is also a two-apply move — the
+first apply creates the ECR repository, and `backend/converter.Dockerfile` has to
+be built and pushed to it before the function can be created. The converter is
+pinned into subnets with no route off the VPC, because a `.doc` can name a URL for
+a linked graphic and LibreOffice fetches it while converting. Design rationale,
+threat model, and the measured evidence behind those controls are in the monorepo
+at `docs/superpowers/specs/2026-08-07-doc-conversion-design.md` — the same pointer
+`enable_doc_conversion`'s own variable description carries.
+
 ## Repository layout
 
 ```

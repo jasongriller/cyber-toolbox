@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from rmf_migrator.common.bedrock import BedrockClient, BedrockError
 from rmf_migrator.common.catalog import Catalog, rev4_catalog
+from rmf_migrator.common.logging import log_error
 from rmf_migrator.common.models import ControlMapping, MappingStatus, Section
 
 # Bound the section text sent to the model. Mapping needs the gist, not the whole
@@ -86,7 +87,19 @@ def map_section(
 
     try:
         result = bedrock.converse_json(system=_SYSTEM_PROMPT, user=_build_user_prompt(section))
-    except BedrockError:
+    except BedrockError as exc:
+        # include_message is safe here: BedrockError messages are built by our
+        # own wrapper from the AWS error code, never from prompts or responses.
+        # Without this the rationale below is the only trace, and a model that
+        # was never reachable looks exactly like one that found no controls.
+        log_error(
+            "mapping.bedrock_failed",
+            exc,
+            include_message=True,
+            project_id=section.project_id,
+            document_id=section.document_id,
+            section_id=section.section_id,
+        )
         base.rationale = "automatic mapping failed; please select controls manually"
         base.confidence = 0.0
         return base

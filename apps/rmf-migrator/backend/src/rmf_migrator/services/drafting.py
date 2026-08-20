@@ -18,6 +18,7 @@ from __future__ import annotations
 
 from rmf_migrator.common.bedrock import BedrockClient, BedrockError
 from rmf_migrator.common.catalog import Catalog, Crosswalk, crosswalk, rev5_catalog
+from rmf_migrator.common.logging import log_error
 from rmf_migrator.common.models import (
     ControlMapping,
     DispositionNote,
@@ -145,7 +146,16 @@ def build_draft(
             user=_build_user_prompt(section, rev5_ids, notes, cat5),
             max_tokens=4096,
         )
-    except BedrockError:
+    except BedrockError as exc:
+        # Safe to include: see the matching note in services/mapping.py.
+        log_error(
+            "drafting.bedrock_failed",
+            exc,
+            include_message=True,
+            project_id=section.project_id,
+            document_id=section.document_id,
+            section_id=section.section_id,
+        )
         draft.draft_text = ""
         draft.suggestions = ["automatic drafting failed; please author this section manually"]
         return draft

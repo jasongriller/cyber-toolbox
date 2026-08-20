@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from rmf_migrator.common.bedrock import BedrockError
+from rmf_migrator.common.bedrock import MIN_TEMPERATURE, BedrockError
 from rmf_migrator.common.http import HttpError
 from rmf_migrator.common.models import Document, DocumentStatus, Draft, Project, Section
 from rmf_migrator.handlers.chat import _chat
@@ -20,7 +20,7 @@ class FakeChatBedrock:
         self.last_system: str | None = None
         self.last_messages: list[dict[str, str]] | None = None
 
-    def converse_messages(self, *, system, messages, max_tokens=2048, temperature=0.0):
+    def converse_messages(self, *, system, messages, max_tokens=2048, temperature=MIN_TEMPERATURE):
         self.last_system = system
         self.last_messages = messages
         if self._error:

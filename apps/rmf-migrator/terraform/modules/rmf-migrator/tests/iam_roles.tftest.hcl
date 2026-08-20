@@ -100,3 +100,54 @@ run "chat_role_grants_only_read_and_bedrock" {
     error_message = "The chat policy must attach to the dedicated chat role."
   }
 }
+
+# Cross-region inference profiles ("us.", "eu.", "apac.", "us-gov." prefixes)
+# are not foundation models. They are account-scoped resources that fan out to
+# the underlying model in several regions, so they need the profile ARN plus the
+# underlying foundation model. Interpolating a profile id into a
+# foundation-model ARN builds an ARN that matches nothing, and the only symptom
+# is AccessDenied at invoke time, in someone else's account.
+run "inference_profile_id_grants_the_profile_and_the_underlying_model" {
+  command = apply
+
+  variables {
+    bedrock_model_id = "us.amazon.nova-pro-v1:0"
+  }
+
+  assert {
+    condition     = strcontains(aws_iam_role_policy.chat.policy, "inference-profile/us.amazon.nova-pro-v1:0")
+    error_message = "An inference-profile model id must grant invoke on the profile ARN."
+  }
+
+  assert {
+    condition     = strcontains(aws_iam_role_policy.chat.policy, "foundation-model/amazon.nova-pro-v1:0")
+    error_message = "The profile fans out to the underlying foundation model, which must also be granted."
+  }
+
+  assert {
+    condition     = !strcontains(aws_iam_role_policy.chat.policy, "foundation-model/us.amazon.nova-pro-v1:0")
+    error_message = "The profile id must never be interpolated into a foundation-model ARN; that ARN matches nothing."
+  }
+}
+
+# The profile path widens the foundation-model ARN to any region, because AWS
+# changes which regions a profile routes to. That widening must not leak into
+# deployments that name a plain model id.
+run "plain_model_id_stays_pinned_to_one_region" {
+  command = apply
+
+  assert {
+    condition     = strcontains(aws_iam_role_policy.chat.policy, "foundation-model/mock.model-v1")
+    error_message = "A plain model id must still grant invoke on its foundation-model ARN."
+  }
+
+  assert {
+    condition     = !strcontains(aws_iam_role_policy.chat.policy, "inference-profile/")
+    error_message = "A plain model id must not gain inference-profile permissions it cannot use."
+  }
+
+  assert {
+    condition     = !strcontains(aws_iam_role_policy.chat.policy, "bedrock:*::foundation-model")
+    error_message = "A plain model id must stay pinned to one region, not widen to a region wildcard."
+  }
+}

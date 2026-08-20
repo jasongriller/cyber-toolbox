@@ -15,8 +15,28 @@ data "aws_iam_policy_document" "lambda_assume" {
 # Shared statements ----------------------------------------------------------
 
 locals {
-  # Bedrock foundation-model ARN for the configured model, partition-aware.
-  bedrock_model_arn = "arn:${local.partition}:bedrock:${local.bedrock_region}::foundation-model/${var.bedrock_model_id}"
+  # A model id carrying a geography prefix ("us.", "eu.", "apac.", "us-gov.") is
+  # a cross-region inference profile rather than a foundation model. Several
+  # Bedrock models -- Nova Pro among them -- cannot be invoked on-demand any
+  # other way outside their home region, so this is an ordinary case to support.
+  bedrock_is_inference_profile = can(regex("^(us|eu|apac|us-gov)[.]", var.bedrock_model_id))
+
+  # The foundation model a profile resolves to, e.g. us.amazon.nova-pro-v1:0
+  # -> amazon.nova-pro-v1:0.
+  bedrock_base_model_id = replace(var.bedrock_model_id, "/^(us|eu|apac|us-gov)[.]/", "")
+
+  # Invoking through a profile authorizes twice: against the profile ARN, which
+  # is account-scoped, and against the underlying foundation model in whichever
+  # region the profile routed the call to. AWS adds and removes those regions
+  # without notice, so pinning them here would silently break on their schedule;
+  # the region is wildcarded instead and the grant stays bounded by naming one
+  # model. A plain model id keeps exactly the single pinned ARN it had before.
+  bedrock_model_arns = local.bedrock_is_inference_profile ? [
+    "arn:${local.partition}:bedrock:${local.bedrock_region}:${local.account_id}:inference-profile/${var.bedrock_model_id}",
+    "arn:${local.partition}:bedrock:*::foundation-model/${local.bedrock_base_model_id}",
+    ] : [
+    "arn:${local.partition}:bedrock:${local.bedrock_region}::foundation-model/${var.bedrock_model_id}",
+  ]
 }
 
 data "aws_iam_policy_document" "kms_use" {
@@ -138,7 +158,7 @@ data "aws_iam_policy_document" "worker" {
     sid       = "InvokeModel"
     effect    = "Allow"
     actions   = ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"]
-    resources = [local.bedrock_model_arn]
+    resources = local.bedrock_model_arns
   }
 
   dynamic "statement" {
@@ -261,7 +281,7 @@ resource "aws_iam_role_policy" "chat" {
           Sid      = "InvokeModel"
           Effect   = "Allow"
           Action   = ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"]
-          Resource = local.bedrock_model_arn
+          Resource = local.bedrock_model_arns
         },
       ],
       var.bedrock_guardrail_id != null ? [

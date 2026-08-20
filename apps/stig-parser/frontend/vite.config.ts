@@ -11,6 +11,10 @@ export default defineConfig(({ mode }) => {
   const target = env.VITE_DEV_PROXY_TARGET; // invoke URL incl. stage, from .env.devfull.local
   return {
     plugins: [react(), ...(devfull ? [basicSsl()] : [])],
+    // amazon-cognito-identity-js reaches for Node's `global`. Vite 5 shimmed it
+    // while pre-bundling deps; Vite 8 does not, so the bundle throws
+    // "global is not defined" at import time and the SPA never mounts.
+    define: { global: 'globalThis' },
     // Assets are served from the SPA bucket through the API Gateway S3 proxy,
     // which sits under a stage path (e.g. /v1). Relative asset URLs survive that;
     // absolute ones (/assets/...) would 404.

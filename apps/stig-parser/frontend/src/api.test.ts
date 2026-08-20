@@ -128,7 +128,14 @@ describe('api', () => {
       onerror: undefined as (() => void) | undefined,
       status: 200,
     };
-    vi.stubGlobal('XMLHttpRequest', vi.fn(() => xhr));
+    // Function expression, not an arrow: api.ts calls `new XMLHttpRequest()`,
+    // and an arrow is not constructible.
+    vi.stubGlobal(
+      'XMLHttpRequest',
+      vi.fn(function () {
+        return xhr;
+      }),
+    );
 
     const file = new File(['x'], 'a.xml');
     const promise = uploadFile('https://s3/a', file, (p) => events.push(p));
@@ -152,7 +159,12 @@ describe('api', () => {
       onerror: undefined as (() => void) | undefined,
       status: 403,
     };
-    vi.stubGlobal('XMLHttpRequest', vi.fn(() => xhr));
+    vi.stubGlobal(
+      'XMLHttpRequest',
+      vi.fn(function () {
+        return xhr;
+      }),
+    );
 
     const promise = uploadFile('https://s3/a', new File(['x'], 'a.xml'), () => {});
     xhr.onload?.();

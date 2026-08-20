@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 from rmf_migrator.common.bedrock import BedrockError
 from rmf_migrator.common.models import MappingStatus, Section
 from rmf_migrator.services.mapping import map_document, map_section
@@ -104,3 +106,17 @@ def test_map_document_preserves_order():
     mappings = map_document(sections, fake)
     assert [m.order for m in mappings] == [0, 1, 2]
     assert all(m.document_id == "doc_1" for m in mappings)
+
+
+def test_bedrock_failure_is_logged_with_its_cause(capsys):
+    """The user-facing rationale says "map it manually" and says nothing about
+    why. Without a log line naming the cause, a misconfigured model looks
+    identical to a model that simply found no controls — and the deployer, who
+    cannot read this repo, has nothing to go on."""
+    mapping = map_section(_section(), FakeBedrock(error=True))
+
+    payload = json.loads(capsys.readouterr().err.strip().splitlines()[-1])
+    assert payload["event"] == "mapping.bedrock_failed"
+    assert payload["error_type"] == "BedrockError"
+    assert "boom" in payload["error_message"]
+    assert payload["section_id"] == mapping.section_id

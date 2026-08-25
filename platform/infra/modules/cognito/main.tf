@@ -92,6 +92,11 @@ resource "aws_cognito_user_pool_client" "app" {
 # Cross-stack handoff: apps read these instead of this root's state, so an app
 # apply can never touch the pool and the pool can move without app edits.
 resource "aws_ssm_parameter" "user_pool_id" {
+  # checkov:skip=CKV2_AWS_34: The value is the Cognito user pool id — it is
+  # shipped to every browser client in the SPA auth config and carries no
+  # confidentiality. The pool clients are public (generate_secret = false),
+  # so no secret material is published here. SecureString would only add KMS
+  # coupling for the cross-stack readers.
   name  = "${var.ssm_prefix}/cognito_user_pool_id"
   type  = "String"
   value = aws_cognito_user_pool.this.id
@@ -99,6 +104,9 @@ resource "aws_ssm_parameter" "user_pool_id" {
 }
 
 resource "aws_ssm_parameter" "user_pool_arn" {
+  # checkov:skip=CKV2_AWS_34: The pool ARN is an identifier, not a credential.
+  # It is consumed by the app stacks to attach authorizers; possession of it
+  # grants nothing without IAM.
   name  = "${var.ssm_prefix}/cognito_user_pool_arn"
   type  = "String"
   value = aws_cognito_user_pool.this.arn
@@ -106,6 +114,9 @@ resource "aws_ssm_parameter" "user_pool_arn" {
 }
 
 resource "aws_ssm_parameter" "client_id" {
+  # checkov:skip=CKV2_AWS_34: App client ids are public by design — the SPA
+  # embeds them. generate_secret = false on these clients (PKCE), so there is
+  # no client secret to protect.
   for_each = aws_cognito_user_pool_client.app
 
   name  = "${var.ssm_prefix}/cognito_client_id/${each.key}"

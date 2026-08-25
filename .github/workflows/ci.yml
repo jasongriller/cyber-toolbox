@@ -54,6 +54,50 @@ jobs:
             | tar -xz -C /tmp gitleaks
           /tmp/gitleaks detect --source=. --redact --no-banner
 
+  sast:
+    # Static analysis of APPLICATION code. The other security gates in this
+    # workflow deliberately do not cover this ground:
+    #   checkov/tflint -> Terraform only
+    #   pip-audit/npm audit -> dependency CVEs only, not our own code
+    #   gitleaks/leak-scan -> committed secrets and account ids only
+    # Nothing else reads the Lambda handlers, parsers, or React source for
+    # injection, XXE, path traversal, or unsafe deserialization patterns.
+    #
+    # Ungated (no `needs: changes`) like secret-scan: a rule update can surface
+    # a finding in code this PR did not touch, and we want to know on every run.
+    name: SAST (semgrep + bandit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.12"
+      - name: Install scanners
+        # Pinned: an unpinned scanner turns a green build red on someone else's
+        # release schedule. Bump deliberately, with the new baseline verified.
+        run: pip install 'semgrep==1.174.0' 'bandit==1.9.4'
+      # --error makes any finding fail the job. Baseline verified clean:
+      # 317 files / 117 rules / 0 findings at the commit that added this gate.
+      # To accept a specific finding, add a `nosemgrep` comment with a reason
+      # so the exception is a deliberate, reviewable act — never `|| true`.
+      - name: semgrep (security-audit + OWASP Top 10)
+        run: |
+          semgrep \
+            --config=p/security-audit \
+            --config=p/owasp-top-ten \
+            --severity=ERROR \
+            --exclude=node_modules --exclude=.venv --exclude=dist \
+            --metrics=off \
+            --error \
+            apps/ platform/
+      # -ll = MEDIUM severity and above. Tests are excluded: assert-heavy test
+      # code trips B101 without indicating a real defect in shipped code.
+      - name: bandit (Python)
+        run: |
+          set -euo pipefail
+          bandit -r apps/stig-parser/app -ll
+          bandit -r apps/rmf-migrator/backend/src -ll
+
   stig-python:
     name: stig backend (audit + tests)
     needs: changes

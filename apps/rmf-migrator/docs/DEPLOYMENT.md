@@ -51,6 +51,37 @@ terraform init
 terraform apply
 ```
 
+## Choosing a Bedrock model
+
+`bedrock_model_id` is pure configuration; the tool has no model baked in. Before
+deploying a model you have not used with this tool, pre-flight it against the
+real mapping and drafting prompts:
+
+```bash
+python scripts/check_bedrock_model.py <model-id> --region <region>
+```
+
+It makes four short calls (a fraction of a cent), creates no infrastructure, and
+prints a PASS/FAIL per check. A model that fails the Converse or system-block
+check needs a code change, not a config change.
+
+### Inference profile IDs
+
+Many models — Amazon Nova among them — cannot be invoked on-demand by their bare
+model ID outside their home region, and must be addressed through a cross-region
+inference profile instead: `us.amazon.nova-pro-v1:0` rather than
+`amazon.nova-pro-v1:0`. Set `bedrock_model_id` to the profile ID and the module
+grants both the profile and the underlying foundation model. If you use the bare
+ID where a profile is required, Bedrock returns:
+
+```
+ValidationException: Invocation of model ID ... with on-demand throughput isn't
+supported. Retry your request with the ID or ARN of an inference profile ...
+```
+
+Those errors reach CloudWatch under the `mapping.bedrock_failed` and
+`drafting.bedrock_failed` events, with the AWS error code intact.
+
 ## GovCloud
 
 Set `region = "us-gov-west-1"` (or `us-gov-east-1`). No other change — the module is partition-aware (`aws-us-gov`) and constructs all ARNs accordingly.

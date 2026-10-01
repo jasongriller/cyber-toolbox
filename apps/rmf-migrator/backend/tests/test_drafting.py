@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 from rmf_migrator.common.bedrock import BedrockError
 from rmf_migrator.common.models import ControlMapping, DraftStatus, Section
 from rmf_migrator.services.drafting import build_draft, draft_document
@@ -113,3 +115,16 @@ def test_draft_document_preserves_order():
     mappings = [_mapping(sid=f"sec_{i}", order=i) for i in range(3)]
     drafts = draft_document(sections, mappings, FakeBedrock())
     assert [d.order for d in drafts] == [0, 1, 2]
+
+
+def test_bedrock_failure_is_logged_with_its_cause(capsys):
+    """Same reasoning as the mapping engine: the empty draft and the "author it
+    manually" suggestion are indistinguishable from a model that returned
+    nothing useful, unless the cause reaches CloudWatch."""
+    draft = build_draft(_section(), _mapping(), FakeBedrock(error=True))
+
+    payload = json.loads(capsys.readouterr().err.strip().splitlines()[-1])
+    assert payload["event"] == "drafting.bedrock_failed"
+    assert payload["error_type"] == "BedrockError"
+    assert "boom" in payload["error_message"]
+    assert payload["section_id"] == draft.section_id

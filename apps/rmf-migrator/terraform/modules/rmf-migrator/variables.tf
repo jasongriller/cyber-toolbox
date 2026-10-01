@@ -87,7 +87,7 @@ variable "kms_key_arn" {
 # ---- Bedrock -----------------------------------------------------------------
 
 variable "bedrock_model_id" {
-  description = "Bedrock model ID the tool invokes. Pure configuration — set to whatever your account has enabled. No default, to force a conscious choice."
+  description = "Bedrock model ID the tool invokes. Pure configuration — set to whatever your account has enabled. No default, to force a conscious choice. A cross-region inference profile ID (one prefixed us./eu./apac./us-gov.) is accepted and is required for models that are not invocable on-demand in your region; IAM is built to match either form."
   type        = string
 }
 

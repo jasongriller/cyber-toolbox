@@ -1,1 +1,100 @@
+# Root safety net for a PUBLIC repo.
+#
+# The per-app and per-infra .gitignore files (apps/*/, apps/*/terraform/,
+# apps/*/infra/, platform/infra/) already cover their own subtrees thoroughly.
+# A gitignore only applies to its own directory downward, so this file exists to
+# cover everything those do NOT reach: the repo root itself, platform/ outside
+# infra/, docs/, modules/, .claude/, and apps/ above the per-app files.
+#
+# Rule of thumb: a real secret must be ignored by SOME file no matter where a
+# tired operator drops it. Duplication with the subtree files is deliberate.
+
+# --- Secrets / local env — never commit ------------------------------------
+.env
+.env.*
+*.env
+!*.env.example
+!.env.*.example
+
+# Credentials and keys
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+*.jks
+id_rsa*
+id_ed25519*
+aws-credentials*
+credentials.json
+.netrc
+
+# Per-env deploy settings (carry account ids — see deploy.sh).
+deploy.env
+!deploy.env.example
+
+# --- Terraform -------------------------------------------------------------
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+*.plan
+*.tfplan
+backend.tf
+!backend.tf.example
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# --- Python ----------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+.eggs/
+.venv/
+venv/
+env/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# --- Node / build artifacts ------------------------------------------------
 node_modules/
+dist/
+build/
+.vite/
+*.tsbuildinfo
+test-results/
+playwright-report/
+
+# --- Scan output / working files -------------------------------------------
+# Security tooling writes reports into the tree; they can embed findings and
+# real hostnames. Regenerate them, do not commit them.
+semgrep.sarif
+bandit.sarif
+*.sarif
+gitleaks-report.json
+
+# --- Agent workspaces ------------------------------------------------------
+# Worktrees are throwaway checkouts that may hold uncommitted secrets.
+.claude/worktrees/
+.claude/launch.json
+
+# --- OS / editor -----------------------------------------------------------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~

@@ -26,9 +26,9 @@ const INPUT: CSSProperties = {
   padding: '11px 13px',
   fontSize: 14,
   borderRadius: 'var(--radius)',
-  border: '1px solid var(--color-border)',
-  background: 'var(--color-surface)',
-  color: 'var(--color-text)',
+  border: '1px solid var(--border)',
+  background: 'var(--surface)',
+  color: 'var(--text)',
   fontFamily: 'inherit',
 };
 
@@ -149,13 +149,13 @@ export default function Login() {
         <h1 style={{ marginBottom: 18 }}>{heading}</h1>
 
         {view === 'new-password' && (
-          <p style={{ fontSize: 13, color: 'var(--color-muted)', marginBottom: 16, lineHeight: 1.55 }}>
+          <p style={{ fontSize: 13, color: 'var(--text-mute)', marginBottom: 16, lineHeight: 1.55 }}>
             Your account was created by an administrator. Choose a permanent password to continue.
           </p>
         )}
 
         {view === 'enroll' && (
-          <p style={{ fontSize: 13, color: 'var(--color-muted)', marginBottom: 16, lineHeight: 1.55 }}>
+          <p style={{ fontSize: 13, color: 'var(--text-mute)', marginBottom: 16, lineHeight: 1.55 }}>
             Add this account to an authenticator app (Google Authenticator, Authy, 1Password…) by
             entering the secret key below or opening the setup link, then enter the 6-digit code
             it generates.
@@ -163,7 +163,7 @@ export default function Login() {
         )}
 
         {view === 'code' && (
-          <p style={{ fontSize: 13, color: 'var(--color-muted)', marginBottom: 16, lineHeight: 1.55 }}>
+          <p style={{ fontSize: 13, color: 'var(--text-mute)', marginBottom: 16, lineHeight: 1.55 }}>
             Enter the 6-digit code from your authenticator app.
           </p>
         )}
@@ -195,7 +195,7 @@ export default function Login() {
               {busy ? 'Signing in…' : 'Sign in'}
             </button>
             {error ? (
-              <p role="alert" style={{ color: 'var(--color-danger)', fontSize: 12.5 }}>{error}</p>
+              <p role="alert" style={{ color: 'var(--crit)', fontSize: 12.5 }}>{error}</p>
             ) : null}
           </form>
         )}
@@ -229,9 +229,9 @@ export default function Login() {
                 flexDirection: 'column',
                 gap: 4,
                 padding: '8px 10px',
-                background: 'var(--color-bg)',
+                background: 'var(--bg)',
                 borderRadius: 'var(--radius)',
-                border: '1px solid var(--color-border)',
+                border: '1px solid var(--border)',
               }}
             >
               {reqs.map((r) => (
@@ -239,7 +239,7 @@ export default function Login() {
                   key={r.key}
                   style={{
                     fontSize: 11.5,
-                    color: r.met ? 'var(--color-success)' : 'var(--color-muted)',
+                    color: r.met ? 'var(--ok)' : 'var(--text-mute)',
                   }}
                 >
                   {r.met ? '✓' : '○'} {r.label}
@@ -262,7 +262,7 @@ export default function Login() {
               ← Back to sign in
             </button>
             {error ? (
-              <p role="alert" style={{ color: 'var(--color-danger)', fontSize: 12.5 }}>{error}</p>
+              <p role="alert" style={{ color: 'var(--crit)', fontSize: 12.5 }}>{error}</p>
             ) : null}
           </form>
         )}
@@ -306,7 +306,7 @@ export default function Login() {
               ← Back to sign in
             </button>
             {error ? (
-              <p role="alert" style={{ color: 'var(--color-danger)', fontSize: 12.5 }}>{error}</p>
+              <p role="alert" style={{ color: 'var(--crit)', fontSize: 12.5 }}>{error}</p>
             ) : null}
           </form>
         )}
@@ -339,7 +339,7 @@ export default function Login() {
               ← Back to sign in
             </button>
             {error ? (
-              <p role="alert" style={{ color: 'var(--color-danger)', fontSize: 12.5 }}>{error}</p>
+              <p role="alert" style={{ color: 'var(--crit)', fontSize: 12.5 }}>{error}</p>
             ) : null}
           </form>
         )}

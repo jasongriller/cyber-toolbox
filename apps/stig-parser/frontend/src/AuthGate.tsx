@@ -18,10 +18,10 @@ function ToolboxBar({ right }: { right?: ReactNode }) {
         justifyContent: 'space-between',
         gap: '1rem',
         padding: '.5rem 1rem',
-        background: 'var(--color-surface)',
-        borderBottom: '1px solid var(--color-border)',
-        fontSize: 'var(--text-small)',
-        color: 'var(--color-muted)',
+        background: 'var(--surface)',
+        borderBottom: '1px solid var(--border)',
+        fontSize: 13,
+        color: 'var(--text-mute)',
       }}
     >
       <nav
